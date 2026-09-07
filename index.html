@@ -445,11 +445,14 @@ async function renderNoticeWriteBox(){
   const box = document.getElementById("noticeWriteBox");
   if(!currentProfile || currentProfile.role !== "teacher"){ box.innerHTML = ""; return; }
 
-  const studentsSnap = await db.collection("students").where("role", "==", "student").orderBy("num").get();
+  try{
+    const studentsSnap = await db.collection("students").where("role", "==", "student").get();
+  const studentList = studentsSnap.docs
+    .map(d => ({id: d.id, ...d.data()}))
+    .sort((a, b) => a.num - b.num);
   let options = `<option value="">전체 학생</option>`;
-  studentsSnap.forEach(doc => {
-    const s = doc.data();
-    options += `<option value="${doc.id}">${s.num}번 ${s.name}</option>`;
+  studentList.forEach(s => {
+    options += `<option value="${s.id}">${s.num}번 ${s.name}</option>`;
   });
 
   box.innerHTML = `
@@ -459,6 +462,10 @@ async function renderNoticeWriteBox(){
       <div class="field" style="margin-bottom:0;"><label>내용</label><textarea id="noticeBody" rows="4" placeholder="공지 내용"></textarea></div>
       <button class="primary-btn" onclick="handlePostNotice()">보내기 (알림 발송)</button>
     </div>`;
+  } catch(e){
+    console.error("작성창 로딩 실패:", e);
+    box.innerHTML = `<div class="notice-write" style="color:var(--danger);">작성창을 불러오지 못했어요. 콘솔(F12)의 에러 메시지를 확인해주세요.</div>`;
+  }
 }
 async function handlePostNotice(){
   const title = document.getElementById("noticeTitle").value.trim();
