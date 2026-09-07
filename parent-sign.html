@@ -210,7 +210,7 @@ function renderForm(){
   document.getElementById("p1EndMonth").textContent = end.m;
   document.getElementById("p1EndDay").textContent = end.d;
   document.getElementById("p1TotalDays").textContent = total;
-  document.getElementById("p1Reason").textContent = a.reason;
+  document.getElementById("p1Reason").textContent = a.reason + (a.evidencePhysical ? " (실물 서류 별도 제출 예정)" : "");
   document.getElementById("p1SubmitMonth").textContent = today.getMonth() + 1;
   document.getElementById("p1SubmitDay").textContent = today.getDate();
 

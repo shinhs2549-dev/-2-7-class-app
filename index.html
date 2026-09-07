@@ -207,7 +207,15 @@
           <textarea id="absReason" rows="3" placeholder="구체적인 사유를 적어주세요"></textarea>
         </div>
         <div class="field" style="margin-bottom:0;">
-          <label>증빙자료 사진 (있으면 첨부, 선택)</label>
+          <label>증빙자료 제출 방법</label>
+          <div style="display:flex; flex-direction:column; gap:6px; margin-bottom:8px;">
+            <label style="display:flex; align-items:center; gap:8px; font-size:14px; font-weight:400;">
+              <input type="radio" name="absEvidenceMode" value="photo" checked onchange="toggleAbsEvidenceMode()"> 사진으로 첨부
+            </label>
+            <label style="display:flex; align-items:center; gap:8px; font-size:14px; font-weight:400;">
+              <input type="radio" name="absEvidenceMode" value="physical" onchange="toggleAbsEvidenceMode()"> 학교에 실물로 직접 제출 예정
+            </label>
+          </div>
           <input type="file" id="absEvidencePhoto" accept="image/*">
         </div>
         <button class="primary-btn" onclick="handleSubmitAbsence()">제출하고 학부모 링크 만들기</button>
@@ -716,6 +724,11 @@ function setupAbsenceTab(){
   }
 }
 
+function toggleAbsEvidenceMode(){
+  const isPhysical = document.querySelector('input[name="absEvidenceMode"]:checked').value === "physical";
+  document.getElementById("absEvidencePhoto").style.display = isPhysical ? "none" : "block";
+}
+
 async function handleSubmitAbsence(){
   const type = document.getElementById("absType").value;
   const startDate = document.getElementById("absStart").value;
@@ -724,6 +737,7 @@ async function handleSubmitAbsence(){
   const evidenceOtherText = document.getElementById("absEtcText").value.trim();
   const reason = document.getElementById("absReason").value.trim();
   const photoFile = document.getElementById("absEvidencePhoto").files[0];
+  const evidenceMode = document.querySelector('input[name="absEvidenceMode"]:checked').value;
   const errEl = document.getElementById("absError");
 
   if(!startDate || !endDate || !reason){
@@ -740,7 +754,7 @@ async function handleSubmitAbsence(){
     const docRef = db.collection("absences").doc(); // ID 미리 생성
 
     let evidencePhotoUrl = null;
-    if(photoFile){
+    if(evidenceMode === "photo" && photoFile){
       const ref = storage.ref().child(`absences/${docRef.id}_evidence_${photoFile.name}`);
       await ref.put(photoFile);
       evidencePhotoUrl = await ref.getDownloadURL();
@@ -753,6 +767,7 @@ async function handleSubmitAbsence(){
       type, startDate, endDate,
       evidenceTypes, evidenceOtherText, reason,
       evidencePhotoUrl,
+      evidencePhysical: evidenceMode === "physical",
       status: "waiting_parent",
       parentOpinion: "", relation: "",
       imageUrl: null,
@@ -765,6 +780,8 @@ async function handleSubmitAbsence(){
     document.getElementById("absEnd").value = "";
     document.getElementById("absReason").value = "";
     document.getElementById("absEvidencePhoto").value = "";
+    document.querySelector('input[name="absEvidenceMode"][value="photo"]').checked = true;
+    toggleAbsEvidenceMode();
     document.getElementById("absEtcText").value = "";
     document.getElementById("absEtcText").style.display = "none";
     document.querySelectorAll(".absEvidenceCb").forEach(cb => cb.checked = false);
