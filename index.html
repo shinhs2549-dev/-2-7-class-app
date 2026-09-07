@@ -496,7 +496,12 @@ async function requestNotificationPermission(){
   if(permission !== "granted") return;
   document.getElementById("notifBanner").style.display = "none";
 
-  const token = await messaging.getToken({ vapidKey: VAPID_KEY });
+  // 서비스워커를 "현재 페이지 기준 상대경로"로 직접 등록합니다.
+  // (GitHub Pages 프로젝트 사이트처럼 하위 경로에 배포된 경우, Firebase 기본 등록 방식은
+  //  항상 도메인 루트에서 파일을 찾다가 404가 나기 때문에 이렇게 해야 합니다.)
+  const swReg = await navigator.serviceWorker.register("firebase-messaging-sw.js");
+
+  const token = await messaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
   // 이 토큰을 학생 프로필에 저장 → Cloud Function이 공지 발송 시 이 토큰들로 push 전송
   await db.collection("students").doc(currentUser.uid).set({
     fcmTokens: firebase.firestore.FieldValue.arrayUnion(token)
