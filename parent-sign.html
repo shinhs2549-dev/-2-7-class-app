@@ -15,24 +15,32 @@
   }
   *{box-sizing:border-box;}
   body{ margin:0; background:var(--paper); color:var(--ink); font-family:'Noto Sans KR', sans-serif; min-height:100vh; }
-  .wrap{ max-width:560px; margin:0 auto; padding:28px 20px 60px; }
+  .wrap{ max-width:600px; margin:0 auto; padding:24px 16px 60px; }
   h1,h2,h3{ font-family:'Noto Serif KR', serif; margin:0; }
-  .card{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:22px 24px; margin-bottom:16px; }
-  h1{ font-size:20px; margin-bottom:6px; }
-  p.sub{ color:#6b6455; font-size:13.5px; margin:0 0 20px; }
-  .row{ display:flex; justify-content:space-between; padding:7px 0; border-bottom:1px solid var(--line); font-size:14px; }
-  .row:last-child{ border-bottom:none; }
-  .row .label{ color:#8a8270; }
-  .row .value{ font-weight:500; text-align:right; }
-  .field{ margin-bottom:16px; }
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:20px; margin-bottom:16px; }
+  h1{ font-size:19px; margin-bottom:6px; }
+  p.sub{ color:#6b6455; font-size:13px; margin:0 0 16px; }
+  .field{ margin-bottom:14px; }
   .field label{ display:block; font-size:13px; font-weight:500; margin-bottom:6px; color:var(--forest-deep); }
-  .field input, .field textarea{ width:100%; padding:10px 12px; border:1px solid var(--line); border-radius:6px; font-size:14.5px; font-family:'Noto Sans KR', sans-serif; background:#fff; }
-  canvas#sigCanvas{ width:100%; height:160px; border:1.5px dashed var(--line); border-radius:6px; background:#fff; touch-action:none; }
+  .field input, .field textarea{ width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:6px; font-size:14px; font-family:'Noto Sans KR', sans-serif; background:#fff; }
+  canvas#sigCanvas{ width:100%; height:150px; border:1.5px dashed var(--line); border-radius:6px; background:#fff; touch-action:none; }
   .primary-btn{ width:100%; padding:13px; background:var(--forest); color:#fff; border:none; border-radius:6px; font-size:15px; font-weight:500; cursor:pointer; margin-top:6px; }
   .primary-btn:disabled{ background:#B9B29B; cursor:not-allowed; }
   .ghost-btn{ background:none; border:1px solid var(--line); border-radius:6px; padding:8px 12px; font-size:13px; cursor:pointer; color:var(--ink); }
   .msg{ text-align:center; padding:60px 20px; color:#6b6455; font-size:14.5px; }
   .msg.err{ color:var(--danger); }
+
+  /* ---- 원본 양식 오버레이 ---- */
+  .page-outer{ width:100%; overflow:hidden; margin-bottom:16px; border:1px solid var(--line); border-radius:6px; }
+  .page-inner{
+    width:992px; height:1403px; position:relative; transform-origin:top left;
+    background-repeat:no-repeat; background-size:992px 1403px;
+  }
+  .ov{ position:absolute; font-family:'Noto Sans KR', sans-serif; color:#111; white-space:nowrap; }
+  .ov-text{ font-size:22px; }
+  .ov-check{ font-size:24px; font-weight:700; color:#c0392b; line-height:1; }
+  .ov-circle{ position:absolute; border:3px solid #c0392b; border-radius:50%; }
+  .ov-sig{ position:absolute; object-fit:contain; }
 </style>
 </head>
 <body>
@@ -40,20 +48,65 @@
   <div id="loadingMsg" class="msg">불러오는 중...</div>
 
   <div id="formArea" style="display:none;">
-    <div class="card" id="printCard">
+    <div class="card">
       <h1>결석 신고서 확인</h1>
-      <p class="sub">아래 내용을 확인하시고 서명해주세요.</p>
-      <div class="row"><span class="label">학생</span><span class="value" id="viewStudent"></span></div>
-      <div class="row"><span class="label">결석 유형</span><span class="value" id="viewType"></span></div>
-      <div class="row"><span class="label">기간</span><span class="value" id="viewPeriod"></span></div>
-      <div class="row"><span class="label">증빙자료</span><span class="value" id="viewEvidence"></span></div>
-      <div class="row"><span class="label">사유</span><span class="value" id="viewReason"></span></div>
+      <p class="sub">아래는 실제 제출되는 양식 모양이에요. 내용을 확인하시고 서명해주세요.</p>
+    </div>
+
+    <div class="page-outer" id="page1Outer">
+      <div class="page-inner" id="page1" style="background-image:url('assets/abs-form-1.jpg');">
+        <div class="ov ov-text" id="p1Num" style="left:392px; top:200px;"></div>
+        <div class="ov ov-text" id="p1Name" style="left:262px; top:248px;"></div>
+        <div class="ov-circle" id="p1TypeCircle"></div>
+        <div class="ov ov-text" id="p1StartMonth" style="left:358px; top:407px;"></div>
+        <div class="ov ov-text" id="p1StartDay" style="left:428px; top:407px;"></div>
+        <div class="ov ov-text" id="p1EndMonth" style="left:588px; top:407px;"></div>
+        <div class="ov ov-text" id="p1EndDay" style="left:683px; top:407px;"></div>
+        <div class="ov ov-text" id="p1TotalDays" style="left:757px; top:407px;"></div>
+        <div class="ov ov-check" id="p1Cb_진료확인서" style="left:172px; top:461px; display:none;">✓</div>
+        <div class="ov ov-check" id="p1Cb_진료비영수증" style="left:360px; top:461px; display:none;">✓</div>
+        <div class="ov ov-check" id="p1Cb_처방전" style="left:565px; top:461px; display:none;">✓</div>
+        <div class="ov ov-check" id="p1Cb_의사소견서" style="left:722px; top:461px; display:none;">✓</div>
+        <div class="ov ov-check" id="p1Cb_진단서" style="left:172px; top:506px; display:none;">✓</div>
+        <div class="ov ov-check" id="p1Cb_학부모의견서" style="left:360px; top:506px; display:none;">✓</div>
+        <div class="ov ov-check" id="p1Cb_담임교사확인서" style="left:565px; top:506px; display:none;">✓</div>
+        <div class="ov ov-check" id="p1Cb_내부결재문서" style="left:172px; top:551px; display:none;">✓</div>
+        <div class="ov ov-check" id="p1Cb_사망확인서" style="left:360px; top:551px; display:none;">✓</div>
+        <div class="ov ov-check" id="p1Cb_기타" style="left:565px; top:551px; display:none;">✓</div>
+        <div class="ov ov-text" id="p1EtcText" style="left:655px; top:553px; font-size:18px;"></div>
+        <div class="ov ov-text" id="p1Reason" style="left:262px; top:600px; font-size:19px; white-space:normal; width:640px;"></div>
+        <div class="ov ov-text" id="p1SubmitMonth" style="left:462px; top:660px;"></div>
+        <div class="ov ov-text" id="p1SubmitDay" style="left:532px; top:660px;"></div>
+        <img class="ov-sig" id="p1Sig" style="left:715px; top:745px; width:140px; height:55px;">
+      </div>
+    </div>
+
+    <div class="page-outer" id="page2Outer" style="display:none;">
+      <div class="page-inner" id="page2" style="background-image:url('assets/abs-form-2.jpg');">
+        <div class="ov ov-text" id="p2Grade" style="left:417px; top:88px;">2</div>
+        <div class="ov ov-text" id="p2Ban" style="left:557px; top:88px;">7</div>
+        <div class="ov ov-text" id="p2Num" style="left:624px; top:88px;"></div>
+        <div class="ov ov-text" id="p2Name" style="left:452px; top:155px;"></div>
+        <div class="ov-circle" id="p2TypeCircle" style="left:487px; top:222px; width:48px; height:30px;"></div>
+        <div class="ov ov-text" id="p2StartYear" style="left:350px; top:448px;"></div>
+        <div class="ov ov-text" id="p2StartMonth" style="left:422px; top:448px;"></div>
+        <div class="ov ov-text" id="p2StartDay" style="left:502px; top:448px;"></div>
+        <div class="ov ov-text" id="p2EndMonth" style="left:632px; top:448px;"></div>
+        <div class="ov ov-text" id="p2EndDay" style="left:707px; top:448px;"></div>
+        <div class="ov ov-text" id="p2TotalDays" style="left:792px; top:448px;"></div>
+        <div class="ov ov-text" id="p2Reason" style="left:262px; top:648px; font-size:17px; white-space:normal; width:620px;"></div>
+        <div class="ov ov-text" id="p2SubmitMonth" style="left:547px; top:903px;"></div>
+        <div class="ov ov-text" id="p2SubmitDay" style="left:617px; top:903px;"></div>
+        <div class="ov ov-text" id="p2ParentName" style="left:482px; top:963px;"></div>
+        <div class="ov ov-text" id="p2Relation" style="left:582px; top:1008px;"></div>
+        <img class="ov-sig" id="p2Sig" style="left:690px; top:955px; width:60px; height:40px;">
+      </div>
     </div>
 
     <div class="card" id="parentOpinionCard" style="display:none;">
-      <h3 style="font-size:15px; margin-bottom:10px;">학부모 의견서</h3>
-      <p class="sub" style="margin-bottom:14px;">학부모 의견서는 상습적이지 않은 2일 이내 결석에만 사용할 수 있어요. 사유를 구체적으로 적어주세요.</p>
-      <div class="field"><label>학부모 의견</label><textarea id="parentOpinion" rows="3" placeholder="구체적인 사유"></textarea></div>
+      <h3 style="font-size:15px; margin-bottom:10px;">학부모 의견서 내용</h3>
+      <p class="sub">학부모 의견서는 상습적이지 않은 2일 이내 결석에만 사용할 수 있어요. 사유를 구체적으로 적어주세요.</p>
+      <div class="field"><label>학부모 의견 (구체적 사유)</label><textarea id="parentOpinion" rows="3" placeholder="구체적인 사유"></textarea></div>
       <div class="field" style="margin-bottom:0;"><label>학생과의 관계</label><input type="text" id="parentRelation" placeholder="예: 모, 부"></div>
     </div>
 
@@ -96,6 +149,14 @@ const params = new URLSearchParams(location.search);
 const absenceId = params.get("id");
 let absenceData = null;
 
+// 결석유형 단어별 원(circle) 좌표 (원본 이미지 픽셀 기준)
+const TYPE_CIRCLE_POS = {
+  "인정":   {left:340, top:303, width:46, height:34},
+  "질병":   {left:394, top:303, width:48, height:34},
+  "기타":   {left:450, top:303, width:48, height:34},
+  "미인정": {left:505, top:303, width:63, height:34}
+};
+
 function showMsg(text, isErr){
   document.getElementById("loadingMsg").textContent = text;
   document.getElementById("loadingMsg").className = "msg" + (isErr ? " err" : "");
@@ -123,19 +184,85 @@ async function init(){
   }
 }
 
+function dayCount(startStr, endStr){
+  const s = new Date(startStr), e = new Date(endStr);
+  return Math.round((e - s) / 86400000) + 1;
+}
+function mmdd(dateStr){
+  const d = new Date(dateStr);
+  return {m: d.getMonth() + 1, d: d.getDate()};
+}
+
 function renderForm(){
   document.getElementById("loadingMsg").style.display = "none";
   document.getElementById("formArea").style.display = "block";
-  document.getElementById("viewStudent").textContent = `2학년 7반 ${absenceData.num}번 ${absenceData.name}`;
-  document.getElementById("viewType").textContent = absenceData.type;
-  document.getElementById("viewPeriod").textContent = `${absenceData.startDate} ~ ${absenceData.endDate}`;
-  document.getElementById("viewEvidence").textContent = (absenceData.evidenceTypes || []).join(", ") || "없음";
-  document.getElementById("viewReason").textContent = absenceData.reason;
 
-  if((absenceData.evidenceTypes || []).includes("학부모의견서")){
-    document.getElementById("parentOpinionCard").style.display = "block";
+  const a = absenceData;
+  const start = mmdd(a.startDate), end = mmdd(a.endDate);
+  const total = dayCount(a.startDate, a.endDate);
+  const today = new Date();
+
+  // ---- Page 1 채우기 ----
+  document.getElementById("p1Num").textContent = a.num;
+  document.getElementById("p1Name").textContent = a.name;
+  document.getElementById("p1StartMonth").textContent = start.m;
+  document.getElementById("p1StartDay").textContent = start.d;
+  document.getElementById("p1EndMonth").textContent = end.m;
+  document.getElementById("p1EndDay").textContent = end.d;
+  document.getElementById("p1TotalDays").textContent = total;
+  document.getElementById("p1Reason").textContent = a.reason;
+  document.getElementById("p1SubmitMonth").textContent = today.getMonth() + 1;
+  document.getElementById("p1SubmitDay").textContent = today.getDate();
+
+  const tp = TYPE_CIRCLE_POS[a.type];
+  if(tp){
+    const c = document.getElementById("p1TypeCircle");
+    c.style.left = tp.left + "px"; c.style.top = tp.top + "px";
+    c.style.width = tp.width + "px"; c.style.height = tp.height + "px";
   }
+
+  (a.evidenceTypes || []).forEach(ev => {
+    const el = document.getElementById("p1Cb_" + ev);
+    if(el) el.style.display = "block";
+  });
+  if((a.evidenceTypes || []).includes("기타") && a.evidenceOtherText){
+    document.getElementById("p1EtcText").textContent = a.evidenceOtherText;
+  }
+
+  // ---- 학부모의견서(Page 2) 필요 여부 ----
+  const needsOpinion = (a.evidenceTypes || []).includes("학부모의견서");
+  if(needsOpinion){
+    document.getElementById("page2Outer").style.display = "block";
+    document.getElementById("parentOpinionCard").style.display = "block";
+    document.getElementById("p2Num").textContent = a.num;
+    document.getElementById("p2Name").textContent = a.name;
+    document.getElementById("p2StartYear").textContent = new Date(a.startDate).getFullYear();
+    document.getElementById("p2StartMonth").textContent = start.m;
+    document.getElementById("p2StartDay").textContent = start.d;
+    document.getElementById("p2EndMonth").textContent = end.m;
+    document.getElementById("p2EndDay").textContent = end.d;
+    document.getElementById("p2TotalDays").textContent = total;
+    document.getElementById("p2SubmitMonth").textContent = today.getMonth() + 1;
+    document.getElementById("p2SubmitDay").textContent = today.getDate();
+  }
+
+  scaleAllPages();
+  window.addEventListener("resize", scaleAllPages);
   initSignaturePad();
+}
+
+function scalePageEl(outerId, innerId){
+  const outer = document.getElementById(outerId);
+  const inner = document.getElementById(innerId);
+  const scale = outer.clientWidth / 992;
+  inner.style.transform = `scale(${scale})`;
+  outer.style.height = (1403 * scale) + "px";
+}
+function scaleAllPages(){
+  scalePageEl("page1Outer", "page1");
+  if(document.getElementById("page2Outer").style.display !== "none"){
+    scalePageEl("page2Outer", "page2");
+  }
 }
 
 // ---------- 서명 캔버스 ----------
@@ -198,31 +325,42 @@ async function handleParentSubmit(){
   btn.textContent = "제출 중...";
 
   try{
-    // 확인 카드 + 서명을 하나의 이미지로 캡처
-    const canvas = await html2canvas(document.getElementById("printCard"), {backgroundColor:"#ffffff", scale:2});
-    const sigCanvas = document.getElementById("sigCanvas");
-    const combined = document.createElement("canvas");
-    combined.width = canvas.width;
-    combined.height = canvas.height + 200;
-    const ctx = combined.getContext("2d");
-    ctx.fillStyle = "#ffffff";
-    ctx.fillRect(0, 0, combined.width, combined.height);
-    ctx.drawImage(canvas, 0, 0);
-    ctx.font = "28px sans-serif";
-    ctx.fillStyle = "#2B2620";
-    ctx.fillText("보호자 서명", 20, canvas.height + 40);
-    ctx.drawImage(sigCanvas, 20, canvas.height + 55, sigCanvas.width * 0.4, sigCanvas.height * 0.4);
-    const base64 = combined.toDataURL("image/png").split(",")[1];
+    // 서명 이미지를 양식 위 서명란에 배치
+    const sigDataUrl = document.getElementById("sigCanvas").toDataURL("image/png");
+    document.getElementById("p1Sig").src = sigDataUrl;
+    if(needsOpinion){
+      document.getElementById("p2Reason").textContent = parentOpinion;
+      document.getElementById("p2ParentName").textContent = parentRelation ? "" : ""; // 이름은 학생 이름과 동일 처리 생략
+      document.getElementById("p2Relation").textContent = parentRelation;
+      document.getElementById("p2Sig").src = sigDataUrl;
+    }
 
-    const ref = storage.ref().child(`absences/${absenceId}_final.png`);
-    await ref.putString(base64, "base64", {contentType: "image/png"});
-    const imageUrl = await ref.getDownloadURL();
+    // 캡처를 위해 원본 크기(스케일 1)로 잠깐 되돌림
+    document.getElementById("page1").style.transform = "scale(1)";
+    if(needsOpinion) document.getElementById("page2").style.transform = "scale(1)";
+    await new Promise(r => setTimeout(r, 150)); // 이미지 로드 대기
+
+    const canvas1 = await html2canvas(document.getElementById("page1"), {backgroundColor:"#ffffff", scale:1, useCORS:true});
+    const imageUrls = [];
+
+    const ref1 = storage.ref().child(`absences/${absenceId}_page1.png`);
+    await ref1.putString(canvas1.toDataURL("image/png").split(",")[1], "base64", {contentType:"image/png"});
+    imageUrls.push(await ref1.getDownloadURL());
+
+    if(needsOpinion){
+      const canvas2 = await html2canvas(document.getElementById("page2"), {backgroundColor:"#ffffff", scale:1, useCORS:true});
+      const ref2 = storage.ref().child(`absences/${absenceId}_page2.png`);
+      await ref2.putString(canvas2.toDataURL("image/png").split(",")[1], "base64", {contentType:"image/png"});
+      imageUrls.push(await ref2.getDownloadURL());
+    }
+
+    scaleAllPages(); // 화면 표시는 다시 축소 상태로
 
     await db.collection("absences").doc(absenceId).update({
       status: "submitted",
       parentOpinion: needsOpinion ? parentOpinion : "",
       relation: needsOpinion ? parentRelation : "",
-      imageUrl,
+      imageUrls,
       signedAt: firebase.firestore.FieldValue.serverTimestamp()
     });
 
@@ -234,6 +372,7 @@ async function handleParentSubmit(){
     errEl.style.display = "block";
     btn.disabled = false;
     btn.textContent = "제출하기";
+    scaleAllPages();
   }
 }
 

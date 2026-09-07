@@ -198,8 +198,9 @@
             <label style="display:flex; align-items:center; gap:8px; padding:4px 0;"><input type="checkbox" class="absEvidenceCb" value="학부모의견서" id="absEvidenceParentOpinion"> <span>학부모의견서 (상습적이지 않은 2일 이내 결석만 가능)</span></label>
             <label style="display:flex; align-items:center; gap:8px; padding:4px 0;"><input type="checkbox" class="absEvidenceCb" value="내부결재문서"> <span>내부결재문서</span></label>
             <label style="display:flex; align-items:center; gap:8px; padding:4px 0;"><input type="checkbox" class="absEvidenceCb" value="사망확인서"> <span>사망확인서</span></label>
-            <label style="display:flex; align-items:center; gap:8px; padding:4px 0;"><input type="checkbox" class="absEvidenceCb" value="기타"> <span>기타</span></label>
+            <label style="display:flex; align-items:center; gap:8px; padding:4px 0;"><input type="checkbox" class="absEvidenceCb" value="기타" id="absEvidenceEtc"> <span>기타</span></label>
           </div>
+          <input type="text" id="absEtcText" placeholder="'기타'를 선택했다면 내용을 적어주세요" style="display:none; margin-top:8px;">
         </div>
         <div class="field">
           <label>사유</label>
@@ -704,6 +705,15 @@ function setupAbsenceTab(){
   const showTab = currentProfile && currentProfile.role === "student";
   document.getElementById("tabBtnAbsence").style.display = showTab ? "" : "none";
   if(showTab) subscribeMyAbsences();
+
+  const etcCb = document.getElementById("absEvidenceEtc");
+  const etcInput = document.getElementById("absEtcText");
+  if(etcCb && !etcCb.dataset.bound){
+    etcCb.dataset.bound = "1";
+    etcCb.addEventListener("change", () => {
+      etcInput.style.display = etcCb.checked ? "block" : "none";
+    });
+  }
 }
 
 async function handleSubmitAbsence(){
@@ -711,6 +721,7 @@ async function handleSubmitAbsence(){
   const startDate = document.getElementById("absStart").value;
   const endDate = document.getElementById("absEnd").value;
   const evidenceTypes = [...document.querySelectorAll(".absEvidenceCb:checked")].map(cb => cb.value);
+  const evidenceOtherText = document.getElementById("absEtcText").value.trim();
   const reason = document.getElementById("absReason").value.trim();
   const photoFile = document.getElementById("absEvidencePhoto").files[0];
   const errEl = document.getElementById("absError");
@@ -740,7 +751,7 @@ async function handleSubmitAbsence(){
       num: currentProfile.num,
       name: currentProfile.name,
       type, startDate, endDate,
-      evidenceTypes, reason,
+      evidenceTypes, evidenceOtherText, reason,
       evidencePhotoUrl,
       status: "waiting_parent",
       parentOpinion: "", relation: "",
@@ -754,6 +765,8 @@ async function handleSubmitAbsence(){
     document.getElementById("absEnd").value = "";
     document.getElementById("absReason").value = "";
     document.getElementById("absEvidencePhoto").value = "";
+    document.getElementById("absEtcText").value = "";
+    document.getElementById("absEtcText").style.display = "none";
     document.querySelectorAll(".absEvidenceCb").forEach(cb => cb.checked = false);
 
     const link = `${location.origin}${location.pathname.replace(/index\.html$/, "")}${PARENT_SIGN_BASE_URL}?id=${docRef.id}`;
