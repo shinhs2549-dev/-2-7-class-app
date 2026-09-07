@@ -86,8 +86,13 @@
     <div id="brandRight"></div>
   </div>
 
+  <!-- 화면 0: 초기 로딩 (로그인 상태 확인 중) -->
+  <div class="screen active" id="screen-loading">
+    <div class="login-card" style="text-align:center; color:#8a8270; font-size:14px;">불러오는 중...</div>
+  </div>
+
   <!-- 화면 1: 로그인 -->
-  <div class="screen active" id="screen-login">
+  <div class="screen" id="screen-login">
     <div class="login-card">
       <h2>로그인</h2>
       <p class="sub">번호와 비밀번호를 입력해주세요. (초기 비밀번호는 선생님께 확인)</p>
@@ -485,27 +490,35 @@ function subscribeNotices(){
 /* =========================================================
    7. 푸시 알림 — FCM 토큰 등록
    ========================================================= */
+async function registerFcmToken(){
+  if(!messaging) return;
+  try{
+    const swReg = await navigator.serviceWorker.register("firebase-messaging-sw.js");
+    const token = await messaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
+    await db.collection("students").doc(currentUser.uid).set({
+      fcmTokens: firebase.firestore.FieldValue.arrayUnion(token)
+    }, {merge:true});
+  } catch(e){
+    console.error("FCM 토큰 등록 실패:", e);
+  }
+}
+
 function setupNotificationBanner(){
   const banner = document.getElementById("notifBanner");
   if(!messaging || !("Notification" in window)) { banner.style.display = "none"; return; }
-  banner.style.display = Notification.permission === "granted" ? "none" : "flex";
+  if(Notification.permission === "granted"){
+    banner.style.display = "none";
+    registerFcmToken(); // 권한은 이미 있는데 토큰 저장이 안 됐을 수 있으니 조용히 다시 시도
+  } else {
+    banner.style.display = "flex";
+  }
 }
 async function requestNotificationPermission(){
   if(!messaging) return;
   const permission = await Notification.requestPermission();
   if(permission !== "granted") return;
   document.getElementById("notifBanner").style.display = "none";
-
-  // 서비스워커를 "현재 페이지 기준 상대경로"로 직접 등록합니다.
-  // (GitHub Pages 프로젝트 사이트처럼 하위 경로에 배포된 경우, Firebase 기본 등록 방식은
-  //  항상 도메인 루트에서 파일을 찾다가 404가 나기 때문에 이렇게 해야 합니다.)
-  const swReg = await navigator.serviceWorker.register("firebase-messaging-sw.js");
-
-  const token = await messaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
-  // 이 토큰을 학생 프로필에 저장 → Cloud Function이 공지 발송 시 이 토큰들로 push 전송
-  await db.collection("students").doc(currentUser.uid).set({
-    fcmTokens: firebase.firestore.FieldValue.arrayUnion(token)
-  }, {merge:true});
+  await registerFcmToken();
 }
 
 // 앱이 열려있는 동안 푸시가 오면 처리 (포그라운드)
