@@ -172,6 +172,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 <script>
 /* =========================================================
    0. Firebase 설정 — ⚠️ 콘솔에서 복사한 값으로 반드시 교체하세요
@@ -192,6 +193,7 @@ const EMAIL_DOMAIN = "2hak7ban.app";
 firebase.initializeApp(FIREBASE_CONFIG);
 const auth = firebase.auth();
 const db = firebase.firestore();
+const storage = firebase.storage();
 let messaging = null;
 try { messaging = firebase.messaging(); } catch(e) { /* 지원 안 하는 브라우저 */ }
 
@@ -471,9 +473,29 @@ async function renderNoticeWriteBox(){
           </div>
         </div>
         <div class="field"><label>제목</label><input type="text" id="noticeTitle" placeholder="공지 제목"></div>
-        <div class="field" style="margin-bottom:0;"><label>내용</label><textarea id="noticeBody" rows="4" placeholder="공지 내용"></textarea></div>
+        <div class="field"><label>내용</label><textarea id="noticeBody" rows="4" placeholder="공지 내용"></textarea></div>
+        <div class="field" style="margin-bottom:0;">
+          <label>이미지 첨부 (선택)</label>
+          <input type="file" id="noticeImage" accept="image/*">
+          <div id="noticeImagePreviewWrap" style="display:none; margin-top:8px;">
+            <img id="noticeImagePreview" style="max-width:100%; max-height:180px; border-radius:6px; border:1px solid var(--line);">
+            <button type="button" class="link-btn" onclick="clearNoticeImage()">이미지 제거</button>
+          </div>
+        </div>
         <button class="primary-btn" onclick="handlePostNotice()">보내기 (알림 발송)</button>
       </div>`;
+
+    document.getElementById("noticeImage").addEventListener("change", (e) => {
+      const file = e.target.files[0];
+      const wrap = document.getElementById("noticeImagePreviewWrap");
+      if(!file){ wrap.style.display = "none"; return; }
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        document.getElementById("noticeImagePreview").src = ev.target.result;
+        wrap.style.display = "block";
+      };
+      reader.readAsDataURL(file);
+    });
   } catch(e){
     console.error("작성창 로딩 실패:", e);
     box.innerHTML = `<div class="notice-write" style="color:var(--danger);">작성창을 불러오지 못했어요. 콘솔(F12)의 에러 메시지를 확인해주세요.</div>`;
@@ -482,11 +504,16 @@ async function renderNoticeWriteBox(){
 function toggleAllNoticeTargets(checked){
   document.querySelectorAll(".noticeTargetCb").forEach(cb => { cb.checked = false; cb.disabled = checked; });
 }
+function clearNoticeImage(){
+  document.getElementById("noticeImage").value = "";
+  document.getElementById("noticeImagePreviewWrap").style.display = "none";
+}
 async function handlePostNotice(){
   const title = document.getElementById("noticeTitle").value.trim();
   const body = document.getElementById("noticeBody").value.trim();
   const isAll = document.getElementById("noticeTargetAll").checked;
   const selectedUids = [...document.querySelectorAll(".noticeTargetCb:checked")].map(cb => cb.value);
+  const imageFile = document.getElementById("noticeImage").files[0];
 
   if(!title || !body) return;
   if(!isAll && selectedUids.length === 0){
@@ -494,16 +521,37 @@ async function handlePostNotice(){
     return;
   }
 
-  // 이 문서가 생성되면 Cloud Function(functions/index.js)이 감지해서
-  // toUids가 배열이면 그 학생들에게만, null이면 전체 학생에게 FCM 푸시 알림을 자동 발송합니다.
-  await db.collection("notices").add({
-    title, body,
-    toUids: isAll ? null : selectedUids,
-    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
-    authorNum: currentProfile.num || "담임"
-  });
-  document.getElementById("noticeTitle").value = "";
-  document.getElementById("noticeBody").value = "";
+  const sendBtn = document.querySelector("#noticeWriteBox .primary-btn");
+  sendBtn.disabled = true;
+  sendBtn.textContent = imageFile ? "이미지 업로드 중..." : "보내는 중...";
+
+  let imageUrl = null;
+  try{
+    if(imageFile){
+      const path = `notices/${Date.now()}_${imageFile.name}`;
+      const ref = storage.ref().child(path);
+      await ref.put(imageFile);
+      imageUrl = await ref.getDownloadURL();
+    }
+
+    // 이 문서가 생성되면 Cloud Function(functions/index.js)이 감지해서
+    // toUids가 배열이면 그 학생들에게만, null이면 전체 학생에게 FCM 푸시 알림을 자동 발송합니다.
+    await db.collection("notices").add({
+      title, body, imageUrl,
+      toUids: isAll ? null : selectedUids,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      authorNum: currentProfile.num || "담임"
+    });
+    document.getElementById("noticeTitle").value = "";
+    document.getElementById("noticeBody").value = "";
+    clearNoticeImage();
+  } catch(e){
+    console.error("공지 전송 실패:", e);
+    alert("전송에 실패했어요. 콘솔(F12)을 확인해주세요.");
+  } finally {
+    sendBtn.disabled = false;
+    sendBtn.textContent = "보내기 (알림 발송)";
+  }
 }
 
 let broadcastNotices = [], myNotices = [];
@@ -523,6 +571,9 @@ function mergeAndRenderNotices(){
       : "";
     card.innerHTML = `<div class="notice-title">${deleteBtn}${n.toUids ? "💌 " : ""}${n.title}</div>
       <div class="notice-meta">${n.toUids ? "나에게 온 메시지" : "전체 공지"} · ${dateStr}</div>
+      ${(n.imageUrls || (n.imageUrl ? [n.imageUrl] : [])).map(url =>
+        `<img src="${url}" style="max-width:100%; border-radius:6px; margin:8px 0; display:block;">`
+      ).join("")}
       <div class="notice-body">${n.body}</div>`;
     listEl.appendChild(card);
   });
