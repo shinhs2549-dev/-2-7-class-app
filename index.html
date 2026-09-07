@@ -512,12 +512,12 @@ async function handleDeleteNotice(id){
 
 function subscribeNotices(){
   renderNoticeWriteBox();
-  db.collection("notices").where("toUid", "==", null).orderBy("createdAt", "desc").limit(30)
+  db.collection("notices").where("toUid", "==", null).limit(30)
     .onSnapshot(snap => {
       broadcastNotices = snap.docs.map(d => ({id: d.id, ...d.data()}));
       mergeAndRenderNotices();
     });
-  db.collection("notices").where("toUid", "==", currentUser.uid).orderBy("createdAt", "desc").limit(30)
+  db.collection("notices").where("toUid", "==", currentUser.uid).limit(30)
     .onSnapshot(snap => {
       myNotices = snap.docs.map(d => ({id: d.id, ...d.data()}));
       mergeAndRenderNotices();
