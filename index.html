@@ -441,24 +441,34 @@ function markRead(id){
   localStorage.setItem("readNotices", JSON.stringify([...readNoticeIds]));
 }
 
-function renderNoticeWriteBox(){
+async function renderNoticeWriteBox(){
   const box = document.getElementById("noticeWriteBox");
   if(!currentProfile || currentProfile.role !== "teacher"){ box.innerHTML = ""; return; }
+
+  const studentsSnap = await db.collection("students").where("role", "==", "student").orderBy("num").get();
+  let options = `<option value="">전체 학생</option>`;
+  studentsSnap.forEach(doc => {
+    const s = doc.data();
+    options += `<option value="${doc.id}">${s.num}번 ${s.name}</option>`;
+  });
+
   box.innerHTML = `
     <div class="notice-write">
+      <div class="field"><label>받는 사람</label><select id="noticeTarget">${options}</select></div>
       <div class="field"><label>제목</label><input type="text" id="noticeTitle" placeholder="공지 제목"></div>
       <div class="field" style="margin-bottom:0;"><label>내용</label><textarea id="noticeBody" rows="4" placeholder="공지 내용"></textarea></div>
-      <button class="primary-btn" onclick="handlePostNotice()">공지 보내기 (알림 발송)</button>
+      <button class="primary-btn" onclick="handlePostNotice()">보내기 (알림 발송)</button>
     </div>`;
 }
 async function handlePostNotice(){
   const title = document.getElementById("noticeTitle").value.trim();
   const body = document.getElementById("noticeBody").value.trim();
+  const toUid = document.getElementById("noticeTarget").value || null; // 비어있으면 전체 공지
   if(!title || !body) return;
   // 이 문서가 생성되면 Cloud Function(functions/index.js)이 감지해서
-  // 등록된 모든 학생 기기로 FCM 푸시 알림을 자동 발송합니다.
+  // toUid가 있으면 그 학생에게만, 없으면 전체 학생에게 FCM 푸시 알림을 자동 발송합니다.
   await db.collection("notices").add({
-    title, body,
+    title, body, toUid,
     createdAt: firebase.firestore.FieldValue.serverTimestamp(),
     authorNum: currentProfile.num || "담임"
   });
@@ -466,24 +476,44 @@ async function handlePostNotice(){
   document.getElementById("noticeBody").value = "";
 }
 
+let broadcastNotices = [], myNotices = [];
+function mergeAndRenderNotices(){
+  const all = [...broadcastNotices, ...myNotices]
+    .sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+  const listEl = document.getElementById("noticeList");
+  listEl.innerHTML = "";
+  all.forEach(n => {
+    const unread = !readNoticeIds.has(n.id);
+    const dateStr = n.createdAt ? n.createdAt.toDate().toLocaleString("ko-KR") : "";
+    const card = document.createElement("div");
+    card.className = "notice-card" + (unread ? " unread" : "");
+    card.onclick = () => { markRead(n.id); card.classList.remove("unread"); };
+    const deleteBtn = currentProfile.role === "teacher"
+      ? `<button class="link-btn" style="float:right;" onclick="event.stopPropagation(); handleDeleteNotice('${n.id}')">삭제</button>`
+      : "";
+    card.innerHTML = `<div class="notice-title">${deleteBtn}${n.toUid ? "💌 " : ""}${n.title}</div>
+      <div class="notice-meta">${n.toUid ? "나에게 온 메시지" : "전체 공지"} · ${dateStr}</div>
+      <div class="notice-body">${n.body}</div>`;
+    listEl.appendChild(card);
+  });
+}
+
+async function handleDeleteNotice(id){
+  if(!confirm("이 공지를 삭제할까요?")) return;
+  await db.collection("notices").doc(id).delete();
+}
+
 function subscribeNotices(){
   renderNoticeWriteBox();
-  db.collection("notices").orderBy("createdAt", "desc").limit(30)
+  db.collection("notices").where("toUid", "==", null).orderBy("createdAt", "desc").limit(30)
     .onSnapshot(snap => {
-      const listEl = document.getElementById("noticeList");
-      listEl.innerHTML = "";
-      snap.forEach(doc => {
-        const n = doc.data();
-        const unread = !readNoticeIds.has(doc.id);
-        const dateStr = n.createdAt ? n.createdAt.toDate().toLocaleString("ko-KR") : "";
-        const card = document.createElement("div");
-        card.className = "notice-card" + (unread ? " unread" : "");
-        card.onclick = () => { markRead(doc.id); card.classList.remove("unread"); };
-        card.innerHTML = `<div class="notice-title">${n.title}</div>
-          <div class="notice-meta">${dateStr}</div>
-          <div class="notice-body">${n.body}</div>`;
-        listEl.appendChild(card);
-      });
+      broadcastNotices = snap.docs.map(d => ({id: d.id, ...d.data()}));
+      mergeAndRenderNotices();
+    });
+  db.collection("notices").where("toUid", "==", currentUser.uid).orderBy("createdAt", "desc").limit(30)
+    .onSnapshot(snap => {
+      myNotices = snap.docs.map(d => ({id: d.id, ...d.data()}));
+      mergeAndRenderNotices();
     });
 }
 
