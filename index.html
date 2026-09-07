@@ -145,6 +145,7 @@
     <div class="main-tabs">
       <button id="tabBtnTimetable" class="active" onclick="switchMainTab('timetable')">시간표</button>
       <button id="tabBtnNotice" onclick="switchMainTab('notice')">공지사항</button>
+      <button id="tabBtnAbsence" onclick="switchMainTab('absence')" style="display:none;">결석계</button>
     </div>
 
     <div class="tab-panel active" id="panel-timetable">
@@ -162,6 +163,57 @@
       </div>
       <div id="noticeWriteBox"></div>
       <div id="noticeList"></div>
+    </div>
+
+    <div class="tab-panel" id="panel-absence">
+      <div class="group-block">
+        <h3>결석계 작성</h3>
+        <p class="hint">결석 정보를 입력하고 제출하면, 학부모님께 보낼 서명 링크가 생성돼요.</p>
+
+        <div class="field">
+          <label>결석 유형</label>
+          <select id="absType">
+            <option value="인정">인정</option>
+            <option value="질병">질병</option>
+            <option value="기타">기타</option>
+            <option value="미인정">미인정</option>
+          </select>
+        </div>
+        <div class="field">
+          <label>기간</label>
+          <div style="display:flex; gap:8px; align-items:center;">
+            <input type="date" id="absStart" style="flex:1;">
+            <span>~</span>
+            <input type="date" id="absEnd" style="flex:1;">
+          </div>
+        </div>
+        <div class="field">
+          <label>증빙자료 (해당하는 것 모두 선택)</label>
+          <div style="border:1px solid var(--line); border-radius:6px; padding:10px 12px;">
+            <label style="display:flex; align-items:center; gap:8px; padding:4px 0;"><input type="checkbox" class="absEvidenceCb" value="진료확인서"> <span>진료확인서</span></label>
+            <label style="display:flex; align-items:center; gap:8px; padding:4px 0;"><input type="checkbox" class="absEvidenceCb" value="진료비영수증"> <span>진료비영수증</span></label>
+            <label style="display:flex; align-items:center; gap:8px; padding:4px 0;"><input type="checkbox" class="absEvidenceCb" value="처방전"> <span>처방전</span></label>
+            <label style="display:flex; align-items:center; gap:8px; padding:4px 0;"><input type="checkbox" class="absEvidenceCb" value="의사소견서"> <span>의사소견서</span></label>
+            <label style="display:flex; align-items:center; gap:8px; padding:4px 0;"><input type="checkbox" class="absEvidenceCb" value="진단서"> <span>진단서</span></label>
+            <label style="display:flex; align-items:center; gap:8px; padding:4px 0;"><input type="checkbox" class="absEvidenceCb" value="학부모의견서" id="absEvidenceParentOpinion"> <span>학부모의견서 (상습적이지 않은 2일 이내 결석만 가능)</span></label>
+            <label style="display:flex; align-items:center; gap:8px; padding:4px 0;"><input type="checkbox" class="absEvidenceCb" value="내부결재문서"> <span>내부결재문서</span></label>
+            <label style="display:flex; align-items:center; gap:8px; padding:4px 0;"><input type="checkbox" class="absEvidenceCb" value="사망확인서"> <span>사망확인서</span></label>
+            <label style="display:flex; align-items:center; gap:8px; padding:4px 0;"><input type="checkbox" class="absEvidenceCb" value="기타"> <span>기타</span></label>
+          </div>
+        </div>
+        <div class="field">
+          <label>사유</label>
+          <textarea id="absReason" rows="3" placeholder="구체적인 사유를 적어주세요"></textarea>
+        </div>
+        <div class="field" style="margin-bottom:0;">
+          <label>증빙자료 사진 (있으면 첨부, 선택)</label>
+          <input type="file" id="absEvidencePhoto" accept="image/*">
+        </div>
+        <button class="primary-btn" onclick="handleSubmitAbsence()">제출하고 학부모 링크 만들기</button>
+        <p class="error-msg" id="absError">기간과 사유는 꼭 입력해주세요.</p>
+      </div>
+
+      <div id="absenceList"></div>
     </div>
   </div>
 
@@ -307,6 +359,7 @@ auth.onAuthStateChanged(async (user) => {
     renderTimetable(currentProfile.selection);
     subscribeNotices();
     setupNotificationBanner();
+    setupAbsenceTab();
   } else {
     goToSelectScreen();
   }
@@ -322,8 +375,10 @@ function showScreen(id){
 function switchMainTab(tab){
   document.getElementById("tabBtnTimetable").classList.toggle("active", tab === "timetable");
   document.getElementById("tabBtnNotice").classList.toggle("active", tab === "notice");
+  document.getElementById("tabBtnAbsence").classList.toggle("active", tab === "absence");
   document.getElementById("panel-timetable").classList.toggle("active", tab === "timetable");
   document.getElementById("panel-notice").classList.toggle("active", tab === "notice");
+  document.getElementById("panel-absence").classList.toggle("active", tab === "absence");
 }
 function renderBrandRight(){
   const el = document.getElementById("brandRight");
@@ -380,6 +435,7 @@ async function handleSaveSelection(){
   switchMainTab("timetable");
   subscribeNotices();
   setupNotificationBanner();
+  setupAbsenceTab();
 }
 
 /* =========================================================
@@ -637,6 +693,100 @@ if(messaging){
   messaging.onMessage(payload => {
     alert(`📢 ${payload.notification.title}\n${payload.notification.body}`);
   });
+}
+
+/* =========================================================
+   8. 결석계 — 학생 작성 → 학부모 서명 링크 생성
+   ========================================================= */
+const PARENT_SIGN_BASE_URL = "parent-sign.html"; // 같은 폴더에 있는 학부모 서명 페이지
+
+function setupAbsenceTab(){
+  const showTab = currentProfile && currentProfile.role === "student";
+  document.getElementById("tabBtnAbsence").style.display = showTab ? "" : "none";
+  if(showTab) subscribeMyAbsences();
+}
+
+async function handleSubmitAbsence(){
+  const type = document.getElementById("absType").value;
+  const startDate = document.getElementById("absStart").value;
+  const endDate = document.getElementById("absEnd").value;
+  const evidenceTypes = [...document.querySelectorAll(".absEvidenceCb:checked")].map(cb => cb.value);
+  const reason = document.getElementById("absReason").value.trim();
+  const photoFile = document.getElementById("absEvidencePhoto").files[0];
+  const errEl = document.getElementById("absError");
+
+  if(!startDate || !endDate || !reason){
+    errEl.style.display = "block";
+    return;
+  }
+  errEl.style.display = "none";
+
+  const submitBtn = document.querySelector("#panel-absence .primary-btn");
+  submitBtn.disabled = true;
+  submitBtn.textContent = "제출 중...";
+
+  try{
+    const docRef = db.collection("absences").doc(); // ID 미리 생성
+
+    let evidencePhotoUrl = null;
+    if(photoFile){
+      const ref = storage.ref().child(`absences/${docRef.id}_evidence_${photoFile.name}`);
+      await ref.put(photoFile);
+      evidencePhotoUrl = await ref.getDownloadURL();
+    }
+
+    await docRef.set({
+      studentUid: currentUser.uid,
+      num: currentProfile.num,
+      name: currentProfile.name,
+      type, startDate, endDate,
+      evidenceTypes, reason,
+      evidencePhotoUrl,
+      status: "waiting_parent",
+      parentOpinion: "", relation: "",
+      imageUrl: null,
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+      signedAt: null
+    });
+
+    // 입력값 초기화
+    document.getElementById("absStart").value = "";
+    document.getElementById("absEnd").value = "";
+    document.getElementById("absReason").value = "";
+    document.getElementById("absEvidencePhoto").value = "";
+    document.querySelectorAll(".absEvidenceCb").forEach(cb => cb.checked = false);
+
+    const link = `${location.origin}${location.pathname.replace(/index\.html$/, "")}${PARENT_SIGN_BASE_URL}?id=${docRef.id}`;
+    if(navigator.clipboard){ try{ await navigator.clipboard.writeText(link); }catch(e){} }
+    alert("제출 완료! 아래 링크를 복사했어요. 학부모님께 카톡/문자로 전달해주세요:\n\n" + link);
+  } catch(e){
+    console.error("결석계 제출 실패:", e);
+    alert("제출에 실패했어요. 콘솔(F12)을 확인해주세요.");
+  } finally {
+    submitBtn.disabled = false;
+    submitBtn.textContent = "제출하고 학부모 링크 만들기";
+  }
+}
+
+function subscribeMyAbsences(){
+  db.collection("absences").where("studentUid", "==", currentUser.uid)
+    .onSnapshot(snap => {
+      const items = snap.docs.map(d => ({id: d.id, ...d.data()}))
+        .sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+      const listEl = document.getElementById("absenceList");
+      listEl.innerHTML = "";
+      items.forEach(a => {
+        const statusLabel = a.status === "submitted" ? "✅ 담임 전달 완료" : "⏳ 학부모 서명 대기중";
+        const link = `${location.origin}${location.pathname.replace(/index\.html$/, "")}${PARENT_SIGN_BASE_URL}?id=${a.id}`;
+        const card = document.createElement("div");
+        card.className = "notice-card";
+        card.innerHTML = `<div class="notice-title">${a.startDate} ~ ${a.endDate} (${a.type})</div>
+          <div class="notice-meta">${statusLabel}</div>
+          <div class="notice-body">${a.reason}</div>
+          ${a.status !== "submitted" ? `<button class="link-btn" onclick="navigator.clipboard.writeText('${link}'); alert('링크를 복사했어요.');">학부모 링크 다시 복사하기</button>` : ""}`;
+        listEl.appendChild(card);
+      });
+    });
 }
 </script>
 </body>
