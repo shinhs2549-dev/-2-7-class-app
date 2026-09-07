@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2학년 7반</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://www.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+
+<style>
+  :root{
+    --paper:#F6F1E4; --ink:#2B2620; --ochre:#B4762A;
+    --forest:#3E5C42; --forest-deep:#2A3F2D; --line:#D8CDB4;
+    --card:#FFFDF7; --danger:#A5432F;
+  }
+  *{box-sizing:border-box;}
+  body{ margin:0; background:var(--paper); color:var(--ink); font-family:'Noto Sans KR', sans-serif; min-height:100vh; }
+  .wrap{ max-width:720px; margin:0 auto; padding:28px 20px 60px; }
+  h1,h2,h3{ font-family:'Noto Serif KR', serif; margin:0; }
+  .brand{ display:flex; align-items:baseline; justify-content:space-between; margin-bottom:20px; border-bottom:2px solid var(--ink); padding-bottom:14px; }
+  .brand h1{ font-size:26px; font-weight:700; }
+  .brand .who{ font-size:14px; color:var(--forest-deep); }
+  .brand button{ background:none; border:1px solid var(--line); border-radius:6px; padding:6px 12px; font-size:13px; color:var(--ink); cursor:pointer; font-family:'Noto Sans KR', sans-serif; }
+  .brand button:hover{ border-color:var(--ink); }
+
+  .main-tabs{ display:flex; gap:8px; margin-bottom:20px; }
+  .main-tabs button{ flex:1; padding:11px 0; background:var(--card); border:1px solid var(--line); border-radius:8px; font-family:'Noto Serif KR', serif; font-size:15px; font-weight:500; color:#8a8270; cursor:pointer; }
+  .main-tabs button.active{ color:#fff; background:var(--forest); border-color:var(--forest); }
+
+  .screen{ display:none; }
+  .screen.active{ display:block; }
+  .tab-panel{ display:none; }
+  .tab-panel.active{ display:block; }
+
+  .login-card{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:40px 32px; margin-top:60px; }
+  .login-card h2{ font-size:22px; margin-bottom:6px; }
+  .login-card p.sub{ margin:0 0 28px; color:#6b6455; font-size:14px; }
+  .field{ margin-bottom:18px; }
+  .field label{ display:block; font-size:13px; font-weight:500; margin-bottom:6px; color:var(--forest-deep); }
+  .field input, .field select, .field textarea{ width:100%; padding:11px 12px; border:1px solid var(--line); border-radius:6px; font-size:15px; font-family:'Noto Sans KR', sans-serif; background:#fff; }
+  .field input:focus, .field select:focus, .field textarea:focus{ outline:none; border-color:var(--forest); }
+  .primary-btn{ width:100%; padding:13px; background:var(--forest); color:#fff; border:none; border-radius:6px; font-size:15px; font-weight:500; cursor:pointer; font-family:'Noto Sans KR', sans-serif; margin-top:6px; }
+  .primary-btn:hover{ background:var(--forest-deep); }
+  .primary-btn:disabled{ background:#B9B29B; cursor:not-allowed; }
+  .error-msg{ color:var(--danger); font-size:13px; margin-top:10px; display:none; }
+
+  .select-intro{ margin-bottom:22px; }
+  .select-intro p{ color:#6b6455; font-size:14px; line-height:1.6; margin:4px 0 0; }
+  .group-block{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:20px 22px; margin-bottom:16px; }
+  .group-block h3{ font-size:15px; margin-bottom:4px; }
+  .group-block .hint{ font-size:12.5px; color:#8a8270; margin:0 0 14px; }
+
+  .day-tabs{ display:flex; gap:6px; margin-bottom:16px; }
+  .day-tabs button{ flex:1; padding:10px 0; background:var(--card); border:1px solid var(--line); border-radius:8px 8px 0 0; font-family:'Noto Serif KR', serif; font-size:15px; font-weight:500; color:#8a8270; cursor:pointer; border-bottom:3px solid transparent; }
+  .day-tabs button.active{ color:var(--forest-deep); border-bottom:3px solid var(--forest); background:#fff; }
+  .period-row{ display:grid; grid-template-columns:64px 1fr auto; gap:2px 14px; align-items:center; background:var(--card); border:1px solid var(--line); border-top:none; padding:13px 16px; }
+  .period-row:first-of-type{ border-top:1px solid var(--line); }
+  .period-row.empty{ opacity:0.4; }
+  .p-num{ font-family:'Noto Serif KR', serif; font-weight:700; font-size:15px; color:var(--ochre); }
+  .p-time{ grid-column:1; grid-row:2; font-size:11px; color:#a49c88; }
+  .p-subject{ font-size:15.5px; font-weight:500; }
+  .p-teacher{ font-size:12.5px; color:#8a8270; margin-top:2px; }
+  .p-room{ font-size:13px; color:var(--forest-deep); background:#EAF0E7; padding:4px 10px; border-radius:14px; white-space:nowrap; }
+  .p-room.fixed{ background:transparent; color:#a49c88; }
+  .lunch-row{ text-align:center; font-size:12.5px; color:#a49c88; padding:8px 0; background:var(--paper); border-left:1px solid var(--line); border-right:1px solid var(--line); }
+  .footer-actions{ display:flex; justify-content:flex-end; margin-top:18px; }
+  .link-btn{ background:none; border:none; color:var(--forest-deep); font-size:13px; text-decoration:underline; cursor:pointer; font-family:'Noto Sans KR', sans-serif; }
+
+  /* 공지사항 */
+  .notice-write{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:18px 20px; margin-bottom:20px; }
+  .notice-card{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:16px 18px; margin-bottom:10px; }
+  .notice-card.unread{ border-left:4px solid var(--ochre); }
+  .notice-title{ font-weight:700; font-size:15px; margin-bottom:4px; }
+  .notice-meta{ font-size:11.5px; color:#a49c88; margin-bottom:8px; }
+  .notice-body{ font-size:14px; line-height:1.6; white-space:pre-wrap; }
+  .notif-banner{ background:#EAF0E7; border:1px solid var(--forest); border-radius:8px; padding:12px 16px; font-size:13px; color:var(--forest-deep); margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; gap:10px; }
+  .notif-banner button{ background:var(--forest); color:#fff; border:none; border-radius:6px; padding:7px 12px; font-size:12.5px; cursor:pointer; white-space:nowrap; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="brand">
+    <h1>2학년 7반</h1>
+    <div id="brandRight"></div>
+  </div>
+
+  <!-- 화면 1: 로그인 -->
+  <div class="screen active" id="screen-login">
+    <div class="login-card">
+      <h2>로그인</h2>
+      <p class="sub">번호와 비밀번호를 입력해주세요. (초기 비밀번호는 선생님께 확인)</p>
+      <div class="field">
+        <label for="loginNum">번호</label>
+        <input type="number" id="loginNum" placeholder="예: 3" min="1" max="30">
+      </div>
+      <div class="field">
+        <label for="loginPw">비밀번호</label>
+        <input type="password" id="loginPw" placeholder="비밀번호">
+      </div>
+      <button class="primary-btn" id="loginBtn" onclick="handleLogin()">로그인</button>
+      <p class="error-msg" id="loginError">번호와 비밀번호를 확인해주세요.</p>
+    </div>
+  </div>
+
+  <!-- 화면 2: 선택과목 입력 -->
+  <div class="screen" id="screen-select">
+    <div class="select-intro">
+      <h2>선택과목 입력</h2>
+      <p>선택한 과목에 따라 시간표와 교실이 자동으로 채워져요. 한 번 입력하면 나중에 다시 수정할 수 있어요.</p>
+    </div>
+    <div class="group-block">
+      <h3>선택과목 A · B · C</h3>
+      <p class="hint">아래 10개 과목 중 3개를 골라 각각 A, B, C 자리에 배정해주세요. (같은 과목을 중복 선택할 수 없어요)</p>
+      <div class="field"><label>선택과목 A</label><select id="selA"></select></div>
+      <div class="field"><label>선택과목 B</label><select id="selB"></select></div>
+      <div class="field" style="margin-bottom:0;"><label>선택과목 C</label><select id="selC"></select></div>
+    </div>
+    <div class="group-block">
+      <h3>사회문제탐구 · 과학과제연구</h3>
+      <p class="hint">둘 중 하나를 선택해주세요.</p>
+      <div class="field" style="margin-bottom:0;">
+        <select id="selTamgu"><option value="사회문제탐구">사회문제탐구</option><option value="과학과제연구">과학과제연구</option></select>
+      </div>
+    </div>
+    <div class="group-block">
+      <h3>중국어 · 스페인어 · 교육의이해</h3>
+      <p class="hint">셋 중 하나를 선택해주세요.</p>
+      <div class="field" style="margin-bottom:0;">
+        <select id="selLang"><option value="중국어">중국어</option><option value="스페인어">스페인어</option><option value="교육의이해">교육의이해</option></select>
+      </div>
+    </div>
+    <button class="primary-btn" onclick="handleSaveSelection()">시간표 확인하기</button>
+    <p class="error-msg" id="selectError">A, B, C는 서로 다른 과목이어야 해요.</p>
+  </div>
+
+  <!-- 화면 3: 메인 (시간표 / 공지사항) -->
+  <div class="screen" id="screen-main">
+    <div class="main-tabs">
+      <button id="tabBtnTimetable" class="active" onclick="switchMainTab('timetable')">시간표</button>
+      <button id="tabBtnNotice" onclick="switchMainTab('notice')">공지사항</button>
+    </div>
+
+    <div class="tab-panel active" id="panel-timetable">
+      <div class="day-tabs" id="dayTabs"></div>
+      <div id="periodList"></div>
+      <div class="footer-actions">
+        <button class="link-btn" onclick="goToSelectScreen()">선택과목 다시 입력하기</button>
+      </div>
+    </div>
+
+    <div class="tab-panel" id="panel-notice">
+      <div class="notif-banner" id="notifBanner" style="display:none;">
+        <span>새 공지가 오면 휴대폰으로 바로 알림을 받을 수 있어요.</span>
+        <button onclick="requestNotificationPermission()">알림 켜기</button>
+      </div>
+      <div id="noticeWriteBox"></div>
+      <div id="noticeList"></div>
+    </div>
+  </div>
+
+</div>
+
+<!-- ===== Firebase SDK (compat 버전) - 화면이 먼저 그려지도록 body 맨 아래에서 로드 ===== -->
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
+<script>
+/* =========================================================
+   0. Firebase 설정 — ⚠️ 콘솔에서 복사한 값으로 반드시 교체하세요
+   ========================================================= */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBars-AalN-eZKCjGIOgOqkQ9oCHyDSLqU",
+  authDomain: "grade-7class.firebaseapp.com",
+  projectId: "grade-7class",
+  storageBucket: "grade-7class.firebasestorage.app",
+  messagingSenderId: "304110691750",
+  appId: "1:304110691750:web:7b7ce68828f538802adb67"
+};
+// 프로젝트 설정 > Cloud Messaging 탭에서 발급받은 VAPID 키
+const VAPID_KEY = "BMjRRKguQo_bi-Fv3722iGlAtcTioU2Gljh4UTzZth7CBs6wz8l212jiqawO0T6dG7WFPT-LeehQPXIO8kceeIs";
+// 학생 계정을 만들 때 사용할 가상 이메일 도메인 (실제로 존재하는 도메인일 필요 없음)
+const EMAIL_DOMAIN = "2hak7ban.app";
+
+firebase.initializeApp(FIREBASE_CONFIG);
+const auth = firebase.auth();
+const db = firebase.firestore();
+let messaging = null;
+try { messaging = firebase.messaging(); } catch(e) { /* 지원 안 하는 브라우저 */ }
+
+/* =========================================================
+   1. 시간표 데이터 정의 (2026학년도 2학기 2-7반 기준)
+   ========================================================= */
+const FIXED_TIMETABLE = {
+  "월": [
+    {subject:"확률과통계", teacher:"양한열"},
+    {subject:"스포츠2", teacher:"안영선"},
+    {slot:"A"},
+    {slot:"과탐"},
+    {subject:"화법과언어", teacher:"정소현"},
+    {subject:"영어2", teacher:"박하은"},
+    null
+  ],
+  "화": [
+    {subject:"화법과언어", teacher:"오종수"},
+    {slot:"C"},
+    {slot:"언어"},
+    {subject:"미적분", teacher:"양한열"},
+    {subject:"영어2", teacher:"권경화"},
+    {slot:"B"},
+    {slot:"A"}
+  ],
+  "수": [
+    {slot:"언어"},
+    {subject:"스포츠2", teacher:"안영선"},
+    {slot:"B"},
+    {subject:"미적분", teacher:"양한열"},
+    {slot:"과탐"},
+    {subject:"화법과언어", teacher:"오종수"},
+    {subject:"자기주도학습", teacher:""}
+  ],
+  "목": [
+    {slot:"B"},
+    {subject:"확률과통계", teacher:"김미애"},
+    {subject:"진로", teacher:"신효숙"},
+    {subject:"영어2", teacher:"권경화"},
+    {slot:"C"},
+    {subject:"미적분", teacher:"양한열"},
+    {slot:"과탐"}
+  ],
+  "금": [
+    {slot:"A"},
+    {subject:"영어2", teacher:"박하은"},
+    {subject:"창의적체험활동", teacher:""},
+    {subject:"창의적체험활동", teacher:""},
+    {slot:"C"},
+    {subject:"화법과언어", teacher:"정소현"},
+    {subject:"확률과통계", teacher:"김미애"}
+  ]
+};
+const PERIOD_TIMES = ["08:40~09:30","09:40~10:30","10:40~11:30","11:40~12:30","13:30~14:20","14:30~15:20","15:40~16:30"];
+const LUNCH_AFTER_PERIOD = 4;
+
+const SELECTION_ROOMS = {
+  "정치":{A:"206",B:"207",C:"208"}, "법과사회":{A:"사회교과실",B:"사회교과실",C:"사회교과실"},
+  "경제":{A:"202",B:"204",C:"207"}, "동아시아역사기행":{A:"207",B:"208",C:"208"},
+  "윤리와사상":{A:"208",B:"복합교과실",C:null}, "역학과 에너지":{A:"물리교과실",B:"물리교과실",C:"물리교과실"},
+  "물질과 에너지":{A:"201",B:"204",C:"205"}, "생물의 유전":{A:"생명과학실",B:"생명과학실",C:"생명과학실"},
+  "지구시스템과학":{A:null,B:"206",C:"204"}, "융합과학탐구":{A:"지구과학실",B:"지구과학실",C:"지구과학실"}
+};
+const SINGLE_ROOMS = { "사회문제탐구":"복합교과실", "과학과제연구":"생명과학실", "중국어":"208", "스페인어":"수학교과실", "교육의이해":"207" };
+const DAYS = ["월","화","수","목","금"];
+
+/* =========================================================
+   2. 로그인/역할 — Firebase Authentication 사용
+   ========================================================= */
+let currentUser = null;   // firebase auth user
+let currentProfile = null; // Firestore /students/{uid} 문서 ({num, name, role, selection})
+
+function numToEmail(num){ return `s${num}@${EMAIL_DOMAIN}`; }
+
+function handleLogin(){
+  const num = document.getElementById("loginNum").value.trim();
+  const pw = document.getElementById("loginPw").value;
+  const errEl = document.getElementById("loginError");
+  const btn = document.getElementById("loginBtn");
+  if(!num || !pw){ errEl.style.display = "block"; return; }
+  errEl.style.display = "none";
+  btn.disabled = true; btn.textContent = "확인 중...";
+
+  auth.signInWithEmailAndPassword(numToEmail(num), pw)
+    .catch(() => {
+      errEl.textContent = "번호와 비밀번호를 확인해주세요.";
+      errEl.style.display = "block";
+    })
+    .finally(() => { btn.disabled = false; btn.textContent = "로그인"; });
+}
+
+function handleLogout(){
+  auth.signOut();
+}
+
+// 로그인 상태가 바뀔 때마다 자동 실행 (새로고침해도 로그인 유지됨)
+auth.onAuthStateChanged(async (user) => {
+  currentUser = user;
+  if(!user){
+    currentProfile = null;
+    renderBrandRight();
+    showScreen("screen-login");
+    return;
+  }
+  const doc = await db.collection("students").doc(user.uid).get();
+  currentProfile = doc.exists ? doc.data() : null;
+  renderBrandRight();
+
+  if(currentProfile && currentProfile.selection){
+    showScreen("screen-main");
+    renderTimetable(currentProfile.selection);
+    subscribeNotices();
+    setupNotificationBanner();
+  } else {
+    goToSelectScreen();
+  }
+});
+
+/* =========================================================
+   3. 화면 전환
+   ========================================================= */
+function showScreen(id){
+  document.querySelectorAll(".screen").forEach(s => s.classList.remove("active"));
+  document.getElementById(id).classList.add("active");
+}
+function switchMainTab(tab){
+  document.getElementById("tabBtnTimetable").classList.toggle("active", tab === "timetable");
+  document.getElementById("tabBtnNotice").classList.toggle("active", tab === "notice");
+  document.getElementById("panel-timetable").classList.toggle("active", tab === "timetable");
+  document.getElementById("panel-notice").classList.toggle("active", tab === "notice");
+}
+function renderBrandRight(){
+  const el = document.getElementById("brandRight");
+  if(!currentUser || !currentProfile){ el.innerHTML = ""; return; }
+  el.innerHTML = `<span class="who">${currentProfile.num}번 ${currentProfile.name}</span> &nbsp;
+    <button onclick="handleLogout()">로그아웃</button>`;
+}
+
+/* =========================================================
+   4. 선택과목 입력 — Firestore에 저장
+   ========================================================= */
+function populateSelectionDropdowns(){
+  ["selA","selB","selC"].forEach(id => {
+    const sel = document.getElementById(id);
+    sel.innerHTML = "";
+    const slotLetter = id.slice(-1);
+    Object.keys(SELECTION_ROOMS).forEach(subject => {
+      if(SELECTION_ROOMS[subject][slotLetter]){
+        const opt = document.createElement("option");
+        opt.value = subject; opt.textContent = subject;
+        sel.appendChild(opt);
+      }
+    });
+  });
+}
+function goToSelectScreen(){
+  populateSelectionDropdowns();
+  if(currentProfile && currentProfile.selection){
+    const s = currentProfile.selection;
+    document.getElementById("selA").value = s.A;
+    document.getElementById("selB").value = s.B;
+    document.getElementById("selC").value = s.C;
+    document.getElementById("selTamgu").value = s.탐구;
+    document.getElementById("selLang").value = s.언어;
+  }
+  document.getElementById("selectError").style.display = "none";
+  showScreen("screen-select");
+}
+async function handleSaveSelection(){
+  const A = document.getElementById("selA").value, B = document.getElementById("selB").value, C = document.getElementById("selC").value;
+  const 탐구 = document.getElementById("selTamgu").value, 언어 = document.getElementById("selLang").value;
+  if(A === B || B === C || A === C){
+    document.getElementById("selectError").style.display = "block";
+    return;
+  }
+  document.getElementById("selectError").style.display = "none";
+  const selection = {A, B, C, 탐구, 언어};
+
+  await db.collection("students").doc(currentUser.uid).set({ selection }, {merge:true});
+  currentProfile = {...currentProfile, selection};
+
+  renderTimetable(selection);
+  showScreen("screen-main");
+  switchMainTab("timetable");
+  subscribeNotices();
+  setupNotificationBanner();
+}
+
+/* =========================================================
+   5. 개인 시간표 렌더링
+   ========================================================= */
+let currentDayIndex = 0;
+function renderTimetable(selection){
+  const tabsEl = document.getElementById("dayTabs");
+  tabsEl.innerHTML = "";
+  DAYS.forEach((day, idx) => {
+    const btn = document.createElement("button");
+    btn.textContent = day;
+    if(idx === currentDayIndex) btn.classList.add("active");
+    btn.onclick = () => { currentDayIndex = idx; renderTimetable(selection); };
+    tabsEl.appendChild(btn);
+  });
+
+  const listEl = document.getElementById("periodList");
+  listEl.innerHTML = "";
+  const day = DAYS[currentDayIndex];
+  const periods = FIXED_TIMETABLE[day];
+
+  periods.forEach((p, i) => {
+    const periodNum = i + 1;
+    const row = document.createElement("div");
+    row.className = "period-row" + (p ? "" : " empty");
+    let subject, teacherOrRoom, roomTag, isFixed;
+
+    if(!p){ subject="공강"; teacherOrRoom=""; roomTag=""; isFixed=true; }
+    else if(p.subject){ subject=p.subject; teacherOrRoom=p.teacher; roomTag="우리반 교실"; isFixed=true; }
+    else if(p.slot === "A" || p.slot === "B" || p.slot === "C"){
+      subject = selection[p.slot]; teacherOrRoom="이동수업"; roomTag = SELECTION_ROOMS[subject][p.slot]; isFixed=false;
+    } else if(p.slot === "과탐"){
+      subject = selection["탐구"]; teacherOrRoom="이동수업"; roomTag = SINGLE_ROOMS[subject]; isFixed=false;
+    } else if(p.slot === "언어"){
+      subject = selection["언어"]; teacherOrRoom="이동수업"; roomTag = SINGLE_ROOMS[subject]; isFixed=false;
+    }
+
+    row.innerHTML = `
+      <div class="p-num">${periodNum}</div>
+      <div><div class="p-subject">${subject}</div>${teacherOrRoom ? `<div class="p-teacher">${teacherOrRoom}</div>` : ""}</div>
+      <div class="p-room ${isFixed ? "fixed" : ""}">${roomTag || ""}</div>
+      <div class="p-time">${PERIOD_TIMES[i]}</div>`;
+    listEl.appendChild(row);
+
+    if(periodNum === LUNCH_AFTER_PERIOD){
+      const lunch = document.createElement("div");
+      lunch.className = "lunch-row";
+      lunch.textContent = "점심시간 12:30~13:30";
+      listEl.appendChild(lunch);
+    }
+  });
+}
+
+/* =========================================================
+   6. 공지사항 — Firestore 실시간 구독 + (선생님) 작성
+   ========================================================= */
+let readNoticeIds = new Set(JSON.parse(localStorage.getItem("readNotices") || "[]"));
+function markRead(id){
+  readNoticeIds.add(id);
+  localStorage.setItem("readNotices", JSON.stringify([...readNoticeIds]));
+}
+
+function renderNoticeWriteBox(){
+  const box = document.getElementById("noticeWriteBox");
+  if(!currentProfile || currentProfile.role !== "teacher"){ box.innerHTML = ""; return; }
+  box.innerHTML = `
+    <div class="notice-write">
+      <div class="field"><label>제목</label><input type="text" id="noticeTitle" placeholder="공지 제목"></div>
+      <div class="field" style="margin-bottom:0;"><label>내용</label><textarea id="noticeBody" rows="4" placeholder="공지 내용"></textarea></div>
+      <button class="primary-btn" onclick="handlePostNotice()">공지 보내기 (알림 발송)</button>
+    </div>`;
+}
+async function handlePostNotice(){
+  const title = document.getElementById("noticeTitle").value.trim();
+  const body = document.getElementById("noticeBody").value.trim();
+  if(!title || !body) return;
+  // 이 문서가 생성되면 Cloud Function(functions/index.js)이 감지해서
+  // 등록된 모든 학생 기기로 FCM 푸시 알림을 자동 발송합니다.
+  await db.collection("notices").add({
+    title, body,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    authorNum: currentProfile.num || "담임"
+  });
+  document.getElementById("noticeTitle").value = "";
+  document.getElementById("noticeBody").value = "";
+}
+
+function subscribeNotices(){
+  renderNoticeWriteBox();
+  db.collection("notices").orderBy("createdAt", "desc").limit(30)
+    .onSnapshot(snap => {
+      const listEl = document.getElementById("noticeList");
+      listEl.innerHTML = "";
+      snap.forEach(doc => {
+        const n = doc.data();
+        const unread = !readNoticeIds.has(doc.id);
+        const dateStr = n.createdAt ? n.createdAt.toDate().toLocaleString("ko-KR") : "";
+        const card = document.createElement("div");
+        card.className = "notice-card" + (unread ? " unread" : "");
+        card.onclick = () => { markRead(doc.id); card.classList.remove("unread"); };
+        card.innerHTML = `<div class="notice-title">${n.title}</div>
+          <div class="notice-meta">${dateStr}</div>
+          <div class="notice-body">${n.body}</div>`;
+        listEl.appendChild(card);
+      });
+    });
+}
+
+/* =========================================================
+   7. 푸시 알림 — FCM 토큰 등록
+   ========================================================= */
+function setupNotificationBanner(){
+  const banner = document.getElementById("notifBanner");
+  if(!messaging || !("Notification" in window)) { banner.style.display = "none"; return; }
+  banner.style.display = Notification.permission === "granted" ? "none" : "flex";
+}
+async function requestNotificationPermission(){
+  if(!messaging) return;
+  const permission = await Notification.requestPermission();
+  if(permission !== "granted") return;
+  document.getElementById("notifBanner").style.display = "none";
+
+  const token = await messaging.getToken({ vapidKey: VAPID_KEY });
+  // 이 토큰을 학생 프로필에 저장 → Cloud Function이 공지 발송 시 이 토큰들로 push 전송
+  await db.collection("students").doc(currentUser.uid).set({
+    fcmTokens: firebase.firestore.FieldValue.arrayUnion(token)
+  }, {merge:true});
+}
+
+// 앱이 열려있는 동안 푸시가 오면 처리 (포그라운드)
+if(messaging){
+  messaging.onMessage(payload => {
+    alert(`📢 ${payload.notification.title}\n${payload.notification.body}`);
+  });
+}
+</script>
+</body>
+</html>
