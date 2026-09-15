@@ -33,3 +33,9 @@ function yajaEffectiveBlocks(dow, override) {
   }
   return yajaDefaultBlocksForDay(dow);
 }
+
+// 학생의 요일별 야자 신청 여부 확인
+// enrollMap 형태: { "1": {p7:true,p8:false,...}, "2": {...}, ... } (요일 1=월 ~ 5=금)
+function yajaIsEnrolled(enrollMap, dow, blockKey) {
+  return !!(enrollMap && enrollMap[dow] && enrollMap[dow][blockKey]);
+}

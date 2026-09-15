@@ -99,6 +99,7 @@
     <div class="cam-row">
       <select id="cameraSelect"></select>
       <button id="switchCamBtn">카메라 전환</button>
+      <button id="testSoundBtn">🔊 소리 테스트</button>
     </div>
     <div id="qrReaderWrap"><div id="qrReader"></div></div>
 
@@ -138,7 +139,10 @@ let gateUser = null, gateProfile = null;
 let rosterMap = {}; // num(1~27) -> {uid, name}
 
 document.getElementById("gateLoginBtn").addEventListener("click", async () => {
-  try{ if(!sharedAudioCtx) sharedAudioCtx = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){}
+  try{
+    if(!sharedAudioCtx) sharedAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if(sharedAudioCtx.state === "suspended") await sharedAudioCtx.resume();
+  }catch(e){}
   const num = document.getElementById("gateNum").value.trim();
   const pw = document.getElementById("gatePw").value;
   const errEl = document.getElementById("gateError");
@@ -175,6 +179,7 @@ auth.onAuthStateChanged(async (user) => {
 
   await loadRoster();
   await loadTodayOverride();
+  document.getElementById("testSoundBtn").addEventListener("click", () => playTone("good"));
   updateBlockStatus();
   setInterval(updateBlockStatus, 15000);
   await startScanner();
@@ -185,7 +190,7 @@ async function loadRoster(){
   rosterMap = {};
   snap.forEach(doc => {
     const d = doc.data();
-    rosterMap[d.num] = { uid: doc.id, name: d.name };
+    rosterMap[d.num] = { uid: doc.id, name: d.name, yajaEnroll: d.yajaEnroll || {} };
   });
 }
 
@@ -324,9 +329,10 @@ async function sign(no, secret){
 }
 
 let sharedAudioCtx = null;
-function playTone(type){
+async function playTone(type){
   try{
     if(!sharedAudioCtx) sharedAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    if(sharedAudioCtx.state === "suspended") await sharedAudioCtx.resume();
     const ctx = sharedAudioCtx;
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
@@ -400,6 +406,12 @@ async function handleCode(text){
   const p = currentPhase();
   if(!p){
     showFeedback("warn", "⏰", student.name, "지금은 출석 인정 시간이 아니에요.");
+    return;
+  }
+
+  const nowDow = new Date().getDay();
+  if(!yajaIsEnrolled(student.yajaEnroll, nowDow, p.block.key)){
+    showFeedback("bad", "✕", student.name, `오늘 ${p.block.label} 야자 신청자가 아니에요.`);
     return;
   }
 

@@ -237,6 +237,14 @@
 
     <div class="tab-panel active" id="panel-timetable">
       <div id="yajaBadgeBox" style="display:none;"></div>
+      <div id="myQrBox" style="display:none; margin-bottom:14px;">
+        <button class="link-btn" id="myQrToggleBtn" style="margin-bottom:8px;">📱 내 야자 출석 QR 보기</button>
+        <div id="myQrDisplay" style="display:none; background:var(--card); border:1px solid var(--line); border-radius:10px; padding:18px; text-align:center;">
+          <div id="myQrImg" style="width:200px; height:200px; margin:0 auto 10px;"></div>
+          <div style="font-weight:700;" id="myQrName"></div>
+          <div style="font-size:12px; color:#8a8270;">이 QR을 야자 스캐너에 보여주면 출석 처리돼요</div>
+        </div>
+      </div>
       <div class="day-tabs" id="dayTabs"></div>
       <div id="periodList"></div>
       <div class="footer-actions">
@@ -386,6 +394,12 @@
 
     <div class="tab-panel" id="panel-yajaadmin">
       <div class="group-block">
+        <h3>야자 신청자 설정</h3>
+        <p class="hint">요일별로 어떤 블록에 참여하는지 학생마다 체크해주세요. 체크 안 된 블록은 그 학생 QR을 스캔해도 출석 처리가 안 되고, 출석률 계산에도 안 들어가요.</p>
+        <div id="enrollTable" style="overflow-x:auto;"></div>
+      </div>
+
+      <div class="group-block">
         <h3>운영일 캘린더</h3>
         <p class="hint">기본은 월·수(7·8교시+야간), 화·목·금(8교시+야간), 주말은 미운영이에요. 날짜를 눌러서 강제로 바꿀 수 있어요 — 기본 → 강제 운영 → 강제 미운영 순으로 바뀝니다.</p>
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
@@ -430,6 +444,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 <script src="yaja-common.js"></script>
 <script>
 /* =========================================================
@@ -569,6 +584,7 @@ auth.onAuthStateChanged(async (user) => {
     setupStudyplanTab();
     setupYajaAdminTab();
     renderMyYajaBadge();
+    setupMyQr();
   } else {
     goToSelectScreen();
   }
@@ -652,6 +668,7 @@ async function handleSaveSelection(){
   setupStudyplanTab();
   setupYajaAdminTab();
   renderMyYajaBadge();
+  setupMyQr();
 }
 
 /* =========================================================
@@ -1517,6 +1534,7 @@ function subscribeMyAbsences(){
     document.getElementById("yajaStatBtn").addEventListener("click", renderStatTable);
 
     loadRosterForYaja().then(() => {
+      renderEnrollTable();
       renderCalendar();
       renderDayTable();
     });
@@ -1527,7 +1545,65 @@ function subscribeMyAbsences(){
     yajaRosterMap = {};
     snap.forEach(doc => {
       const d = doc.data();
-      yajaRosterMap[d.num] = { uid: doc.id, name: d.name };
+      yajaRosterMap[d.num] = { uid: doc.id, name: d.name, yajaEnroll: d.yajaEnroll || {} };
+    });
+  }
+
+  const WEEKDAY_LABELS = { 1:"월", 2:"화", 3:"수", 4:"목", 5:"금" };
+  function renderEnrollTable(){
+    const box = document.getElementById("enrollTable");
+    const students = Object.entries(yajaRosterMap).map(([num, s]) => ({num:Number(num), ...s})).sort((a,b)=>a.num-b.num);
+
+    let html = `<table style="border-collapse:collapse; font-size:11.5px; white-space:nowrap;">
+      <tr style="border-bottom:1.5px solid var(--ink);">
+        <th style="padding:5px 6px; text-align:left; position:sticky; left:0; background:var(--paper);">학생</th>
+        ${[1,2,3,4,5].map(dow => {
+          const blocks = yajaDefaultBlocksForDay(dow);
+          return `<th style="padding:5px 8px; border-left:1px solid var(--line);" colspan="${blocks.length}">${WEEKDAY_LABELS[dow]}</th>`;
+        }).join("")}
+      </tr>
+      <tr style="border-bottom:1px solid var(--line); color:#8a8270;">
+        <th style="position:sticky; left:0; background:var(--paper);"></th>
+        ${[1,2,3,4,5].map(dow => yajaDefaultBlocksForDay(dow).map(b =>
+          `<th style="padding:2px 4px; border-left:1px solid var(--line); font-weight:400;">${b.label.replace("교시","").replace("야간","야")}</th>`
+        ).join("")).join("")}
+      </tr>`;
+
+    students.forEach(s => {
+      html += `<tr style="border-bottom:1px solid var(--line);">
+        <td style="padding:4px 6px; position:sticky; left:0; background:#fff;">${s.num} ${s.name}</td>`;
+      [1,2,3,4,5].forEach(dow => {
+        yajaDefaultBlocksForDay(dow).forEach(b => {
+          const checked = yajaIsEnrolled(s.yajaEnroll, dow, b.key);
+          html += `<td style="padding:2px 4px; text-align:center; border-left:1px solid var(--line);">
+            <input type="checkbox" data-uid="${s.uid}" data-dow="${dow}" data-block="${b.key}" ${checked?"checked":""}>
+          </td>`;
+        });
+      });
+      html += `</tr>`;
+    });
+    html += `</table>`;
+    box.innerHTML = html;
+
+    box.querySelectorAll("input[type=checkbox]").forEach(cb => {
+      cb.addEventListener("change", async () => {
+        const uid = cb.dataset.uid, dow = cb.dataset.dow, blockKey = cb.dataset.block;
+        try{
+          await db.collection("students").doc(uid).update({
+            [`yajaEnroll.${dow}.${blockKey}`]: cb.checked
+          });
+          // 로컬 캐시도 갱신
+          const s = Object.values(yajaRosterMap).find(x => x.uid === uid);
+          if(s){
+            if(!s.yajaEnroll[dow]) s.yajaEnroll[dow] = {};
+            s.yajaEnroll[dow][blockKey] = cb.checked;
+          }
+        }catch(e){
+          console.error("신청 정보 저장 실패", e);
+          alert("저장에 실패했어요. 콘솔을 확인해주세요.");
+          cb.checked = !cb.checked;
+        }
+      });
     });
   }
 
@@ -1590,54 +1666,65 @@ function subscribeMyAbsences(){
   async function renderDayTable(){
     const dateStr = document.getElementById("yajaDatePick").value;
     if(!dateStr) return;
-    const d = new Date(dateStr + "T00:00:00");
-    const dow = d.getDay();
-
-    const overrideDoc = await db.collection("yajaCalendarOverrides").doc(dateStr).get();
-    const override = overrideDoc.exists ? overrideDoc.data().operating : undefined;
-    const blocks = yajaEffectiveBlocks(dow, override === undefined ? null : override);
-
     const box = document.getElementById("yajaDayTable");
-    if(blocks.length === 0){
-      box.innerHTML = `<p class="hint">이 날은 야자 미운영일이에요.</p>`;
-      return;
-    }
+    box.innerHTML = `<p class="hint">불러오는 중...</p>`;
+    try{
+      const d = new Date(dateStr + "T00:00:00");
+      const dow = d.getDay();
 
-    const snap = await db.collection("yajaAttendance").where("date", "==", dateStr).get();
-    const records = {}; // num -> {block: {checkInAt, checkOutAt, excused, excuseReason}}
-    snap.forEach(doc => {
-      const r = doc.data();
-      if(!records[r.num]) records[r.num] = {};
-      records[r.num][r.block] = r;
-    });
+      const overrideDoc = await db.collection("yajaCalendarOverrides").doc(dateStr).get();
+      const override = overrideDoc.exists ? overrideDoc.data().operating : undefined;
+      const blocks = yajaEffectiveBlocks(dow, override === undefined ? null : override);
 
-    const students = Object.entries(yajaRosterMap).map(([num, s]) => ({num:Number(num), ...s})).sort((a,b)=>a.num-b.num);
+      if(blocks.length === 0){
+        box.innerHTML = `<p class="hint">이 날은 야자 미운영일이에요.</p>`;
+        return;
+      }
 
-    let html = `<table style="width:100%; border-collapse:collapse; font-size:12.5px;">
-      <tr style="border-bottom:1.5px solid var(--ink);">
-        <th style="text-align:left; padding:6px 4px;">번호</th><th style="text-align:left; padding:6px 4px;">이름</th>
-        ${blocks.map(b=>`<th style="padding:6px 4px;">${b.label}</th>`).join("")}
-      </tr>`;
-    students.forEach(s => {
-      html += `<tr style="border-bottom:1px solid var(--line);"><td style="padding:6px 4px;">${s.num}</td><td style="padding:6px 4px;">${s.name}</td>`;
-      blocks.forEach(b => {
-        const rec = records[s.num] && records[s.num][b.key];
-        let cellHtml;
-        if(rec && rec.excused){
-          cellHtml = `<span style="color:#8a8270;">사유인정</span>`;
-        } else if(rec && rec.checkInAt){
-          const inTime = rec.checkInAt.toDate ? rec.checkInAt.toDate().toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"}) : "";
-          const outTime = rec.checkOutAt ? (rec.checkOutAt.toDate ? rec.checkOutAt.toDate().toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"}) : "") : "";
-          cellHtml = `<span style="color:var(--forest-deep);">${inTime}${outTime ? "~"+outTime : ""}</span>`;
-        } else {
-          cellHtml = `<button class="link-btn" style="font-size:11px;" onclick="yajaExcuse('${s.num}','${s.name}','${dateStr}','${b.key}','${b.label}')">미입실 · 사유입력</button>`;
-        }
-        html += `<td style="padding:6px 4px; text-align:center;">${cellHtml}</td>`;
+      const snap = await db.collection("yajaAttendance").where("date", "==", dateStr).get();
+      const records = {}; // num -> {block: {checkInAt, checkOutAt, excused, excuseReason}}
+      snap.forEach(doc => {
+        const r = doc.data();
+        if(!records[r.num]) records[r.num] = {};
+        records[r.num][r.block] = r;
       });
-      html += `</tr>`;
-    });
-    html += `</table>`;
-    box.innerHTML = html;
+
+      const students = Object.entries(yajaRosterMap).map(([num, s]) => ({num:Number(num), ...s})).sort((a,b)=>a.num-b.num);
+
+      let html = `<table style="width:100%; border-collapse:collapse; font-size:12.5px;">
+        <tr style="border-bottom:1.5px solid var(--ink);">
+          <th style="text-align:left; padding:6px 4px;">번호</th><th style="text-align:left; padding:6px 4px;">이름</th>
+          ${blocks.map(b=>`<th style="padding:6px 4px;">${b.label}</th>`).join("")}
+        </tr>`;
+      students.forEach(s => {
+        html += `<tr style="border-bottom:1px solid var(--line);"><td style="padding:6px 4px;">${s.num}</td><td style="padding:6px 4px;">${s.name}</td>`;
+        blocks.forEach(b => {
+          const enrolled = yajaIsEnrolled(s.yajaEnroll, dow, b.key);
+          if(!enrolled){
+            html += `<td style="padding:6px 4px; text-align:center; color:#c9c2ac;">미신청</td>`;
+            return;
+          }
+          const rec = records[s.num] && records[s.num][b.key];
+          let cellHtml;
+          if(rec && rec.excused){
+            cellHtml = `<span style="color:#8a8270;">사유인정</span>`;
+          } else if(rec && rec.checkInAt){
+            const inTime = rec.checkInAt.toDate ? rec.checkInAt.toDate().toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"}) : "";
+            const outTime = rec.checkOutAt ? (rec.checkOutAt.toDate ? rec.checkOutAt.toDate().toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"}) : "") : "";
+            cellHtml = `<span style="color:var(--forest-deep);">${inTime}${outTime ? "~"+outTime : ""}</span>`;
+          } else {
+            cellHtml = `<button class="link-btn" style="font-size:11px;" onclick="yajaExcuse('${s.num}','${s.name}','${dateStr}','${b.key}','${b.label}')">미입실 · 사유입력</button>`;
+          }
+          html += `<td style="padding:6px 4px; text-align:center;">${cellHtml}</td>`;
+        });
+        html += `</tr>`;
+      });
+      html += `</table>`;
+      box.innerHTML = html;
+    }catch(e){
+      console.error("날짜별 출결 표 로딩 실패", e);
+      box.innerHTML = `<p class="hint" style="color:var(--danger);">불러오지 못했어요 — 콘솔(F12)에서 에러를 확인해주세요. (보안규칙이 최신 상태인지도 확인해보세요)</p>`;
+    }
   }
 
   window.yajaExcuse = async function(num, name, dateStr, blockKey, blockLabel){
@@ -1661,59 +1748,110 @@ function subscribeMyAbsences(){
     const box = document.getElementById("yajaStatTable");
     box.innerHTML = `<p class="hint">불러오는 중...</p>`;
 
-    // 기간 내 운영 블록 총량 계산
-    const overrideSnap = await db.collection("yajaCalendarOverrides")
-      .where(firebase.firestore.FieldPath.documentId(), ">=", startStr)
-      .where(firebase.firestore.FieldPath.documentId(), "<=", endStr)
-      .get();
-    const overrides = {};
-    overrideSnap.forEach(doc => { overrides[doc.id] = doc.data().operating; });
+    try{
+      const overrideSnap = await db.collection("yajaCalendarOverrides")
+        .where(firebase.firestore.FieldPath.documentId(), ">=", startStr)
+        .where(firebase.firestore.FieldPath.documentId(), "<=", endStr)
+        .get();
+      const overrides = {};
+      overrideSnap.forEach(doc => { overrides[doc.id] = doc.data().operating; });
 
-    let totalBlocks = 0;
-    const cursor = new Date(startStr + "T00:00:00");
-    const endDate = new Date(endStr + "T00:00:00");
-    while(cursor <= endDate){
-      const key = yajaDateKey(cursor);
-      const blocks = yajaEffectiveBlocks(cursor.getDay(), overrides[key] === undefined ? null : overrides[key]);
-      totalBlocks += blocks.length;
-      cursor.setDate(cursor.getDate()+1);
+      const students = Object.entries(yajaRosterMap).map(([num, s]) => ({num:Number(num), ...s})).sort((a,b)=>a.num-b.num);
+
+      // 학생별 기간 내 "신청된" 블록 총량 계산 (요일×블록 신청 여부 반영)
+      const totalByStudent = {};
+      students.forEach(s => { totalByStudent[s.num] = 0; });
+      const cursor = new Date(startStr + "T00:00:00");
+      const endDate = new Date(endStr + "T00:00:00");
+      while(cursor <= endDate){
+        const key = yajaDateKey(cursor);
+        const dow = cursor.getDay();
+        const blocks = yajaEffectiveBlocks(dow, overrides[key] === undefined ? null : overrides[key]);
+        students.forEach(s => {
+          blocks.forEach(b => {
+            if(yajaIsEnrolled(s.yajaEnroll, dow, b.key)) totalByStudent[s.num] += 1;
+          });
+        });
+        cursor.setDate(cursor.getDate()+1);
+      }
+
+      const attSnap = await db.collection("yajaAttendance")
+        .where("date", ">=", startStr).where("date", "<=", endStr).get();
+      const perStudent = {}; // num -> {attended, excused}
+      attSnap.forEach(doc => {
+        const r = doc.data();
+        if(!perStudent[r.num]) perStudent[r.num] = { attended: 0, excused: 0 };
+        if(r.excused) perStudent[r.num].excused += 1;
+        else if(r.checkInAt) perStudent[r.num].attended += 1;
+      });
+
+      let html = `<table style="width:100%; border-collapse:collapse; font-size:12.5px;">
+        <tr style="border-bottom:1.5px solid var(--ink);">
+          <th style="text-align:left; padding:6px 4px;">번호</th><th style="text-align:left; padding:6px 4px;">이름</th>
+          <th style="padding:6px 4px;">출석</th><th style="padding:6px 4px;">사유인정</th><th style="padding:6px 4px;">출석률</th>
+        </tr>`;
+      students.forEach(s => {
+        const rec = perStudent[s.num] || { attended:0, excused:0 };
+        const total = totalByStudent[s.num] || 0;
+        if(total === 0){
+          html += `<tr style="border-bottom:1px solid var(--line); color:#c9c2ac;">
+            <td style="padding:6px 4px;">${s.num}</td><td style="padding:6px 4px;">${s.name}</td>
+            <td colspan="3" style="padding:6px 4px; text-align:center;">이 기간 신청 내역 없음</td>
+          </tr>`;
+          return;
+        }
+        const denom = Math.max(1, total - rec.excused);
+        const rate = Math.round((rec.attended / denom) * 100);
+        html += `<tr style="border-bottom:1px solid var(--line);">
+          <td style="padding:6px 4px;">${s.num}</td><td style="padding:6px 4px;">${s.name}</td>
+          <td style="padding:6px 4px; text-align:center;">${rec.attended}/${total}</td>
+          <td style="padding:6px 4px; text-align:center;">${rec.excused}</td>
+          <td style="padding:6px 4px; text-align:center; font-weight:700; color:${rate>=90?'var(--forest-deep)':rate>=70?'var(--ochre)':'var(--danger)'};">${rate}%${rate>=90 ? ' 🏅' : ''}</td>
+        </tr>`;
+      });
+      html += `</table>`;
+      box.innerHTML = html;
+    }catch(e){
+      console.error("기간별 출석률 로딩 실패", e);
+      box.innerHTML = `<p class="hint" style="color:var(--danger);">불러오지 못했어요 — 콘솔(F12)을 확인해주세요.</p>`;
     }
-
-    const attSnap = await db.collection("yajaAttendance")
-      .where("date", ">=", startStr).where("date", "<=", endStr).get();
-    const perStudent = {}; // num -> {attended, excused}
-    attSnap.forEach(doc => {
-      const r = doc.data();
-      if(!perStudent[r.num]) perStudent[r.num] = { attended: 0, excused: 0 };
-      if(r.excused) perStudent[r.num].excused += 1;
-      else if(r.checkInAt) perStudent[r.num].attended += 1;
-    });
-
-    const students = Object.entries(yajaRosterMap).map(([num, s]) => ({num:Number(num), ...s})).sort((a,b)=>a.num-b.num);
-    let html = `<table style="width:100%; border-collapse:collapse; font-size:12.5px;">
-      <tr style="border-bottom:1.5px solid var(--ink);">
-        <th style="text-align:left; padding:6px 4px;">번호</th><th style="text-align:left; padding:6px 4px;">이름</th>
-        <th style="padding:6px 4px;">출석</th><th style="padding:6px 4px;">사유인정</th><th style="padding:6px 4px;">출석률</th>
-      </tr>`;
-    students.forEach(s => {
-      const rec = perStudent[s.num] || { attended:0, excused:0 };
-      const denom = Math.max(1, totalBlocks - rec.excused);
-      const rate = Math.round((rec.attended / denom) * 100);
-      html += `<tr style="border-bottom:1px solid var(--line);">
-        <td style="padding:6px 4px;">${s.num}</td><td style="padding:6px 4px;">${s.name}</td>
-        <td style="padding:6px 4px; text-align:center;">${rec.attended}/${totalBlocks}</td>
-        <td style="padding:6px 4px; text-align:center;">${rec.excused}</td>
-        <td style="padding:6px 4px; text-align:center; font-weight:700; color:${rate>=90?'var(--forest-deep)':rate>=70?'var(--ochre)':'var(--danger)'};">${rate}%${rate>=90 ? ' 🏅' : ''}</td>
-      </tr>`;
-    });
-    html += `</table>`;
-    box.innerHTML = html;
   }
 })();
 
 /* =========================================================
    11. 학생용 — 이번 달 야자 출석 배지
    ========================================================= */
+// ⚠️ yaja-scanner.html, yaja-qr-issuer.html의 비밀키와 반드시 같아야 합니다.
+const YAJA_SECRET_KEY = "yangil-yaja-2026";
+async function yajaSign(no, secret){
+  const enc = new TextEncoder().encode(no + "::" + secret);
+  const buf = await crypto.subtle.digest("SHA-256", enc);
+  return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("").slice(0,6);
+}
+
+async function setupMyQr(){
+  if(!currentProfile || currentProfile.role !== "student") return;
+  document.getElementById("myQrBox").style.display = "block";
+  const toggleBtn = document.getElementById("myQrToggleBtn");
+  const display = document.getElementById("myQrDisplay");
+  let rendered = false;
+  toggleBtn.onclick = async () => {
+    const willShow = display.style.display === "none";
+    display.style.display = willShow ? "block" : "none";
+    if(willShow && !rendered){
+      rendered = true;
+      const code = "207" + String(currentProfile.num).padStart(2, "0");
+      const sig = await yajaSign(code, YAJA_SECRET_KEY);
+      const text = `YJ|${code}|${sig}`;
+      const qr = qrcode(0, "Q");
+      qr.addData(text);
+      qr.make();
+      document.getElementById("myQrImg").innerHTML = qr.createSvgTag({cellSize:5, margin:0, scalable:true});
+      document.getElementById("myQrName").textContent = `${currentProfile.num}번 ${currentProfile.name}`;
+    }
+  };
+}
+
 async function renderMyYajaBadge(){
   const box = document.getElementById("yajaBadgeBox");
   if(!currentUser || !currentProfile || currentProfile.role !== "student"){ box.style.display = "none"; return; }
@@ -1735,8 +1873,9 @@ async function renderMyYajaBadge(){
     const cursor = new Date(monthStart);
     while(cursor <= now){
       const key = yajaDateKey(cursor);
-      const blocks = yajaEffectiveBlocks(cursor.getDay(), overrides[key] === undefined ? null : overrides[key]);
-      totalBlocks += blocks.length;
+      const dow = cursor.getDay();
+      const blocks = yajaEffectiveBlocks(dow, overrides[key] === undefined ? null : overrides[key]);
+      blocks.forEach(b => { if(yajaIsEnrolled(currentProfile.yajaEnroll, dow, b.key)) totalBlocks += 1; });
       cursor.setDate(cursor.getDate()+1);
     }
     if(totalBlocks === 0){ box.style.display = "none"; return; }
