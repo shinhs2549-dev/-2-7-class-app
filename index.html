@@ -4,6 +4,11 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>2학년 7반</title>
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icons/favicon-32.png" sizes="32x32">
+<link rel="icon" href="icons/favicon-16.png" sizes="16x16">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<meta name="theme-color" content="#3E5C42">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
@@ -76,6 +81,81 @@
   .notice-body{ font-size:14px; line-height:1.6; white-space:pre-wrap; }
   .notif-banner{ background:#EAF0E7; border:1px solid var(--forest); border-radius:8px; padding:12px 16px; font-size:13px; color:var(--forest-deep); margin-bottom:16px; display:flex; justify-content:space-between; align-items:center; gap:10px; }
   .notif-banner button{ background:var(--forest); color:#fff; border:none; border-radius:6px; padding:7px 12px; font-size:12.5px; cursor:pointer; white-space:nowrap; }
+
+  /* ---- 주간 학습 계획서 (sp-*) ---- */
+  .sp-root{ font-family:"Noto Sans KR",sans-serif; color:var(--ink); line-height:1.5; }
+  .sp-head{ display:flex; justify-content:space-between; align-items:flex-end; border-bottom:2px solid var(--ink); padding-bottom:12px; margin-bottom:14px; flex-wrap:wrap; gap:10px; }
+  .sp-title{ font-family:'Noto Serif KR', serif; font-size:20px; font-weight:700; }
+  .sp-sub{ font-size:12px; color:#8a8270; margin-top:2px; }
+  .sp-season{ display:flex; align-items:center; gap:6px; }
+  .sp-dot{ width:9px; height:9px; border-radius:50%; background:var(--line); cursor:pointer; }
+  .sp-dot.on{ background:var(--ochre); }
+  .sp-target-row{ display:flex; gap:8px; align-items:center; margin-bottom:16px; font-size:13px; }
+  .sp-target-row select{ border:1px solid var(--line); border-radius:6px; padding:6px 8px; font-family:inherit; font-size:13px; }
+  .sp-weeknav{ display:flex; align-items:center; gap:10px; margin-bottom:16px; }
+  .sp-weeknav button{ border:1px solid var(--line); background:var(--card); color:var(--ink); border-radius:6px; padding:4px 9px; cursor:pointer; font-size:13px; }
+  .sp-weeknav button:disabled{ opacity:.35; cursor:default; }
+  .sp-weekrange{ font-size:13px; color:#8a8270; }
+  .sp-section-label{ font-size:13px; font-weight:700; margin:20px 0 8px; color:var(--ink); display:flex; align-items:center; gap:6px; }
+  .sp-section-label .n{ width:18px; height:18px; border-radius:50%; background:var(--ink); color:var(--paper); font-size:11px; display:flex; align-items:center; justify-content:center; }
+  .sp-goals{ display:flex; flex-direction:column; gap:6px; }
+  .sp-goal-row{ display:flex; align-items:center; gap:8px; }
+  .sp-goal-row span{ font-size:12px; color:#8a8270; width:14px; }
+  .sp-goal-row input{ flex:1; border:none; border-bottom:1px solid var(--line); background:transparent; padding:6px 2px; font-size:13.5px; font-family:inherit; color:var(--ink); }
+  .sp-goal-hint{ font-size:11px; color:#8a8270; margin-top:6px; }
+  .sp-days{ display:flex; flex-direction:column; gap:8px; }
+  .sp-day{ background:var(--card); border:1px solid var(--line); border-radius:8px; padding:10px 12px; position:relative; }
+  .sp-day.locked{ background:#F1EEE3; }
+  .sp-day-head{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+  .sp-day-name{ font-weight:700; font-size:13.5px; }
+  .sp-day-date{ font-size:11px; color:#8a8270; margin-left:5px; font-weight:400;}
+  .sp-badge{ font-size:11px; padding:2px 8px; border-radius:10px; font-weight:600; }
+  .sp-badge.open{ background:#F1DDB2; color:#8a5f14; }
+  .sp-badge.done{ background:#DCE8DC; color:var(--forest-deep); }
+  .sp-badge.miss{ background:#F3DDD6; color:var(--danger); }
+  .sp-fields{ display:flex; flex-direction:column; gap:5px; margin-bottom:8px; }
+  .sp-cats{ display:flex; flex-direction:column; gap:4px; margin-bottom:8px; }
+  .sp-cat-row{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; padding:3px 0; border-bottom:1px dashed var(--line); }
+  .sp-cat-toggle{ display:flex; align-items:center; gap:5px; font-size:12px; cursor:pointer; flex-shrink:0; width:118px; }
+  .sp-cat-toggle input{ accent-color:var(--forest); width:14px; height:14px; flex-shrink:0; }
+  .sp-cat-detail{ flex:1; min-width:100px; border:none; border-bottom:1px dashed var(--line); background:transparent; font-size:12px; padding:3px 2px; font-family:inherit; color:var(--ink); }
+  .sp-period-chips{ display:flex; gap:6px; flex-wrap:wrap; }
+  .sp-period-chip{ display:flex; align-items:center; gap:3px; font-size:11px; border:1px solid var(--line); border-radius:12px; padding:2px 8px; cursor:pointer; color:#8a8270; }
+  .sp-period-chip.on{ background:#DCE8DC; border-color:var(--forest); color:var(--forest-deep); }
+  .sp-period-chip input{ accent-color:var(--forest); width:12px; height:12px; }
+  .sp-check-row{ display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; }
+  .sp-check-row .deadline{ font-size:10.5px; color:#8a8270; }
+  .sp-check-right{ display:flex; align-items:center; gap:8px; }
+  .sp-time-done{ display:flex; align-items:center; gap:4px; font-size:11px; color:#8a8270; }
+  .sp-time-done input{ border:1px solid var(--line); border-radius:4px; background:#fff; font-size:11px; padding:2px 4px; font-family:inherit; color:var(--ink); }
+  .sp-checkbox{ width:22px; height:22px; border-radius:5px; border:1.5px solid #8a8270; display:flex; align-items:center; justify-content:center; cursor:pointer; font-size:14px; background:var(--card); flex-shrink:0; }
+  .sp-checkbox.checked{ background:var(--forest); border-color:var(--forest); color:white; }
+  .sp-checkbox.disabled{ cursor:default; opacity:.6; }
+  .sp-reflect{ background:var(--card); border:1px solid var(--line); border-radius:8px; padding:12px; }
+  .sp-reflect textarea{ width:100%; border:1px solid var(--line); border-radius:6px; padding:8px; font-family:inherit; font-size:12.5px; resize:vertical; min-height:44px; margin-top:4px; margin-bottom:10px; background:#fff; color:var(--ink); }
+  .sp-reflect textarea:disabled{ background:#F1EEE3; color:#8a8270; }
+  .sp-reflect label{ font-size:12px; font-weight:600; }
+  .sp-submit-btn{ background:var(--forest); color:#fff; border:none; border-radius:6px; padding:9px 16px; font-size:13px; font-weight:600; cursor:pointer; width:100%; }
+  .sp-submit-btn:disabled{ background:#B9B29B; cursor:default; }
+  .sp-locked-note{ font-size:11px; color:var(--danger); margin-top:6px; }
+  .sp-plan-submit{ background:var(--card); border:1px solid var(--line); border-radius:8px; padding:12px; margin-top:8px; }
+  .sp-plan-note{ font-size:11.5px; color:#8a8270; margin-bottom:8px; }
+  .sp-plan-note.warn{ color:var(--ochre); font-weight:600; }
+  .sp-plan-note.locked{ color:var(--danger); font-weight:600; }
+  .sp-plan-note.done{ color:var(--forest-deep); font-weight:600; }
+  .sp-plan-override{ display:inline-flex; align-items:center; gap:6px; font-size:11px; color:#8a8270; margin-top:8px; cursor:pointer; }
+  .sp-plan-override input{ accent-color:var(--ochre); width:14px; height:14px; }
+  .sp-teacher{ margin-top:14px; border-top:1px dashed var(--line); padding-top:12px; }
+  .sp-teacher label{ font-size:12px; font-weight:600; }
+  .sp-teacher textarea{ width:100%; border:1px solid var(--line); border-radius:6px; padding:8px; font-family:inherit; font-size:12.5px; min-height:40px; margin-top:4px; background:#fff; color:var(--ink); }
+  .sp-teacher-readout{ font-size:12.5px; background:#F1DDB2; border-radius:6px; padding:8px 10px; margin-top:4px; color:#5c3f10; min-height:20px; }
+  .sp-score-grid{ display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:6px; text-align:center; margin-top:8px; }
+  .sp-score-cell{ background:var(--card); border:1px solid var(--line); border-radius:8px; padding:8px 4px; }
+  .sp-score-cell .lbl{ font-size:10px; color:#8a8270; }
+  .sp-score-cell .val{ font-size:17px; font-weight:700; margin-top:2px; }
+  .sp-score-cell.total{ background:#F1DDB2; }
+  .sp-score-cell.total .val{ color:#8a5f14; }
+  .sp-footer-note{ font-size:11px; color:#8a8270; text-align:center; margin-top:18px; }
 </style>
 </head>
 <body>
@@ -146,6 +226,7 @@
       <button id="tabBtnTimetable" class="active" onclick="switchMainTab('timetable')">시간표</button>
       <button id="tabBtnNotice" onclick="switchMainTab('notice')">공지사항</button>
       <button id="tabBtnAbsence" onclick="switchMainTab('absence')" style="display:none;">결석계</button>
+      <button id="tabBtnStudyplan" onclick="switchMainTab('studyplan')">학습계획서</button>
     </div>
 
     <div class="tab-panel active" id="panel-timetable">
@@ -223,6 +304,77 @@
       </div>
 
       <div id="absenceList"></div>
+    </div>
+
+    <div class="tab-panel" id="panel-studyplan">
+      <div class="sp-root" id="spRoot">
+        <div class="sp-head">
+          <div>
+            <div class="sp-title">주간 학습 계획서</div>
+            <div class="sp-sub">학원 시간 말고, 진짜 내 시간을 기록합니다</div>
+          </div>
+          <div class="sp-season">
+            <span style="font-size:12px;color:#8a8270;margin-right:4px;">시즌</span>
+            <div class="sp-dot" data-w="1"></div>
+            <div class="sp-dot" data-w="2"></div>
+            <div class="sp-dot" data-w="3"></div>
+            <div class="sp-dot" data-w="4"></div>
+          </div>
+        </div>
+
+        <div class="sp-target-row" id="spTeacherSelectRow" style="display:none;">
+          <span>학생 선택</span>
+          <select id="spStudentSelect"></select>
+        </div>
+
+        <div id="spBody" style="display:none;">
+          <div class="sp-weeknav">
+            <button id="prevWeekBtn">◀ 이전 주</button>
+            <span class="sp-weekrange" id="weekRangeLabel"></span>
+            <button id="nextWeekBtn">다음 주 ▶</button>
+          </div>
+
+          <div class="sp-section-label"><span class="n">1</span>이번 주 목표 (구체적으로 — 과목 + 분량)</div>
+          <div class="sp-goals" id="goalsBox"></div>
+          <div class="sp-goal-hint">"열심히 한다" 같은 추상적 목표는 인정되지 않습니다. 월요일 24:00까지 요일별 계획과 함께 제출해야 계획 점수 2점을 받습니다.</div>
+
+          <div class="sp-section-label"><span class="n">2</span>요일별 계획 (학원·과외·자기주도학습 등)</div>
+          <div class="sp-days" id="daysBox"></div>
+
+          <div class="sp-plan-submit" id="planSubmitBox">
+            <div id="planStatusNote" class="sp-plan-note"></div>
+            <button class="sp-submit-btn" id="submitPlanBtn">주간 계획 제출 (목표 + 요일별 계획 확정)</button>
+            <label class="sp-plan-override" id="planOverrideBox" style="display:none;">
+              <input type="checkbox" id="planOverrideCheck"/>
+              담임 예외로 이번 주 계획 잠금 해제
+            </label>
+          </div>
+
+          <div class="sp-section-label"><span class="n">3</span>주간 회고</div>
+          <div class="sp-reflect">
+            <label>이번 주는 어땠나요? — 잘한 것, 아쉬운 것, 새로 알게 된 것 등 자유롭게</label>
+            <textarea id="reflectText" placeholder="예: 화요일까진 잘 지켰는데 수요일에 학원 갔다와서 그대로 잠들었다." style="min-height:80px;"></textarea>
+            <button class="sp-submit-btn" id="submitReflectBtn">회고 제출하고 이번 주 포인트 확정</button>
+            <div class="sp-locked-note" id="reflectLockedNote" style="display:none;">제출 완료 — 이번 주 기록은 더 이상 수정할 수 없습니다.</div>
+          </div>
+
+          <div class="sp-teacher" id="teacherBox">
+            <label>담임 피드백 (주 1회)</label>
+            <textarea id="teacherFeedback" placeholder="회고를 읽고 한 줄 남겨주세요"></textarea>
+            <div class="sp-teacher-readout" id="teacherReadout" style="display:none;"></div>
+          </div>
+
+          <div class="sp-section-label"><span class="n">4</span>포인트 정산</div>
+          <div class="sp-score-grid">
+            <div class="sp-score-cell"><div class="lbl">계획 제출</div><div class="val" id="scoreGoals">0</div></div>
+            <div class="sp-score-cell"><div class="lbl">실행 체크</div><div class="val" id="scoreChecks">0</div></div>
+            <div class="sp-score-cell"><div class="lbl">회고 제출</div><div class="val" id="scoreReflect">0</div></div>
+            <div class="sp-score-cell total"><div class="lbl">이번 주 합계</div><div class="val" id="scoreTotal">0</div></div>
+          </div>
+
+          <div class="sp-footer-note">체크는 그날 15:40부터 다음날 08:40까지만 가능 · 그 전후에는 자동 잠김</div>
+        </div>
+      </div>
     </div>
   </div>
 
@@ -369,6 +521,7 @@ auth.onAuthStateChanged(async (user) => {
     subscribeNotices();
     setupNotificationBanner();
     setupAbsenceTab();
+    setupStudyplanTab();
   } else {
     goToSelectScreen();
   }
@@ -385,9 +538,11 @@ function switchMainTab(tab){
   document.getElementById("tabBtnTimetable").classList.toggle("active", tab === "timetable");
   document.getElementById("tabBtnNotice").classList.toggle("active", tab === "notice");
   document.getElementById("tabBtnAbsence").classList.toggle("active", tab === "absence");
+  document.getElementById("tabBtnStudyplan").classList.toggle("active", tab === "studyplan");
   document.getElementById("panel-timetable").classList.toggle("active", tab === "timetable");
   document.getElementById("panel-notice").classList.toggle("active", tab === "notice");
   document.getElementById("panel-absence").classList.toggle("active", tab === "absence");
+  document.getElementById("panel-studyplan").classList.toggle("active", tab === "studyplan");
 }
 function renderBrandRight(){
   const el = document.getElementById("brandRight");
@@ -445,6 +600,7 @@ async function handleSaveSelection(){
   subscribeNotices();
   setupNotificationBanner();
   setupAbsenceTab();
+  setupStudyplanTab();
 }
 
 /* =========================================================
@@ -818,6 +974,468 @@ function subscribeMyAbsences(){
       });
     });
 }
+
+/* =========================================================
+   9. 주간 학습 계획서 — Firestore 연동 버전
+   ========================================================= */
+(function(){
+  const DAY_NAMES = ["월","화","수","목","금","토","일"];
+  const OPEN_HOUR = 15, OPEN_MIN = 40;
+  const CLOSE_HOUR = 8, CLOSE_MIN = 40;
+  const CATS = [
+    { key:"academy", label:"학원" },
+    { key:"tutoring", label:"과외" },
+    { key:"schoolSelf", label:"학교 자기주도학습", periods:true },
+    { key:"homeSelf", label:"가정 자기주도학습" },
+    { key:"etc", label:"기타" },
+  ];
+  function periodsForDay(dayIdx){
+    const list = [];
+    if(dayIdx === 0 || dayIdx === 2) list.push({ key:"p7", label:"7교시" });
+    if(dayIdx >= 0 && dayIdx <= 4) list.push({ key:"p8", label:"8교시" });
+    if(dayIdx >= 0 && dayIdx <= 4) list.push({ key:"night", label:"야간" });
+    return list;
+  }
+
+  let spWeekOffset = 0;
+  let spSeasonWeek = 1;
+  let spTargetUid = null;   // 지금 보고 있는 학생의 uid
+  let spViewerIsTeacher = false;
+  let spState = null;
+
+  function pad(n){ return n.toString().padStart(2,"0"); }
+  function fmtDate(d){ return `${d.getMonth()+1}/${d.getDate()}`; }
+  function isoKey(d){ return `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`; }
+  function getMondayOf(date){
+    const d = new Date(date);
+    const day = d.getDay();
+    const diff = (day === 0 ? -6 : 1 - day);
+    d.setDate(d.getDate() + diff);
+    d.setHours(0,0,0,0);
+    return d;
+  }
+  function spCurrentWeekMonday(){
+    const base = new Date();
+    base.setDate(base.getDate() + spWeekOffset * 7);
+    return getMondayOf(base);
+  }
+  function spDocId(uid, monday){ return `${uid}_${isoKey(monday)}`; }
+  function openFor(monday, dayIdx){
+    const d = new Date(monday); d.setDate(d.getDate() + dayIdx);
+    d.setHours(OPEN_HOUR, OPEN_MIN, 0, 0); return d;
+  }
+  function deadlineFor(monday, dayIdx){
+    const d = new Date(monday); d.setDate(d.getDate() + dayIdx + 1);
+    d.setHours(CLOSE_HOUR, CLOSE_MIN, 0, 0); return d;
+  }
+  function planDeadlineFor(monday){
+    const d = new Date(monday); d.setDate(d.getDate() + 1);
+    d.setHours(0, 0, 0, 0); return d;
+  }
+  function nowTimeStr(){ const n = new Date(); return `${pad(n.getHours())}:${pad(n.getMinutes())}`; }
+
+  function defaultDay(){
+    return {
+      cats: {
+        academy: { on:false, detail:"" },
+        tutoring: { on:false, detail:"" },
+        schoolSelf: { on:false, periods:{ p7:false, p8:false, night:false } },
+        homeSelf: { on:false, detail:"" },
+        etc: { on:false, detail:"" },
+      },
+      checked: false, doneAt: "",
+    };
+  }
+  function defaultState(){
+    return {
+      goals: ["", "", ""],
+      days: DAY_NAMES.map(() => defaultDay()),
+      planSubmitted: false, planOverride: false,
+      reflectText: "", reflectSubmitted: false,
+      teacherFeedback: "",
+    };
+  }
+  function normalizeState(s){
+    if(!s || typeof s !== "object") s = {};
+    if(!Array.isArray(s.goals) || s.goals.length !== 3) s.goals = ["", "", ""];
+    if(!Array.isArray(s.days) || s.days.length !== 7){
+      s.days = DAY_NAMES.map(() => defaultDay());
+    } else {
+      s.days = s.days.map(d=>{
+        const nd = defaultDay();
+        if(d && typeof d === "object"){
+          if(d.cats && typeof d.cats === "object"){
+            Object.keys(nd.cats).forEach(k=>{
+              const src = d.cats[k];
+              if(src && typeof src === "object"){
+                nd.cats[k].on = !!src.on;
+                if("detail" in nd.cats[k]) nd.cats[k].detail = typeof src.detail === "string" ? src.detail : "";
+                if("periods" in nd.cats[k]){
+                  Object.keys(nd.cats[k].periods).forEach(pk=>{
+                    nd.cats[k].periods[pk] = !!(src.periods && src.periods[pk]);
+                  });
+                }
+              }
+            });
+          }
+          nd.checked = !!d.checked;
+          nd.doneAt = typeof d.doneAt === "string" ? d.doneAt : "";
+        }
+        return nd;
+      });
+    }
+    if(typeof s.planSubmitted !== "boolean") s.planSubmitted = false;
+    if(typeof s.planOverride !== "boolean") s.planOverride = false;
+    if(typeof s.reflectText !== "string") s.reflectText = "";
+    if(typeof s.reflectSubmitted !== "boolean") s.reflectSubmitted = false;
+    if(typeof s.teacherFeedback !== "string") s.teacherFeedback = "";
+    return s;
+  }
+
+  async function spLoadWeek(){
+    if(!spTargetUid) return;
+    const monday = spCurrentWeekMonday();
+    const docId = spDocId(spTargetUid, monday);
+    let loadedExisting = false;
+    try{
+      const doc = await db.collection("studyplans").doc(docId).get();
+      if(doc.exists){ spState = normalizeState(doc.data()); loadedExisting = true; }
+      else { spState = defaultState(); }
+    }catch(e){ console.error(e); spState = defaultState(); }
+
+    if(!loadedExisting){
+      const prevMonday = new Date(monday); prevMonday.setDate(prevMonday.getDate()-7);
+      try{
+        const prevDoc = await db.collection("studyplans").doc(spDocId(spTargetUid, prevMonday)).get();
+        if(prevDoc.exists && prevDoc.data().days){
+          const prevDays = prevDoc.data().days;
+          spState.days.forEach((d, i)=>{
+            if(prevDays[i] && prevDays[i].cats){
+              d.cats = JSON.parse(JSON.stringify(prevDays[i].cats));
+            }
+          });
+        }
+      }catch(e){ /* 지난주 기록 없음 */ }
+      if(!spViewerIsTeacher) spSaveWeek();
+    }
+    spRender();
+  }
+
+  async function spSaveWeek(){
+    if(!spTargetUid || !spState) return;
+    const monday = spCurrentWeekMonday();
+    const docId = spDocId(spTargetUid, monday);
+    try{
+      await db.collection("studyplans").doc(docId).set({
+        studentUid: spTargetUid,
+        weekKey: isoKey(monday),
+        ...spState
+      });
+    }catch(e){ console.error("주간계획 저장 실패", e); }
+  }
+
+  function spRender(){
+    try{ spRenderInner(); }
+    catch(e){
+      console.error("학습계획서 렌더링 오류", e);
+    }
+  }
+
+  function spRenderInner(){
+    if(!spState) return;
+    const monday = spCurrentWeekMonday();
+    const sunday = new Date(monday); sunday.setDate(sunday.getDate()+6);
+    document.getElementById("weekRangeLabel").textContent = `${fmtDate(monday)} ~ ${fmtDate(sunday)}${spWeekOffset===0 ? " (이번 주)" : ""}`;
+    document.getElementById("nextWeekBtn").disabled = spWeekOffset >= 0;
+    document.querySelectorAll(".sp-dot").forEach(dot=>{
+      dot.classList.toggle("on", Number(dot.dataset.w) === spSeasonWeek);
+    });
+
+    const now = new Date();
+    const planDeadline = planDeadlineFor(monday);
+    const planLocked = !spState.planOverride && (spState.planSubmitted || spState.reflectSubmitted || now >= planDeadline);
+    const canEditPlan = !planLocked && !spViewerIsTeacher;
+
+    const goalsBox = document.getElementById("goalsBox");
+    goalsBox.innerHTML = "";
+    spState.goals.forEach((g, i)=>{
+      const row = document.createElement("div");
+      row.className = "sp-goal-row";
+      row.innerHTML = `<span>${i+1}</span><input data-i="${i}" value="${spEscapeHtml(g)}" placeholder="예: 수학 미적분 부등식 문제 20개" ${canEditPlan?"":"disabled"}/>`;
+      goalsBox.appendChild(row);
+    });
+    goalsBox.querySelectorAll("input").forEach(inp=>{
+      inp.addEventListener("input", (e)=>{
+        spState.goals[Number(e.target.dataset.i)] = e.target.value;
+        spSaveWeek();
+      });
+    });
+
+    const daysBox = document.getElementById("daysBox");
+    daysBox.innerHTML = "";
+    spState.days.forEach((day, idx)=>{
+      const dDate = new Date(monday); dDate.setDate(dDate.getDate()+idx);
+      const open = openFor(monday, idx);
+      const deadline = deadlineFor(monday, idx);
+      const notYetOpen = now < open;
+      const pastDeadline = now > deadline;
+      const isOpenWindow = !notYetOpen && !pastDeadline;
+      const canCheck = isOpenWindow && !spState.reflectSubmitted && !spViewerIsTeacher;
+      const el = document.createElement("div");
+      el.className = "sp-day" + (spState.reflectSubmitted ? " locked" : "");
+      let badge;
+      if(spState.reflectSubmitted){
+        badge = day.checked ? `<span class="sp-badge done">완료</span>` : `<span class="sp-badge miss">미실행</span>`;
+      } else if(notYetOpen){
+        badge = `<span class="sp-badge miss">결과체크 아직 안 열림</span>`;
+      } else if(pastDeadline){
+        badge = day.checked ? `<span class="sp-badge done">완료</span>` : `<span class="sp-badge miss">결과체크 마감 · 미실행</span>`;
+      } else {
+        badge = `<span class="sp-badge open">결과체크 가능</span>`;
+      }
+      const timeDoneHtml = day.checked
+        ? `<div class="sp-time-done">완료 시각 <input type="time" data-idx="${idx}" value="${spEscapeHtml(day.doneAt)}" ${(!canCheck)?"disabled":""}/></div>`
+        : "";
+      const catsHtml = CATS.map(cat=>{
+        const cd = (day.cats && day.cats[cat.key]) || (cat.periods ? { on:false, periods:{p7:false,p8:false,night:false} } : { on:false, detail:"" });
+        if(cat.periods){
+          const avail = periodsForDay(idx);
+          if(avail.length === 0) return "";
+          const chips = avail.map(p=>{
+            const on = cd.periods[p.key];
+            return `<label class="sp-period-chip ${on?'on':''}">
+                      <input type="checkbox" data-idx="${idx}" data-cat="${cat.key}" data-period="${p.key}" ${on?"checked":""} ${canEditPlan?"":"disabled"}/>
+                      ${p.label}
+                    </label>`;
+          }).join("");
+          return `<div class="sp-cat-row">
+                    <label class="sp-cat-toggle">
+                      <input type="checkbox" class="sp-cat-check" data-idx="${idx}" data-cat="${cat.key}" ${cd.on?"checked":""} ${canEditPlan?"":"disabled"}/>
+                      <span>${cat.label}</span>
+                    </label>
+                    ${cd.on ? `<div class="sp-period-chips">${chips}</div>` : ""}
+                  </div>`;
+        }
+        return `<div class="sp-cat-row">
+                  <label class="sp-cat-toggle">
+                    <input type="checkbox" class="sp-cat-check" data-idx="${idx}" data-cat="${cat.key}" ${cd.on?"checked":""} ${canEditPlan?"":"disabled"}/>
+                    <span>${cat.label}</span>
+                  </label>
+                  ${cd.on ? `<input class="sp-cat-detail" data-idx="${idx}" data-cat="${cat.key}" value="${spEscapeHtml(cd.detail)}" placeholder="내용·시간 (예: 수학 2시간)" ${canEditPlan?"":"disabled"}/>` : ""}
+                </div>`;
+      }).join("");
+
+      el.innerHTML = `
+        <div class="sp-day-head">
+          <div><span class="sp-day-name">${DAY_NAMES[idx]}</span><span class="sp-day-date">${fmtDate(dDate)}</span></div>
+          ${badge}
+        </div>
+        <div class="sp-cats">${catsHtml}</div>
+        <div class="sp-check-row">
+          <span class="deadline">계획대로 공부했음</span>
+          <div class="sp-check-right">
+            ${timeDoneHtml}
+            <div class="sp-checkbox ${day.checked?"checked":""} ${canCheck?"":"disabled"}" data-idx="${idx}">${day.checked?"✓":""}</div>
+          </div>
+        </div>
+        <div class="sp-check-row" style="margin-top:2px; justify-content:flex-start;">
+          <span class="deadline">${pad(open.getMonth()+1)}/${pad(open.getDate())} 15:40 ~ ${pad(deadline.getMonth()+1)}/${pad(deadline.getDate())} 08:40 체크 가능</span>
+        </div>`;
+      daysBox.appendChild(el);
+    });
+    daysBox.querySelectorAll(".sp-cat-check").forEach(cb=>{
+      cb.addEventListener("change", (e)=>{
+        const idx = Number(e.target.dataset.idx), catKey = e.target.dataset.cat;
+        spState.days[idx].cats[catKey].on = e.target.checked;
+        spSaveWeek(); spRender();
+      });
+    });
+    daysBox.querySelectorAll(".sp-cat-detail").forEach(inp=>{
+      inp.addEventListener("input", (e)=>{
+        const idx = Number(e.target.dataset.idx), catKey = e.target.dataset.cat;
+        spState.days[idx].cats[catKey].detail = e.target.value;
+        spSaveWeek();
+      });
+    });
+    daysBox.querySelectorAll(".sp-period-chip input").forEach(cb=>{
+      cb.addEventListener("change", (e)=>{
+        const idx = Number(e.target.dataset.idx), catKey = e.target.dataset.cat, periodKey = e.target.dataset.period;
+        spState.days[idx].cats[catKey].periods[periodKey] = e.target.checked;
+        spSaveWeek(); spRender();
+      });
+    });
+    daysBox.querySelectorAll(".sp-time-done input").forEach(inp=>{
+      inp.addEventListener("input", (e)=>{
+        const idx = Number(e.target.dataset.idx);
+        spState.days[idx].doneAt = e.target.value;
+        spSaveWeek();
+      });
+    });
+    daysBox.querySelectorAll(".sp-checkbox").forEach(cb=>{
+      cb.addEventListener("click", ()=>{
+        if(cb.classList.contains("disabled")) return;
+        const idx = Number(cb.dataset.idx);
+        const day = spState.days[idx];
+        day.checked = !day.checked;
+        day.doneAt = day.checked ? nowTimeStr() : "";
+        spUpdateScores(); spSaveWeek(); spRender();
+      });
+    });
+
+    const planNote = document.getElementById("planStatusNote");
+    const planBtn = document.getElementById("submitPlanBtn");
+    if(spViewerIsTeacher){
+      planBtn.style.display = "none";
+      planNote.className = "sp-plan-note";
+      planNote.textContent = spState.planSubmitted ? "계획 제출 완료." : "아직 계획을 제출하지 않았어요.";
+    } else if(spState.planOverride){
+      planBtn.style.display = "block";
+      planNote.className = "sp-plan-note warn";
+      planNote.textContent = "담임 예외로 잠금이 해제된 상태입니다 — 지금 제출하면 계획 점수 2점을 받습니다.";
+      planBtn.disabled = spState.goals.some(g => !g.trim());
+      planBtn.textContent = "주간 계획 제출 (목표 + 요일별 계획 확정)";
+    } else if(spState.planSubmitted){
+      planBtn.style.display = "block";
+      planNote.className = "sp-plan-note done";
+      planNote.textContent = "제출 완료 — 계획 점수 2점 확정. 이번 주 계획은 더 이상 수정할 수 없습니다.";
+      planBtn.disabled = true; planBtn.textContent = "제출 완료";
+    } else if(now >= planDeadline){
+      planBtn.style.display = "block";
+      planNote.className = "sp-plan-note locked";
+      planNote.textContent = "제출 마감(월요일 24:00 경과) — 이번 주 계획 점수는 0점입니다.";
+      planBtn.disabled = true; planBtn.textContent = "제출 마감";
+    } else {
+      planBtn.style.display = "block";
+      planNote.className = "sp-plan-note warn";
+      planNote.textContent = "월요일 24:00까지 제출해야 계획 점수 2점을 받습니다.";
+      planBtn.disabled = false;
+      planBtn.textContent = "주간 계획 제출 (목표 + 요일별 계획 확정)";
+    }
+    planBtn.onclick = ()=>{
+      if(spState.goals.some(g => !g.trim())){ alert("목표 3개를 모두 채워야 제출할 수 있어요."); return; }
+      spState.planSubmitted = true; spState.planOverride = false;
+      spUpdateScores(); spSaveWeek(); spRender();
+    };
+
+    const overrideBox = document.getElementById("planOverrideBox");
+    if(spViewerIsTeacher){
+      overrideBox.style.display = "flex";
+      const overrideCheck = document.getElementById("planOverrideCheck");
+      overrideCheck.checked = spState.planOverride;
+      overrideCheck.disabled = spState.planSubmitted;
+      overrideCheck.onchange = (e)=>{
+        spState.planOverride = e.target.checked;
+        spSaveWeek(); spRender();
+      };
+    } else {
+      overrideBox.style.display = "none";
+    }
+
+    const reflectText = document.getElementById("reflectText");
+    reflectText.value = spState.reflectText;
+    reflectText.disabled = spState.reflectSubmitted || spViewerIsTeacher;
+    reflectText.oninput = (e)=>{ spState.reflectText = e.target.value; spSaveWeek(); };
+
+    const submitBtn = document.getElementById("submitReflectBtn");
+    const lockedNote = document.getElementById("reflectLockedNote");
+    if(spViewerIsTeacher){
+      submitBtn.style.display = "none";
+      lockedNote.style.display = spState.reflectSubmitted ? "block" : "none";
+      lockedNote.textContent = "회고 제출 완료.";
+    } else if(spState.reflectSubmitted){
+      submitBtn.style.display = "block";
+      submitBtn.disabled = true; submitBtn.textContent = "제출 완료";
+      lockedNote.style.display = "block";
+      lockedNote.textContent = "제출 완료 — 이번 주 기록은 더 이상 수정할 수 없습니다.";
+    } else {
+      submitBtn.style.display = "block";
+      submitBtn.disabled = false; submitBtn.textContent = "회고 제출하고 이번 주 포인트 확정";
+      lockedNote.style.display = "none";
+    }
+    submitBtn.onclick = ()=>{
+      if(!spState.reflectText.trim()){ alert("회고를 작성해야 제출할 수 있어요."); return; }
+      spState.reflectSubmitted = true;
+      spUpdateScores(); spSaveWeek(); spRender();
+    };
+
+    const teacherArea = document.getElementById("teacherFeedback");
+    const teacherReadout = document.getElementById("teacherReadout");
+    if(spViewerIsTeacher){
+      teacherArea.style.display = "block";
+      teacherReadout.style.display = "none";
+      teacherArea.value = spState.teacherFeedback;
+      teacherArea.oninput = (e)=>{ spState.teacherFeedback = e.target.value; spSaveWeek(); };
+    } else {
+      teacherArea.style.display = "none";
+      teacherReadout.style.display = "block";
+      teacherReadout.textContent = spState.teacherFeedback ? spState.teacherFeedback : "아직 담임 피드백이 없습니다.";
+    }
+
+    spUpdateScores();
+  }
+
+  function spUpdateScores(){
+    const goalScore = spState.planSubmitted ? 2 : 0;
+    const checkScore = spState.days.filter(d=>d.checked).length;
+    const reflectScore = spState.reflectSubmitted ? 2 : 0;
+    document.getElementById("scoreGoals").textContent = goalScore;
+    document.getElementById("scoreChecks").textContent = checkScore;
+    const reflectCell = document.getElementById("scoreReflect");
+    reflectCell.textContent = spState.reflectSubmitted ? reflectScore : "미확정";
+    const totalCell = document.getElementById("scoreTotal");
+    totalCell.textContent = spState.reflectSubmitted ? (goalScore + checkScore + reflectScore) : "미확정";
+  }
+
+  function spEscapeHtml(s){
+    return (s||"").replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;");
+  }
+
+  document.getElementById("prevWeekBtn") && document.getElementById("prevWeekBtn").addEventListener("click", ()=>{ spWeekOffset -= 1; spLoadWeek(); });
+  document.getElementById("nextWeekBtn") && document.getElementById("nextWeekBtn").addEventListener("click", ()=>{ if(spWeekOffset<0){ spWeekOffset += 1; spLoadWeek(); } });
+  document.querySelectorAll(".sp-dot").forEach(dot=>{
+    dot.addEventListener("click", async ()=>{
+      if(spViewerIsTeacher) return; // 담임은 학생의 시즌주차를 바꿀 수 없음
+      spSeasonWeek = Number(dot.dataset.w);
+      if(currentUser){
+        await db.collection("students").doc(currentUser.uid).set({studyPlanSeasonWeek: spSeasonWeek}, {merge:true});
+      }
+      spRender();
+    });
+  });
+
+  // 이 탭이 열릴 때 호출 (main.js의 setupAbsenceTab과 같은 타이밍에 실행)
+  window.setupStudyplanTab = async function(){
+    if(!currentProfile) return;
+    spViewerIsTeacher = currentProfile.role === "teacher";
+    document.getElementById("teacherBox").style.display = "block";
+
+    if(spViewerIsTeacher){
+      document.getElementById("spTeacherSelectRow").style.display = "flex";
+      document.getElementById("spBody").style.display = "none";
+      const sel = document.getElementById("spStudentSelect");
+      if(!sel.dataset.loaded){
+        sel.dataset.loaded = "1";
+        const snap = await db.collection("students").where("role", "==", "student").get();
+        const list = snap.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b)=>a.num-b.num);
+        sel.innerHTML = `<option value="">학생을 선택하세요</option>` +
+          list.map(s => `<option value="${s.id}">${s.num}번 ${s.name}</option>`).join("");
+        sel.addEventListener("change", async ()=>{
+          if(!sel.value){ document.getElementById("spBody").style.display = "none"; return; }
+          spTargetUid = sel.value;
+          spWeekOffset = 0;
+          document.getElementById("spBody").style.display = "block";
+          await spLoadWeek();
+        });
+      }
+    } else {
+      spTargetUid = currentUser.uid;
+      spSeasonWeek = currentProfile.studyPlanSeasonWeek || 1;
+      spWeekOffset = 0;
+      document.getElementById("spBody").style.display = "block";
+      await spLoadWeek();
+    }
+  };
+})();
 </script>
 </body>
 </html>
