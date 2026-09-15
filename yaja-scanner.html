@@ -40,9 +40,11 @@
   .block-status{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px 16px; margin-bottom:14px; font-size:13.5px; }
   .block-status b{ color:var(--forest-deep); }
 
-  #qrReaderWrap{ background:#000; border-radius:12px; overflow:hidden; position:relative; aspect-ratio:1/1; }
-  #qrReader{ width:100%; height:100%; }
-  #qrReader video{ object-fit:cover; }
+  #qrReaderWrap{ background:#000; border-radius:12px; overflow:hidden; position:relative; }
+  #qrReader{ width:100%; }
+  .cam-row{ display:flex; align-items:center; gap:8px; margin-bottom:10px; font-size:13px; }
+  .cam-row select{ flex:1; padding:6px 10px; border:1px solid var(--line); border-radius:6px; font-family:inherit; }
+  .cam-row button{ background:none; border:1px solid var(--line); border-radius:6px; padding:6px 10px; font-size:12.5px; cursor:pointer; white-space:nowrap; }
 
   #feedback{
     position:fixed; inset:0; z-index:50; display:none;
@@ -94,6 +96,10 @@
 
     <div class="block-status" id="blockStatus">확인 중...</div>
 
+    <div class="cam-row">
+      <select id="cameraSelect"></select>
+      <button id="switchCamBtn">카메라 전환</button>
+    </div>
     <div id="qrReaderWrap"><div id="qrReader"></div></div>
 
     <div class="log-list" id="logList"></div>
@@ -168,7 +174,7 @@ auth.onAuthStateChanged(async (user) => {
   await loadRoster();
   updateBlockStatus();
   setInterval(updateBlockStatus, 15000);
-  startScanner();
+  await startScanner();
 });
 
 async function loadRoster(){
@@ -233,17 +239,72 @@ function updateBlockStatus(){
 /* ---------- 스캐너 ---------- */
 let html5Qr = null;
 let scanLocked = false;
+let cameraList = [];
+let currentCamIndex = 0;
 
-function startScanner(){
-  html5Qr = new Html5Qrcode("qrReader");
-  html5Qr.start(
-    { facingMode: "environment" },
-    { fps: 10, qrbox: { width: 240, height: 240 } },
-    onScanSuccess,
-    () => {} // 인식 실패 프레임은 무시
-  ).catch(err => {
-    document.getElementById("blockStatus").innerHTML = "카메라를 열 수 없어요: " + err;
+function squareQrbox(viewfinderWidth, viewfinderHeight){
+  const min = Math.min(viewfinderWidth, viewfinderHeight);
+  const size = Math.floor(min * 0.7);
+  return { width: size, height: size };
+}
+
+async function initCameraList(){
+  try{
+    cameraList = await Html5Qrcode.getCameras();
+  }catch(e){
+    document.getElementById("blockStatus").innerHTML = "카메라 목록을 가져오지 못했어요. 카메라 권한을 허용했는지 확인해주세요.";
+    return;
+  }
+  const sel = document.getElementById("cameraSelect");
+  sel.innerHTML = cameraList.map((c,i) => `<option value="${i}">${c.label || "카메라 " + (i+1)}</option>`).join("");
+
+  // 기본값: 라벨에 front/전면이 들어간 카메라를 우선 선택 (요청하신 전면카메라 우선)
+  const frontIdx = cameraList.findIndex(c => /front|전면|user/i.test(c.label));
+  currentCamIndex = frontIdx >= 0 ? frontIdx : 0;
+  sel.value = currentCamIndex;
+
+  sel.addEventListener("change", () => {
+    currentCamIndex = Number(sel.value);
+    restartScanner();
   });
+  document.getElementById("switchCamBtn").addEventListener("click", () => {
+    currentCamIndex = (currentCamIndex + 1) % cameraList.length;
+    sel.value = currentCamIndex;
+    restartScanner();
+  });
+}
+
+async function startScanner(){
+  await initCameraList();
+  if(cameraList.length === 0){
+    document.getElementById("blockStatus").innerHTML = "사용 가능한 카메라를 찾지 못했어요.";
+    return;
+  }
+  html5Qr = new Html5Qrcode("qrReader");
+  await runCamera();
+}
+
+async function runCamera(){
+  const camId = cameraList[currentCamIndex].id;
+  try{
+    await html5Qr.start(
+      camId,
+      { fps: 10, qrbox: squareQrbox },
+      onScanSuccess,
+      () => {} // 인식 실패 프레임은 무시
+    );
+  }catch(err){
+    document.getElementById("blockStatus").innerHTML = "카메라를 열 수 없어요: " + err;
+  }
+}
+
+async function restartScanner(){
+  if(!html5Qr) return;
+  try{
+    await html5Qr.stop();
+    html5Qr.clear();
+  }catch(e){ /* 이미 정지 상태일 수 있음 */ }
+  await runCamera();
 }
 
 async function onScanSuccess(decodedText){
