@@ -36,9 +36,9 @@
     width:992px; height:1403px; position:relative; transform-origin:top left;
     background-repeat:no-repeat; background-size:992px 1403px;
   }
+  .ov-check{ position:absolute; width:24px; height:24px; display:flex; align-items:center; justify-content:center; font-size:19px; font-weight:700; color:#c0392b; line-height:1; }
   .ov{ position:absolute; font-family:'Noto Sans KR', sans-serif; color:#111; white-space:nowrap; }
   .ov-text{ font-size:22px; }
-  .ov-check{ font-size:24px; font-weight:700; color:#c0392b; line-height:1; }
   .ov-circle{ position:absolute; border:3px solid #c0392b; border-radius:50%; }
   .ov-sig{ position:absolute; object-fit:contain; }
 </style>
@@ -63,16 +63,16 @@
         <div class="ov ov-text" id="p1EndMonth" style="left:645px; top:402px;"></div>
         <div class="ov ov-text" id="p1EndDay" style="left:735px; top:402px;"></div>
         <div class="ov ov-text" id="p1TotalDays" style="left:825px; top:402px;"></div>
-        <div class="ov ov-check" id="p1Cb_진료확인서" style="left:277px; top:457px; display:none;">✓</div>
-        <div class="ov ov-check" id="p1Cb_진료비영수증" style="left:435px; top:457px; display:none;">✓</div>
-        <div class="ov ov-check" id="p1Cb_처방전" style="left:613px; top:457px; display:none;">✓</div>
-        <div class="ov ov-check" id="p1Cb_의사소견서" style="left:739px; top:457px; display:none;">✓</div>
-        <div class="ov ov-check" id="p1Cb_진단서" style="left:277px; top:502px; display:none;">✓</div>
-        <div class="ov ov-check" id="p1Cb_학부모의견서" style="left:435px; top:502px; display:none;">✓</div>
-        <div class="ov ov-check" id="p1Cb_담임교사확인서" style="left:613px; top:502px; display:none;">✓</div>
-        <div class="ov ov-check" id="p1Cb_내부결재문서" style="left:277px; top:547px; display:none;">✓</div>
-        <div class="ov ov-check" id="p1Cb_사망확인서" style="left:435px; top:547px; display:none;">✓</div>
-        <div class="ov ov-check" id="p1Cb_기타" style="left:613px; top:547px; display:none;">✓</div>
+        <div class="ov ov-check" id="p1Cb_진료확인서" style="left:265px; top:456px; display:none;">✓</div>
+        <div class="ov ov-check" id="p1Cb_진료비영수증" style="left:423px; top:456px; display:none;">✓</div>
+        <div class="ov ov-check" id="p1Cb_처방전" style="left:600px; top:456px; display:none;">✓</div>
+        <div class="ov ov-check" id="p1Cb_의사소견서" style="left:726px; top:456px; display:none;">✓</div>
+        <div class="ov ov-check" id="p1Cb_진단서" style="left:265px; top:496px; display:none;">✓</div>
+        <div class="ov ov-check" id="p1Cb_학부모의견서" style="left:423px; top:496px; display:none;">✓</div>
+        <div class="ov ov-check" id="p1Cb_담임교사확인서" style="left:601px; top:496px; display:none;">✓</div>
+        <div class="ov ov-check" id="p1Cb_내부결재문서" style="left:265px; top:536px; display:none;">✓</div>
+        <div class="ov ov-check" id="p1Cb_사망확인서" style="left:423px; top:536px; display:none;">✓</div>
+        <div class="ov ov-check" id="p1Cb_기타" style="left:600px; top:536px; display:none;">✓</div>
         <div class="ov ov-text" id="p1EtcText" style="left:700px; top:552px; font-size:18px;"></div>
         <div class="ov ov-text" id="p1Reason" style="left:260px; top:596px; font-size:19px; white-space:normal; width:680px;"></div>
         <div class="ov ov-text" id="p1SubmitMonth" style="left:487px; top:660px;"></div>
@@ -349,7 +349,7 @@ async function handleParentSubmit(){
     if(needsOpinion) document.getElementById("page2").style.transform = "scale(1)";
     await new Promise(r => setTimeout(r, 150)); // 이미지 로드 대기
 
-    const canvas1 = await html2canvas(document.getElementById("page1"), {backgroundColor:"#ffffff", scale:1, useCORS:true});
+    const canvas1 = await html2canvas(document.getElementById("page1"), {backgroundColor:"#ffffff", scale:2, useCORS:true});
     const imageUrls = [];
 
     const ref1 = storage.ref().child(`absences/${absenceId}_page1.png`);
@@ -357,7 +357,7 @@ async function handleParentSubmit(){
     imageUrls.push(await ref1.getDownloadURL());
 
     if(needsOpinion){
-      const canvas2 = await html2canvas(document.getElementById("page2"), {backgroundColor:"#ffffff", scale:1, useCORS:true});
+      const canvas2 = await html2canvas(document.getElementById("page2"), {backgroundColor:"#ffffff", scale:2, useCORS:true});
       const ref2 = storage.ref().child(`absences/${absenceId}_page2.png`);
       await ref2.putString(canvas2.toDataURL("image/png").split(",")[1], "base64", {contentType:"image/png"});
       imageUrls.push(await ref2.getDownloadURL());
