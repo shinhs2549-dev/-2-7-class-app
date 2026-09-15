@@ -4,7 +4,8 @@
 const YAJA_ALL_BLOCKS = [
   { key: "p7", label: "7교시", start: "15:40", end: "16:30" },
   { key: "p8", label: "8교시", start: "16:40", end: "17:30" },
-  { key: "night", label: "야간자율학습", start: "18:30", end: "21:30" },
+  { key: "night1", label: "야간1블록", start: "18:30", end: "20:00" },
+  { key: "night2", label: "야간2블록", start: "20:00", end: "21:30" },
 ];
 
 function yajaDefaultBlocksForDay(dow) {

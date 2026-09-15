@@ -138,6 +138,7 @@ let gateUser = null, gateProfile = null;
 let rosterMap = {}; // num(1~27) -> {uid, name}
 
 document.getElementById("gateLoginBtn").addEventListener("click", async () => {
+  try{ if(!sharedAudioCtx) sharedAudioCtx = new (window.AudioContext || window.webkitAudioContext)(); }catch(e){}
   const num = document.getElementById("gateNum").value.trim();
   const pw = document.getElementById("gatePw").value;
   const errEl = document.getElementById("gateError");
@@ -254,16 +255,26 @@ async function initCameraList(){
   const frontIdx = cameraList.findIndex(c => /front|전면|user/i.test(c.label));
   currentCamIndex = frontIdx >= 0 ? frontIdx : 0;
   sel.value = currentCamIndex;
+  applyMirror();
 
   sel.addEventListener("change", () => {
     currentCamIndex = Number(sel.value);
+    applyMirror();
     restartScanner();
   });
   document.getElementById("switchCamBtn").addEventListener("click", () => {
     currentCamIndex = (currentCamIndex + 1) % cameraList.length;
     sel.value = currentCamIndex;
+    applyMirror();
     restartScanner();
   });
+}
+
+// 전면카메라는 화면에 보이는 방향이 실제와 반대라 헷갈리므로, 미리보기만 좌우 반전
+// (QR 인식 자체는 원본 프레임을 그대로 쓰기 때문에 인식률에는 영향 없음)
+function applyMirror(){
+  const isFront = /front|전면|user/i.test(cameraList[currentCamIndex]?.label || "");
+  document.getElementById("qrReaderWrap").style.transform = isFront ? "scaleX(-1)" : "none";
 }
 
 async function startScanner(){
@@ -312,12 +323,43 @@ async function sign(no, secret){
   return [...new Uint8Array(buf)].map(b=>b.toString(16).padStart(2,"0")).join("").slice(0,6);
 }
 
+let sharedAudioCtx = null;
+function playTone(type){
+  try{
+    if(!sharedAudioCtx) sharedAudioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const ctx = sharedAudioCtx;
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain); gain.connect(ctx.destination);
+    const now = ctx.currentTime;
+    if(type === "good"){
+      // 띠링~ (두 음이 올라가는 밝은 소리)
+      osc.type = "sine";
+      osc.frequency.setValueAtTime(880, now);
+      osc.frequency.setValueAtTime(1318.5, now + 0.09);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.25, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.28);
+      osc.start(now); osc.stop(now + 0.3);
+    } else {
+      // 낮은 경고음
+      osc.type = "square";
+      osc.frequency.setValueAtTime(220, now);
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.exponentialRampToValueAtTime(0.18, now + 0.01);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.22);
+      osc.start(now); osc.stop(now + 0.22);
+    }
+  }catch(e){ /* 오디오 미지원 환경 무시 */ }
+}
+
 function showFeedback(type, icon, name, desc){
   const fb = document.getElementById("feedback");
   fb.className = "show " + type;
   document.getElementById("fbIcon").textContent = icon;
   document.getElementById("fbName").textContent = name;
   document.getElementById("fbDesc").textContent = desc;
+  playTone(type === "good" ? "good" : "bad");
   if(navigator.vibrate) navigator.vibrate(type === "good" ? 80 : [80,60,80]);
   setTimeout(() => { fb.className = ""; }, 1400);
 }
