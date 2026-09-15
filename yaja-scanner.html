@@ -115,6 +115,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+<script src="yaja-common.js"></script>
 <script>
 const FIREBASE_CONFIG = {
   apiKey: "AIzaSyBars-AalN-eZKCjGIOgOqkQ9oCHyDSLqU",
@@ -172,6 +173,7 @@ auth.onAuthStateChanged(async (user) => {
   document.getElementById("appRoot").style.display = "block";
 
   await loadRoster();
+  await loadTodayOverride();
   updateBlockStatus();
   setInterval(updateBlockStatus, 15000);
   await startScanner();
@@ -186,25 +188,13 @@ async function loadRoster(){
   });
 }
 
-/* ---------- 블록 시간표 ---------- */
-// 요일: 0=일 1=월 ... 6=토
-function blocksForDay(dow){
-  const common = [
-    { key:"p8", label:"8교시", start:"16:40", end:"17:30" },
-    { key:"night", label:"야간자율학습", start:"18:30", end:"21:30" },
-  ];
-  if(dow === 1 || dow === 3){ // 월, 수
-    return [{ key:"p7", label:"7교시", start:"15:40", end:"16:30" }, ...common];
-  }
-  if(dow >= 2 && dow <= 5){ // 화목금
-    return common;
-  }
-  return []; // 주말 미운영 (특별 운영일은 추후 달력 기능에서 예외 처리 예정)
-}
-function toMinutes(hhmm){ const [h,m] = hhmm.split(":").map(Number); return h*60+m; }
-function todayKey(){
-  const n = new Date();
-  return `${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,"0")}-${String(n.getDate()).padStart(2,"0")}`;
+/* ---------- 블록 시간표 (yaja-common.js) ---------- */
+let todayOverride = null; // null=기본값, true=강제 운영, false=강제 미운영
+async function loadTodayOverride(){
+  try{
+    const doc = await db.collection("yajaCalendarOverrides").doc(yajaDateKey(new Date())).get();
+    todayOverride = doc.exists ? doc.data().operating : null;
+  }catch(e){ todayOverride = null; }
 }
 
 const CHECKIN_BEFORE = 10, CHECKIN_AFTER = 15; // 시작 -10분 ~ +15분
@@ -213,9 +203,9 @@ const CHECKOUT_BEFORE = 10, CHECKOUT_AFTER = 15; // 종료 -10분 ~ +15분
 function currentPhase(){
   const now = new Date();
   const nowMin = now.getHours()*60 + now.getMinutes();
-  const blocks = blocksForDay(now.getDay());
+  const blocks = yajaEffectiveBlocks(now.getDay(), todayOverride);
   for(const b of blocks){
-    const startMin = toMinutes(b.start), endMin = toMinutes(b.end);
+    const startMin = yajaToMinutes(b.start), endMin = yajaToMinutes(b.end);
     if(nowMin >= startMin - CHECKIN_BEFORE && nowMin <= startMin + CHECKIN_AFTER){
       return { block: b, phase: "checkin" };
     }
@@ -230,7 +220,9 @@ function updateBlockStatus(){
   const el = document.getElementById("blockStatus");
   const p = currentPhase();
   if(!p){
-    el.innerHTML = `오늘은 지금 인정되는 출석 시간대가 아니에요.`;
+    el.innerHTML = todayOverride === false
+      ? "오늘은 담임이 '미운영일'로 지정했어요."
+      : `오늘은 지금 인정되는 출석 시간대가 아니에요.`;
     return;
   }
   el.innerHTML = `<b>${p.block.label}</b> ${p.phase === "checkin" ? "입실" : "퇴실"} 인정 시간대예요.`;
@@ -369,7 +361,7 @@ async function handleCode(text){
     return;
   }
 
-  const date = todayKey();
+  const date = yajaDateKey(new Date());
   const docId = `${date}_${num}_${p.block.key}`;
   const room = document.getElementById("roomSelect").value;
   const ref = db.collection("yajaAttendance").doc(docId);
