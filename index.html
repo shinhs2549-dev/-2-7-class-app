@@ -29,8 +29,9 @@
   .brand button{ background:none; border:1px solid var(--line); border-radius:6px; padding:6px 12px; font-size:13px; color:var(--ink); cursor:pointer; font-family:'Noto Sans KR', sans-serif; }
   .brand button:hover{ border-color:var(--ink); }
 
-  .main-tabs{ display:flex; gap:8px; margin-bottom:20px; }
-  .main-tabs button{ flex:1; padding:11px 0; background:var(--card); border:1px solid var(--line); border-radius:8px; font-family:'Noto Serif KR', serif; font-size:15px; font-weight:500; color:#8a8270; cursor:pointer; }
+  .main-tabs{ display:flex; gap:6px; margin-bottom:20px; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
+  .main-tabs::-webkit-scrollbar{ display:none; }
+  .main-tabs button{ flex:1 0 auto; padding:11px 14px; white-space:nowrap; background:var(--card); border:1px solid var(--line); border-radius:8px; font-family:'Noto Serif KR', serif; font-size:15px; font-weight:500; color:#8a8270; cursor:pointer; }
   .main-tabs button.active{ color:#fff; background:var(--forest); border-color:var(--forest); }
 
   .screen{ display:none; }
@@ -167,7 +168,7 @@
 <div class="wrap">
 
   <div class="brand">
-    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1001-2</span></h1>
+    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1001-3</span></h1>
     <div id="brandRight"></div>
   </div>
 
@@ -233,6 +234,7 @@
       <button id="tabBtnAbsence" onclick="switchMainTab('absence')" style="display:none;">결석계</button>
       <button id="tabBtnStudyplan" onclick="switchMainTab('studyplan')">학습계획서</button>
       <button id="tabBtnYaja" onclick="switchMainTab('yaja')" style="display:none;">야자</button>
+      <button id="tabBtnCounsel" onclick="switchMainTab('counsel')" style="display:none;">상담</button>
       <button id="tabBtnYajaAdmin" onclick="switchMainTab('yajaadmin')" style="display:none;">야자관리</button>
     </div>
 
@@ -415,6 +417,69 @@
       </div>
 
       <div id="myExcList"></div>
+    </div>
+
+    <div class="tab-panel" id="panel-counsel">
+      <!-- 학생용 -->
+      <div id="counselStudentView" style="display:none;">
+        <div class="group-block">
+          <h3>담임 상담 신청</h3>
+          <p class="hint">시간을 골라 신청하면 선생님이 확인 후 확정해요. 확정·불가 결과는 알림으로 와요. (시작 3시간 전까지 신청 가능)</p>
+          <div class="field"><label>날짜</label><input type="date" id="csDate"></div>
+          <div class="field"><label>시간</label><div id="csSlots" style="display:flex; flex-wrap:wrap; gap:6px;"></div></div>
+          <div class="field">
+            <label>주제</label>
+            <select id="csTopic">
+              <option>진로</option><option>성적</option><option>교우관계</option><option>생활</option><option>기타</option>
+            </select>
+          </div>
+          <div class="field" style="margin-bottom:0;"><label>하고 싶은 말 (선택)</label><textarea id="csMessage" rows="2" placeholder="미리 알려주고 싶은 내용이 있으면 적어주세요"></textarea></div>
+          <button class="primary-btn" id="csSubmitBtn">상담 신청</button>
+          <p class="error-msg" id="csError"></p>
+        </div>
+        <div id="csMyList"></div>
+      </div>
+
+      <!-- 담임용 -->
+      <div id="counselTeacherView" style="display:none;">
+        <div class="group-block">
+          <h3>확인 대기</h3>
+          <div id="ctPending"></div>
+        </div>
+        <div class="group-block">
+          <h3>확정된 상담</h3>
+          <div id="ctConfirmed"></div>
+        </div>
+        <div class="group-block" id="ctRecordFormBox">
+          <h3 id="ctRecordFormTitle">상담 기록 쓰기</h3>
+          <p class="hint">기록은 담임만 볼 수 있어요. 신청 없이 한 상담도 여기서 바로 기록할 수 있어요.</p>
+          <input type="hidden" id="ctRecCounselId">
+          <input type="hidden" id="ctRecId">
+          <div class="field"><label>학생</label><select id="ctRecStudent"></select></div>
+          <div class="field"><label>날짜</label><input type="date" id="ctRecDate"></div>
+          <div class="field">
+            <label>분류</label>
+            <select id="ctRecCategory">
+              <option>진로</option><option>성적</option><option>교우관계</option><option>생활</option><option>기타</option>
+            </select>
+          </div>
+          <div class="field" style="margin-bottom:0;"><label>내용</label><textarea id="ctRecContent" rows="5" placeholder="상담 내용, 학생 반응, 후속 조치 등"></textarea></div>
+          <div style="display:flex; gap:8px;">
+            <button class="primary-btn" id="ctRecSaveBtn">기록 저장</button>
+            <button class="primary-btn" id="ctRecResetBtn" style="background:#B9B29B; width:auto; padding:13px 18px;">새로 쓰기</button>
+          </div>
+        </div>
+        <div class="group-block" style="margin-bottom:0;">
+          <h3>상담 기록</h3>
+          <div style="display:flex; gap:8px; margin-bottom:10px;">
+            <select id="ctRecFilterStudent" style="flex:1; padding:8px; border:1px solid var(--line); border-radius:6px; font-family:inherit;"></select>
+            <select id="ctRecFilterCategory" style="flex:1; padding:8px; border:1px solid var(--line); border-radius:6px; font-family:inherit;">
+              <option value="">전체 분류</option><option>진로</option><option>성적</option><option>교우관계</option><option>생활</option><option>기타</option>
+            </select>
+          </div>
+          <div id="ctRecordList"></div>
+        </div>
+      </div>
     </div>
 
     <div class="tab-panel" id="panel-yajaadmin">
@@ -641,6 +706,7 @@ auth.onAuthStateChanged(async (user) => {
     renderMyYajaBadge();
     setupMyQr();
     setupMyYajaTab();
+    setupCounselTab();
   } else {
     goToSelectScreen();
   }
@@ -660,6 +726,10 @@ function switchMainTab(tab){
   document.getElementById("tabBtnStudyplan").classList.toggle("active", tab === "studyplan");
   document.getElementById("tabBtnYajaAdmin").classList.toggle("active", tab === "yajaadmin");
   document.getElementById("tabBtnYaja").classList.toggle("active", tab === "yaja");
+  document.getElementById("tabBtnCounsel").classList.toggle("active", tab === "counsel");
+  const activeBtn = document.querySelector(".main-tabs button.active");
+  if(activeBtn && activeBtn.scrollIntoView) activeBtn.scrollIntoView({inline:"nearest", block:"nearest"});
+  document.getElementById("panel-counsel").classList.toggle("active", tab === "counsel");
   document.getElementById("panel-yaja").classList.toggle("active", tab === "yaja");
   document.getElementById("panel-timetable").classList.toggle("active", tab === "timetable");
   document.getElementById("panel-notice").classList.toggle("active", tab === "notice");
@@ -728,6 +798,7 @@ async function handleSaveSelection(){
   renderMyYajaBadge();
   setupMyQr();
   setupMyYajaTab();
+  setupCounselTab();
 }
 
 /* =========================================================
@@ -804,14 +875,15 @@ async function renderNoticeWriteBox(){
     const checkboxes = studentList.map(s =>
       `<label style="display:flex; align-items:center; gap:8px; padding:6px 2px; font-size:14px; width:100%; box-sizing:border-box;">
         <input type="checkbox" class="noticeTargetCb" value="${s.id}" style="flex:none; width:18px; height:18px; margin:0;">
-        <span style="flex:1;">${s.num}번 ${s.name}</span>
+        <span style="flex:1;">${s.num}번 ${s.name}${(s.fcmTokens||[]).length ? "" : ' <span title="알림 안 켬" style="color:#a49c88;">🔕</span>'}</span>
       </label>`
     ).join("");
+    const notifOn = studentList.filter(s => (s.fcmTokens||[]).length).length;
 
     box.innerHTML = `
       <div class="notice-write">
         <div class="field">
-          <label>받는 사람</label>
+          <label>받는 사람 <span style="font-weight:400; color:#8a8270;">· 알림 켠 학생 ${notifOn}/${studentList.length}명 (🔕 = 알림 안 켬)</span></label>
           <label style="display:flex; align-items:center; gap:8px; margin-bottom:8px; font-weight:500; width:100%; box-sizing:border-box;">
             <input type="checkbox" id="noticeTargetAll" onchange="toggleAllNoticeTargets(this.checked)" style="flex:none; width:18px; height:18px; margin:0;">
             <span style="flex:1;">전체 학생</span>
@@ -2188,6 +2260,349 @@ async function cancelMyExcuse(id){
     console.error(e);
     alert("취소에 실패했어요.");
   }
+}
+
+/* =========================================================
+   13. 상담 신청 (학생) / 상담 관리 (담임)
+   ========================================================= */
+const COUNSEL_SLOTS = [
+  { key:"p7",    label:"7교시",      start:"15:40", days:[1,3] },
+  { key:"p8",    label:"8교시",      start:"16:40", days:[1,2,3,4,5] },
+  { key:"n1830", label:"야간 18:30", start:"18:30", days:[1,2,3,4,5] },
+  { key:"n1930", label:"야간 19:30", start:"19:30", days:[1,2,3,4,5] },
+  { key:"n2030", label:"야간 20:30", start:"20:30", days:[1,2,3,4,5] },
+];
+const COUNSEL_DEADLINE_MIN = 180; // 시작 3시간 전까지 신청
+const COUNSEL_STATUS = {
+  pending:   { text:"확인 대기", color:"var(--ochre)" },
+  confirmed: { text:"확정",     color:"var(--forest-deep)" },
+  declined:  { text:"불가",     color:"var(--danger)" },
+  cancelled: { text:"취소함",   color:"#a49c88" },
+};
+const slotOrder = k => COUNSEL_SLOTS.findIndex(x => x.key === k);
+const fmtMD = d => `${Number(d.slice(5,7))}/${Number(d.slice(8,10))}`;
+const DOW_KO = ["일","월","화","수","목","금","토"];
+const dowOf = d => new Date(d + "T00:00:00").getDay();
+function counselStartDate(dateStr, slot){
+  const [h, m] = slot.start.split(":").map(Number);
+  const d = new Date(dateStr + "T00:00:00"); d.setHours(h, m, 0, 0); return d;
+}
+
+async function setupCounselTab(){
+  if(!currentProfile) return;
+  const role = currentProfile.role;
+  const btn = document.getElementById("tabBtnCounsel");
+  if(role === "student"){
+    btn.textContent = "상담"; btn.style.display = "";
+    document.getElementById("counselStudentView").style.display = "block";
+    await setupStudentCounsel();
+  } else if(role === "teacher"){
+    btn.textContent = "상담관리"; btn.style.display = "";
+    document.getElementById("counselTeacherView").style.display = "block";
+    await setupTeacherCounsel();
+  } else {
+    btn.style.display = "none";
+  }
+}
+
+/* ---------- 학생 ---------- */
+let csSelectedSlot = null;
+async function setupStudentCounsel(){
+  const dateEl = document.getElementById("csDate");
+  const todayStr = yajaDateKey(new Date());
+  dateEl.min = todayStr;
+  if(!dateEl.value){
+    // 기본값: 신청 가능한 가장 가까운 평일
+    const d = new Date();
+    while(d.getDay() === 0 || d.getDay() === 6) d.setDate(d.getDate()+1);
+    dateEl.value = yajaDateKey(d);
+  }
+  if(!dateEl.dataset.bound){
+    dateEl.dataset.bound = "1";
+    dateEl.addEventListener("change", renderStudentSlots);
+    document.getElementById("csSubmitBtn").addEventListener("click", submitCounsel);
+  }
+  await renderStudentSlots();
+  await renderMyCounsels();
+}
+
+async function renderStudentSlots(){
+  const box = document.getElementById("csSlots");
+  const dateStr = document.getElementById("csDate").value;
+  csSelectedSlot = null;
+  if(!dateStr){ box.innerHTML = ""; return; }
+  const dow = dowOf(dateStr);
+  const slots = COUNSEL_SLOTS.filter(x => x.days.includes(dow));
+  if(slots.length === 0){
+    box.innerHTML = `<span class="hint" style="margin:0;">주말에는 상담이 없어요.</span>`;
+    return;
+  }
+  box.innerHTML = `<span class="hint" style="margin:0;">확인 중...</span>`;
+  let taken = {};
+  try{
+    const t = await db.collection("counselSlots").doc(dateStr).get();
+    taken = t.exists ? t.data() : {};
+  }catch(e){ console.error(e); }
+  const now = new Date();
+  box.innerHTML = slots.map(x => {
+    const tooLate = (counselStartDate(dateStr, x) - now) / 60000 < COUNSEL_DEADLINE_MIN;
+    const isTaken = !!taken[x.key];
+    const disabled = tooLate || isTaken;
+    const note = isTaken ? "마감" : tooLate ? "신청 마감" : "";
+    return `<button type="button" class="cs-slot" data-key="${x.key}" ${disabled ? "disabled" : ""}
+      style="padding:9px 12px; border:1px solid var(--line); border-radius:8px; background:${disabled ? "#EFEBDF" : "#fff"};
+      color:${disabled ? "#b3ab95" : "var(--ink)"}; font-family:inherit; font-size:13.5px; cursor:${disabled ? "default" : "pointer"};">
+      ${x.label}${note ? ` <span style="font-size:11px;">(${note})</span>` : ""}</button>`;
+  }).join("");
+  box.querySelectorAll(".cs-slot:not([disabled])").forEach(b => {
+    b.addEventListener("click", () => {
+      box.querySelectorAll(".cs-slot").forEach(o => { if(!o.disabled){ o.style.background = "#fff"; o.style.color = "var(--ink)"; o.style.borderColor = "var(--line)"; } });
+      b.style.background = "var(--forest)"; b.style.color = "#fff"; b.style.borderColor = "var(--forest)";
+      csSelectedSlot = b.dataset.key;
+    });
+  });
+}
+
+let myCounselCache = [];
+async function submitCounsel(){
+  const err = document.getElementById("csError");
+  err.style.display = "none";
+  const show = m => { err.textContent = m; err.style.display = "block"; };
+  const dateStr = document.getElementById("csDate").value;
+  const slot = COUNSEL_SLOTS.find(x => x.key === csSelectedSlot);
+  const topic = document.getElementById("csTopic").value;
+  const message = document.getElementById("csMessage").value.trim();
+  if(!dateStr || !slot) return show("날짜와 시간을 골라주세요.");
+  if((counselStartDate(dateStr, slot) - new Date()) / 60000 < COUNSEL_DEADLINE_MIN) return show("시작 3시간 전까지만 신청할 수 있어요.");
+  if(myCounselCache.some(c => c.date === dateStr && c.slot === slot.key && (c.status === "pending" || c.status === "confirmed")))
+    return show("이미 같은 시간에 신청했어요.");
+
+  const btn = document.getElementById("csSubmitBtn");
+  btn.disabled = true; btn.textContent = "신청 중...";
+  try{
+    await db.collection("counsels").add({
+      studentUid: currentUser.uid, num: currentProfile.num, name: currentProfile.name,
+      date: dateStr, slot: slot.key, slotLabel: slot.label,
+      topic, message, status: "pending",
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    document.getElementById("csMessage").value = "";
+    await renderStudentSlots();
+    await renderMyCounsels();
+  }catch(e){
+    console.error("상담 신청 실패", e);
+    show("신청에 실패했어요. 잠시 후 다시 해주세요.");
+  }finally{
+    btn.disabled = false; btn.textContent = "상담 신청";
+  }
+}
+
+async function renderMyCounsels(){
+  const box = document.getElementById("csMyList");
+  try{
+    const snap = await db.collection("counsels").where("studentUid", "==", currentUser.uid).get();
+    myCounselCache = snap.docs.map(d => ({id:d.id, ...d.data()}));
+    const todayStr = yajaDateKey(new Date());
+    const list = myCounselCache.slice()
+      .sort((a,b) => a.date === b.date ? slotOrder(b.slot) - slotOrder(a.slot) : (a.date < b.date ? 1 : -1))
+      .slice(0, 15);
+    if(list.length === 0){ box.innerHTML = ""; return; }
+    box.innerHTML = `<div style="font-size:13px; font-weight:600; margin:6px 0 8px;">내 상담 신청</div>` + list.map(c => {
+      const st = COUNSEL_STATUS[c.status] || COUNSEL_STATUS.pending;
+      const canCancel = (c.status === "pending" || c.status === "confirmed") && c.date >= todayStr;
+      return `<div class="notice-card" style="border-left:4px solid ${st.color};">
+        <div style="display:flex; justify-content:space-between; gap:8px;">
+          <div class="notice-title" style="margin:0;">${fmtMD(c.date)}(${DOW_KO[dowOf(c.date)]}) ${yajaEsc(c.slotLabel)} · ${yajaEsc(c.topic)}</div>
+          <span style="font-size:12px; font-weight:700; color:${st.color}; white-space:nowrap;">${st.text}</span>
+        </div>
+        ${c.status === "declined" ? `<div class="notice-body" style="margin-top:4px; color:var(--danger);">선생님 사정으로 어려워요${c.declineReason ? " — " + yajaEsc(c.declineReason) : ""}. 다른 시간으로 다시 신청해주세요.</div>` : ""}
+        ${canCancel ? `<button class="link-btn" style="margin-top:6px;" onclick="cancelMyCounsel('${c.id}')">신청 취소</button>` : ""}
+      </div>`;
+    }).join("");
+  }catch(e){
+    console.error("내 상담 목록 실패", e);
+    box.innerHTML = "";
+  }
+}
+
+async function cancelMyCounsel(id){
+  if(!confirm("상담 신청을 취소할까요?")) return;
+  try{
+    await db.collection("counsels").doc(id).update({ status:"cancelled", cancelledAt: firebase.firestore.FieldValue.serverTimestamp() });
+    await renderStudentSlots();
+    await renderMyCounsels();
+  }catch(e){ console.error(e); alert("취소에 실패했어요."); }
+}
+
+/* ---------- 담임 ---------- */
+let ctStudents = [];
+let ctRecords = [];
+async function setupTeacherCounsel(){
+  const view = document.getElementById("counselTeacherView");
+  if(!view.dataset.bound){
+    view.dataset.bound = "1";
+    const snap = await db.collection("students").where("role", "==", "student").get();
+    ctStudents = snap.docs.map(d => ({uid:d.id, ...d.data()})).sort((a,b)=>a.num-b.num);
+    const opts = ctStudents.map(x => `<option value="${x.uid}">${x.num}번 ${yajaEsc(x.name)}</option>`).join("");
+    document.getElementById("ctRecStudent").innerHTML = opts;
+    document.getElementById("ctRecFilterStudent").innerHTML = `<option value="">전체 학생</option>` + opts;
+    document.getElementById("ctRecFilterStudent").addEventListener("change", renderRecordList);
+    document.getElementById("ctRecFilterCategory").addEventListener("change", renderRecordList);
+    document.getElementById("ctRecSaveBtn").addEventListener("click", saveCounselRecord);
+    document.getElementById("ctRecResetBtn").addEventListener("click", resetRecordForm);
+    resetRecordForm();
+  }
+  await renderTeacherCounsels();
+}
+
+async function renderTeacherCounsels(){
+  const pendingBox = document.getElementById("ctPending");
+  const confBox = document.getElementById("ctConfirmed");
+  pendingBox.innerHTML = confBox.innerHTML = `<p class="hint">불러오는 중...</p>`;
+  try{
+    const from = new Date(); from.setDate(from.getDate() - 14);
+    const [cs, rs] = await Promise.all([
+      db.collection("counsels").where("date", ">=", yajaDateKey(from)).get(),
+      db.collection("counselRecords").get(),
+    ]);
+    ctRecords = rs.docs.map(d => ({id:d.id, ...d.data()}));
+    const recordedIds = new Set(ctRecords.map(r => r.counselId).filter(Boolean));
+    const all = cs.docs.map(d => ({id:d.id, ...d.data()}))
+      .sort((a,b) => a.date === b.date ? slotOrder(a.slot) - slotOrder(b.slot) : (a.date < b.date ? -1 : 1));
+    const todayStr = yajaDateKey(new Date());
+
+    const confirmedKey = new Set(all.filter(c => c.status === "confirmed").map(c => c.date + c.slot));
+    const pending = all.filter(c => c.status === "pending" && c.date >= todayStr);
+    pendingBox.innerHTML = pending.length === 0 ? `<p class="hint">대기 중인 신청이 없어요.</p>` : pending.map(c => `
+      <div style="padding:10px 0; border-bottom:1px solid var(--line);">
+        <div style="font-size:14px;"><b>${fmtMD(c.date)}(${DOW_KO[dowOf(c.date)]}) ${yajaEsc(c.slotLabel)}</b> · ${c.num}번 ${yajaEsc(c.name)} · ${yajaEsc(c.topic)}</div>
+        ${c.message ? `<div style="font-size:13px; color:#6b6455; margin-top:3px;">${yajaEsc(c.message)}</div>` : ""}
+        ${confirmedKey.has(c.date + c.slot) ? `<div style="font-size:12px; color:var(--danger); margin-top:3px;">⚠ 이 시간에 이미 확정된 상담이 있어요</div>` : ""}
+        <div style="display:flex; gap:8px; margin-top:8px;">
+          <button class="primary-btn" style="margin:0; padding:8px 14px; width:auto; font-size:13px;" onclick="decideCounsel('${c.id}','confirmed')">확정</button>
+          <button class="primary-btn" style="margin:0; padding:8px 14px; width:auto; font-size:13px; background:var(--danger);" onclick="decideCounsel('${c.id}','declined')">불가</button>
+        </div>
+      </div>`).join("");
+
+    const confirmed = all.filter(c => c.status === "confirmed");
+    const upcoming = confirmed.filter(c => c.date >= todayStr);
+    const pastNoRecord = confirmed.filter(c => c.date < todayStr && !recordedIds.has(c.id));
+    const row = (c, past) => `
+      <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:9px 0; border-bottom:1px solid var(--line); font-size:13.5px;">
+        <div><b>${fmtMD(c.date)}(${DOW_KO[dowOf(c.date)]}) ${yajaEsc(c.slotLabel)}</b> · ${c.num}번 ${yajaEsc(c.name)} · ${yajaEsc(c.topic)}
+          ${recordedIds.has(c.id) ? ` <span style="font-size:11px; color:var(--forest-deep);">기록됨</span>` : ""}</div>
+        <div style="display:flex; gap:10px; white-space:nowrap;">
+          <button class="link-btn" onclick="openRecordFor('${c.id}')">기록</button>
+          ${past ? "" : `<button class="link-btn" style="color:var(--danger);" onclick="decideCounsel('${c.id}','declined')">취소</button>`}
+        </div>
+      </div>`;
+    confBox.innerHTML =
+      (upcoming.length ? upcoming.map(c => row(c, false)).join("") : `<p class="hint">예정된 상담이 없어요.</p>`) +
+      (pastNoRecord.length ? `<div style="font-size:12.5px; font-weight:600; color:var(--ochre); margin:12px 0 2px;">기록을 아직 안 쓴 지난 상담</div>` + pastNoRecord.map(c => row(c, true)).join("") : "");
+    window.__ctCounsels = all;
+    renderRecordList();
+  }catch(e){
+    console.error("상담 목록 실패", e);
+    pendingBox.innerHTML = `<p class="hint" style="color:var(--danger);">불러오지 못했어요 — 보안규칙을 확인해주세요.</p>`;
+    confBox.innerHTML = "";
+  }
+}
+
+async function decideCounsel(id, status){
+  const c = (window.__ctCounsels || []).find(x => x.id === id);
+  let declineReason = "";
+  if(status === "declined"){
+    const r = prompt(`${c ? `${c.num}번 ${c.name} · ${fmtMD(c.date)} ${c.slotLabel}\n` : ""}학생에게 '어렵다'는 알림이 가요. 짧은 사유가 있으면 적어주세요 (비워도 돼요).`);
+    if(r === null) return;
+    declineReason = r.trim();
+  }
+  try{
+    const data = { status, decidedAt: firebase.firestore.FieldValue.serverTimestamp() };
+    if(status === "declined") data.declineReason = declineReason;
+    await db.collection("counsels").doc(id).update(data);
+    await renderTeacherCounsels();
+  }catch(e){ console.error(e); alert("처리에 실패했어요."); }
+}
+
+function resetRecordForm(){
+  document.getElementById("ctRecCounselId").value = "";
+  document.getElementById("ctRecId").value = "";
+  document.getElementById("ctRecDate").value = yajaDateKey(new Date());
+  document.getElementById("ctRecCategory").value = "진로";
+  document.getElementById("ctRecContent").value = "";
+  document.getElementById("ctRecStudent").disabled = false;
+  document.getElementById("ctRecordFormTitle").textContent = "상담 기록 쓰기";
+}
+
+function openRecordFor(counselId){
+  const c = (window.__ctCounsels || []).find(x => x.id === counselId);
+  if(!c) return;
+  const existing = ctRecords.find(r => r.counselId === counselId);
+  document.getElementById("ctRecCounselId").value = counselId;
+  document.getElementById("ctRecId").value = existing ? existing.id : "";
+  document.getElementById("ctRecStudent").value = c.studentUid;
+  document.getElementById("ctRecStudent").disabled = true;
+  document.getElementById("ctRecDate").value = c.date;
+  document.getElementById("ctRecCategory").value = existing ? existing.category : c.topic;
+  document.getElementById("ctRecContent").value = existing ? existing.content : (c.message ? `(학생 사전 메모) ${c.message}\n\n` : "");
+  document.getElementById("ctRecordFormTitle").textContent = `상담 기록 — ${c.num}번 ${c.name} · ${fmtMD(c.date)} ${c.slotLabel}`;
+  document.getElementById("ctRecordFormBox").scrollIntoView({behavior:"smooth", block:"start"});
+}
+
+function openRecordEdit(recId){
+  const r = ctRecords.find(x => x.id === recId);
+  if(!r) return;
+  document.getElementById("ctRecCounselId").value = r.counselId || "";
+  document.getElementById("ctRecId").value = r.id;
+  document.getElementById("ctRecStudent").value = r.studentUid;
+  document.getElementById("ctRecStudent").disabled = true;
+  document.getElementById("ctRecDate").value = r.date;
+  document.getElementById("ctRecCategory").value = r.category;
+  document.getElementById("ctRecContent").value = r.content;
+  document.getElementById("ctRecordFormTitle").textContent = `기록 수정 — ${r.num}번 ${r.name}`;
+  document.getElementById("ctRecordFormBox").scrollIntoView({behavior:"smooth", block:"start"});
+}
+
+async function saveCounselRecord(){
+  const uid = document.getElementById("ctRecStudent").value;
+  const st = ctStudents.find(x => x.uid === uid);
+  const date = document.getElementById("ctRecDate").value;
+  const content = document.getElementById("ctRecContent").value.trim();
+  if(!st || !date || !content){ alert("학생, 날짜, 내용을 모두 입력해주세요."); return; }
+  const recId = document.getElementById("ctRecId").value;
+  const counselId = document.getElementById("ctRecCounselId").value || null;
+  const data = {
+    studentUid: uid, num: st.num, name: st.name, date,
+    category: document.getElementById("ctRecCategory").value,
+    content, counselId,
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+  };
+  const btn = document.getElementById("ctRecSaveBtn");
+  btn.disabled = true; btn.textContent = "저장 중...";
+  try{
+    if(recId) await db.collection("counselRecords").doc(recId).set(data, {merge:true});
+    else await db.collection("counselRecords").add(data);
+    resetRecordForm();
+    await renderTeacherCounsels();
+  }catch(e){ console.error(e); alert("저장에 실패했어요."); }
+  finally{ btn.disabled = false; btn.textContent = "기록 저장"; }
+}
+
+function renderRecordList(){
+  const box = document.getElementById("ctRecordList");
+  const fs = document.getElementById("ctRecFilterStudent").value;
+  const fc = document.getElementById("ctRecFilterCategory").value;
+  const list = ctRecords.filter(r => (!fs || r.studentUid === fs) && (!fc || r.category === fc))
+    .sort((a,b) => a.date < b.date ? 1 : a.date > b.date ? -1 : 0);
+  box.innerHTML = list.length === 0 ? `<p class="hint">기록이 없어요.</p>` : list.map(r => `
+    <div class="notice-card">
+      <div style="display:flex; justify-content:space-between; gap:8px;">
+        <div class="notice-title" style="margin:0;">${r.date.replace(/-/g,".")} · ${r.num}번 ${yajaEsc(r.name)}</div>
+        <span style="font-size:12px; background:#F1DDB2; color:#8a5f14; border-radius:10px; padding:2px 8px; white-space:nowrap;">${yajaEsc(r.category)}</span>
+      </div>
+      <div class="notice-body" style="margin-top:6px;">${yajaEsc(r.content)}</div>
+      <button class="link-btn" style="margin-top:6px;" onclick="openRecordEdit('${r.id}')">수정</button>
+    </div>`).join("");
 }
 </script>
 </body>
