@@ -174,7 +174,7 @@
 <div class="wrap">
 
   <div class="brand">
-    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1001-6</span></h1>
+    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1001-7</span></h1>
     <div id="brandRight"></div>
   </div>
 
@@ -289,6 +289,7 @@
       </div>
 
       <div id="absStudentArea">
+      <div id="attArriveCard" style="display:none;"></div>
       <div class="group-block">
         <h3>🙋 출결 특이사항 알리기</h3>
         <p class="hint">늦거나 빠지게 되면 바로 알려주세요. 선생님께 알림이 가요.</p>
@@ -2761,16 +2762,34 @@ async function renderMyAttNotes(){
     const snap = await db.collection("attendanceNotes").where("studentUid", "==", currentUser.uid).get();
     const list = snap.docs.map(d => ({id:d.id, ...d.data()}))
       .sort((a,b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0)).slice(0, 5);
+    renderArriveCard(list);
     if(list.length === 0){ box.innerHTML = ""; return; }
     box.innerHTML = `<div style="font-size:12.5px; font-weight:600; color:#8a8270; margin-bottom:4px;">최근 보낸 내용</div>` + list.map(n => `
       <div style="font-size:13px; padding:6px 0; border-top:1px solid var(--line);">
         <b style="color:${ATT_KIND_COLOR[n.kind]};">${n.kind}</b> · ${fmtMD(n.date)} · ${yajaEsc(n.reasonType)} · ${yajaEsc(n.reason)}
         ${attTimeText(n) ? ` · ${yajaEsc(attTimeText(n))}` : ""}
         ${n.status === "arrived" ? ` · <span style="color:var(--forest-deep);">${n.arrivedBy === "gps" ? "📍 " : ""}도착 ${n.arrivedTime || ""}</span>` : n.status === "checked" ? ` · <span style="color:var(--forest-deep);">선생님 확인</span>` : ""}
-        ${n.kind === "지각" && n.status === "open" && n.date === yajaDateKey(new Date())
-          ? `<div><button class="primary-btn" style="margin-top:8px; padding:11px;" onclick="gpsArrive('${n.id}', this)">📍 학교 도착했어요</button></div>` : ""}
       </div>`).join("");
   }catch(e){ console.error(e); box.innerHTML = ""; }
+}
+
+/* 오늘 지각 알림이 있으면 출결관리 맨 위에 '학교 도착' 카드를 띄움 */
+function renderArriveCard(list){
+  const card = document.getElementById("attArriveCard");
+  const today = yajaDateKey(new Date());
+  const n = list.find(x => x.kind === "지각" && x.date === today);
+  if(!n){ card.style.display = "none"; card.innerHTML = ""; return; }
+  card.style.display = "block";
+  if(n.status === "open"){
+    card.innerHTML = `<div class="group-block" style="border:2px solid var(--forest-deep); text-align:center;">
+      <div style="font-size:15px; font-weight:700;">⏰ 오늘 지각 알림을 보냈어요${n.time ? ` (예상 ${yajaEsc(n.time)})` : ""}</div>
+      <p class="hint" style="margin:6px 0 10px;">학교에 도착하면 아래 버튼을 눌러주세요. 선생님께 도착 시각이 바로 가요.</p>
+      <button class="primary-btn" style="padding:14px; font-size:16px;" onclick="gpsArrive('${n.id}', this)">📍 학교 도착했어요</button>
+    </div>`;
+  }else{
+    const t = n.status === "arrived" ? `${n.arrivedBy === "gps" ? "📍 " : ""}${yajaEsc(n.arrivedTime || "")} 도착 확인됨` : "선생님이 확인했어요";
+    card.innerHTML = `<div class="group-block" style="text-align:center; color:var(--forest-deep); font-weight:600;">✅ 오늘 지각 · ${t}</div>`;
+  }
 }
 
 /* ---------- 담임 ---------- */
