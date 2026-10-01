@@ -39,3 +39,66 @@ function yajaEffectiveBlocks(dow, override) {
 function yajaIsEnrolled(enrollMap, dow, blockKey) {
   return !!(enrollMap && enrollMap[dow] && enrollMap[dow][blockKey]);
 }
+
+// 블록이 이미 끝났는지 (아직 안 끝난 블록은 결석으로 세지 않음)
+function yajaBlockIsPast(dateObj, block, now) {
+  now = now || new Date();
+  const todayKey = yajaDateKey(now);
+  const key = yajaDateKey(dateObj);
+  if (key < todayKey) return true;
+  if (key > todayKey) return false;
+  return now.getHours() * 60 + now.getMinutes() > yajaToMinutes(block.end) + 15;
+}
+
+// 출석률 공통 계산
+// students: [{num, yajaEnroll}], overrides: {dateKey: true/false}
+// attendance: yajaAttendance 문서 배열, excuses: yajaExcuses 문서 배열
+// 반환: { [num]: {total, attended, excused, absent} }
+// 판정 우선순위: 출석(스캔) > 사유(담임 인정 또는 학생 신청 중 반려 안 된 것) > 결석
+function yajaComputeStats(students, startStr, endStr, overrides, attendance, excuses) {
+  const att = {}, exc = {};
+  attendance.forEach(r => {
+    const k = `${r.date}_${r.num}_${r.block}`;
+    if (r.checkInAt) att[k] = true;
+    if (r.excused) exc[k] = true;
+  });
+  excuses.forEach(r => {
+    if (r.status !== "rejected") exc[`${r.date}_${r.num}_${r.block}`] = true;
+  });
+
+  const out = {};
+  students.forEach(s => { out[s.num] = { total: 0, attended: 0, excused: 0, absent: 0 }; });
+  const now = new Date();
+  const cursor = new Date(startStr + "T00:00:00");
+  const endDate = new Date(endStr + "T00:00:00");
+  while (cursor <= endDate) {
+    const key = yajaDateKey(cursor);
+    const dow = cursor.getDay();
+    const blocks = yajaEffectiveBlocks(dow, overrides[key] === undefined ? null : overrides[key]);
+    blocks.forEach(b => {
+      if (!yajaBlockIsPast(cursor, b, now)) return;
+      students.forEach(s => {
+        if (!yajaIsEnrolled(s.yajaEnroll, dow, b.key)) return;
+        const k = `${key}_${s.num}_${b.key}`;
+        const o = out[s.num];
+        o.total++;
+        if (att[k]) o.attended++;
+        else if (exc[k]) o.excused++;
+        else o.absent++;
+      });
+    });
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return out;
+}
+
+// 출석률(%) — 사유 인정분은 분모에서 제외
+function yajaRate(o) {
+  const denom = o.total - o.excused;
+  if (denom <= 0) return null;
+  return Math.round((o.attended / denom) * 100);
+}
+
+function yajaEsc(s) {
+  return String(s == null ? "" : s).replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#39;");
+}
