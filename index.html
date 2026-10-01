@@ -1272,8 +1272,8 @@ function subscribeMyAbsences(){
     if(!spState) return;
     const monday = spCurrentWeekMonday();
     const sunday = new Date(monday); sunday.setDate(sunday.getDate()+6);
-    document.getElementById("weekRangeLabel").textContent = `${fmtDate(monday)} ~ ${fmtDate(sunday)}${spWeekOffset===0 ? " (이번 주)" : ""}`;
-    document.getElementById("nextWeekBtn").disabled = spWeekOffset >= 0;
+    document.getElementById("weekRangeLabel").textContent = `${fmtDate(monday)} ~ ${fmtDate(sunday)}${spWeekOffset===0 ? " (이번 주)" : spWeekOffset===1 ? " (다음 주)" : ""}`;
+    document.getElementById("nextWeekBtn").disabled = spWeekOffset >= 1; // 다음 주까지 미리 작성 가능
     document.querySelectorAll(".sp-dot").forEach(dot=>{
       dot.classList.toggle("on", Number(dot.dataset.w) === spSeasonWeek);
     });
@@ -1518,7 +1518,7 @@ function subscribeMyAbsences(){
   }
 
   document.getElementById("prevWeekBtn") && document.getElementById("prevWeekBtn").addEventListener("click", ()=>{ spWeekOffset -= 1; spLoadWeek(); });
-  document.getElementById("nextWeekBtn") && document.getElementById("nextWeekBtn").addEventListener("click", ()=>{ if(spWeekOffset<0){ spWeekOffset += 1; spLoadWeek(); } });
+  document.getElementById("nextWeekBtn") && document.getElementById("nextWeekBtn").addEventListener("click", ()=>{ if(spWeekOffset<1){ spWeekOffset += 1; spLoadWeek(); } });
   document.querySelectorAll(".sp-dot").forEach(dot=>{
     dot.addEventListener("click", async ()=>{
       if(spViewerIsTeacher) return; // 담임은 학생의 시즌주차를 바꿀 수 없음
