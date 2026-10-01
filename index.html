@@ -29,10 +29,13 @@
   .brand button{ background:none; border:1px solid var(--line); border-radius:6px; padding:6px 12px; font-size:13px; color:var(--ink); cursor:pointer; font-family:'Noto Sans KR', sans-serif; }
   .brand button:hover{ border-color:var(--ink); }
 
-  .main-tabs{ display:flex; gap:6px; margin-bottom:20px; overflow-x:auto; -webkit-overflow-scrolling:touch; scrollbar-width:none; }
-  .main-tabs::-webkit-scrollbar{ display:none; }
-  .main-tabs button{ flex:1 0 auto; padding:11px 14px; white-space:nowrap; background:var(--card); border:1px solid var(--line); border-radius:8px; font-family:'Noto Serif KR', serif; font-size:15px; font-weight:500; color:#8a8270; cursor:pointer; }
+  .main-tabs{ display:grid; grid-template-columns:repeat(auto-fit, minmax(96px, 1fr)); gap:8px; margin-bottom:20px; }
+  .main-tabs button{ display:flex; flex-direction:column; align-items:center; gap:3px; padding:10px 4px 9px; background:var(--card); border:1px solid var(--line); border-radius:12px; font-family:'Noto Sans KR', sans-serif; font-size:13px; font-weight:500; color:#6b6455; cursor:pointer; transition:transform .12s ease; }
+  .main-tabs button .ti{ font-size:22px; line-height:1; }
+  .main-tabs button:active{ transform:scale(.96); }
   .main-tabs button.active{ color:#fff; background:var(--forest); border-color:var(--forest); }
+  .main-tabs button.active .ti{ filter:drop-shadow(0 1px 0 rgba(0,0,0,.15)); }
+  @media (prefers-reduced-motion:reduce){ .main-tabs button{ transition:none; } }
 
   .screen{ display:none; }
   .screen.active{ display:block; }
@@ -168,7 +171,7 @@
 <div class="wrap">
 
   <div class="brand">
-    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1001-3</span></h1>
+    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1001-5</span></h1>
     <div id="brandRight"></div>
   </div>
 
@@ -229,13 +232,13 @@
   <!-- 화면 3: 메인 (시간표 / 공지사항) -->
   <div class="screen" id="screen-main">
     <div class="main-tabs">
-      <button id="tabBtnTimetable" class="active" onclick="switchMainTab('timetable')">시간표</button>
-      <button id="tabBtnNotice" onclick="switchMainTab('notice')">공지사항</button>
-      <button id="tabBtnAbsence" onclick="switchMainTab('absence')" style="display:none;">결석계</button>
-      <button id="tabBtnStudyplan" onclick="switchMainTab('studyplan')">학습계획서</button>
-      <button id="tabBtnYaja" onclick="switchMainTab('yaja')" style="display:none;">야자</button>
-      <button id="tabBtnCounsel" onclick="switchMainTab('counsel')" style="display:none;">상담</button>
-      <button id="tabBtnYajaAdmin" onclick="switchMainTab('yajaadmin')" style="display:none;">야자관리</button>
+      <button id="tabBtnTimetable" class="active" onclick="switchMainTab('timetable')"><span class="ti">📅</span><span class="tl">시간표</span></button>
+      <button id="tabBtnNotice" onclick="switchMainTab('notice')"><span class="ti">📢</span><span class="tl">공지사항</span></button>
+      <button id="tabBtnAbsence" onclick="switchMainTab('absence')" style="display:none;"><span class="ti">🏫</span><span class="tl">출결관리</span></button>
+      <button id="tabBtnStudyplan" onclick="switchMainTab('studyplan')"><span class="ti">📝</span><span class="tl">학습계획서</span></button>
+      <button id="tabBtnYaja" onclick="switchMainTab('yaja')" style="display:none;"><span class="ti">🌙</span><span class="tl">야자</span></button>
+      <button id="tabBtnCounsel" onclick="switchMainTab('counsel')" style="display:none;"><span class="ti">💬</span><span class="tl">상담</span></button>
+      <button id="tabBtnYajaAdmin" onclick="switchMainTab('yajaadmin')" style="display:none;"><span class="ti">🦉</span><span class="tl">야자관리</span></button>
     </div>
 
     <div class="tab-panel active" id="panel-timetable">
@@ -256,8 +259,47 @@
     </div>
 
     <div class="tab-panel" id="panel-absence">
+      <!-- 담임: 출결 특이사항 확인 -->
+      <div id="attTeacherArea" style="display:none;">
+        <div class="group-block" style="margin-bottom:0;">
+          <h3>📋 출결 특이사항</h3>
+          <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
+            <input type="date" id="attTDate" style="flex:1; padding:9px; border:1px solid var(--line); border-radius:6px;">
+            <button class="link-btn" id="attTTodayBtn">오늘</button>
+          </div>
+          <div id="attTList"></div>
+        </div>
+      </div>
+
+      <div id="absStudentArea">
       <div class="group-block">
-        <h3>결석계 작성</h3>
+        <h3>🙋 출결 특이사항 알리기</h3>
+        <p class="hint">늦거나 빠지게 되면 바로 알려주세요. 선생님께 알림이 가요.</p>
+        <div class="field"><label>날짜</label><input type="date" id="attDate"></div>
+        <div style="display:flex; gap:8px;">
+          <div class="field" style="flex:1;">
+            <label>출결 내용</label>
+            <select id="attKind"><option>지각</option><option>결석</option><option>조퇴</option><option>결과</option></select>
+          </div>
+          <div class="field" style="flex:1;">
+            <label>사유 구분</label>
+            <select id="attReasonType"><option>질병</option><option>인정</option><option>미인정</option><option>기타</option></select>
+          </div>
+        </div>
+        <div class="field" id="attTimeField">
+          <label id="attTimeLabel">예상 등교 시간</label>
+          <input type="time" id="attTime">
+          <input type="text" id="attPeriods" placeholder="예: 3~4교시" style="display:none;">
+        </div>
+        <div class="field" style="margin-bottom:0;"><label>사유</label><input type="text" id="attReason" placeholder="예: 감기, 생리통, 병원 진료"></div>
+        <p class="hint" id="attAbsenceHint" style="display:none; color:var(--ochre);">결석은 아래 결석계도 꼭 작성해서 학부모님 서명을 받아주세요.</p>
+        <button class="primary-btn" id="attSubmitBtn">선생님께 알리기</button>
+        <p class="error-msg" id="attError"></p>
+        <div id="attMyList" style="margin-top:12px;"></div>
+      </div>
+
+      <div class="group-block">
+        <h3>📄 결석계 작성</h3>
         <p class="hint">결석 정보를 입력하고 제출하면, 학부모님께 보낼 서명 링크가 생성돼요.</p>
 
         <div class="field">
@@ -313,6 +355,7 @@
       </div>
 
       <div id="absenceList"></div>
+      </div>
     </div>
 
     <div class="tab-panel" id="panel-studyplan">
@@ -398,7 +441,7 @@
       </div>
 
       <div class="group-block">
-        <h3>야자 불참 사유 내기</h3>
+        <h3>🌙 야자 불참 사유 내기</h3>
         <p class="hint">빠지는 날이 생기면 미리(당일까지) 사유를 내주세요. 사유를 낸 블록은 출석률에서 빠져요. 담임 선생님이 반려하면 결석으로 계산돼요.</p>
         <div class="field">
           <label>날짜</label>
@@ -423,7 +466,7 @@
       <!-- 학생용 -->
       <div id="counselStudentView" style="display:none;">
         <div class="group-block">
-          <h3>담임 상담 신청</h3>
+          <h3>💬 담임 상담 신청</h3>
           <p class="hint">시간을 골라 신청하면 선생님이 확인 후 확정해요. 확정·불가 결과는 알림으로 와요. (시작 3시간 전까지 신청 가능)</p>
           <div class="field"><label>날짜</label><input type="date" id="csDate"></div>
           <div class="field"><label>시간</label><div id="csSlots" style="display:flex; flex-wrap:wrap; gap:6px;"></div></div>
@@ -443,15 +486,15 @@
       <!-- 담임용 -->
       <div id="counselTeacherView" style="display:none;">
         <div class="group-block">
-          <h3>확인 대기</h3>
+          <h3>⏳ 확인 대기</h3>
           <div id="ctPending"></div>
         </div>
         <div class="group-block">
-          <h3>확정된 상담</h3>
+          <h3>✅ 확정된 상담</h3>
           <div id="ctConfirmed"></div>
         </div>
         <div class="group-block" id="ctRecordFormBox">
-          <h3 id="ctRecordFormTitle">상담 기록 쓰기</h3>
+          <h3 id="ctRecordFormTitle">✏️ 상담 기록 쓰기</h3>
           <p class="hint">기록은 담임만 볼 수 있어요. 신청 없이 한 상담도 여기서 바로 기록할 수 있어요.</p>
           <input type="hidden" id="ctRecCounselId">
           <input type="hidden" id="ctRecId">
@@ -470,7 +513,7 @@
           </div>
         </div>
         <div class="group-block" style="margin-bottom:0;">
-          <h3>상담 기록</h3>
+          <h3>🗂 상담 기록</h3>
           <div style="display:flex; gap:8px; margin-bottom:10px;">
             <select id="ctRecFilterStudent" style="flex:1; padding:8px; border:1px solid var(--line); border-radius:6px; font-family:inherit;"></select>
             <select id="ctRecFilterCategory" style="flex:1; padding:8px; border:1px solid var(--line); border-radius:6px; font-family:inherit;">
@@ -484,13 +527,13 @@
 
     <div class="tab-panel" id="panel-yajaadmin">
       <div class="group-block">
-        <h3>야자 신청자 설정</h3>
+        <h3>🧑‍🎓 야자 신청자 설정</h3>
         <p class="hint">요일별로 어떤 블록에 참여하는지 학생마다 체크해주세요. 체크 안 된 블록은 그 학생 QR을 스캔해도 출석 처리가 안 되고, 출석률 계산에도 안 들어가요.</p>
         <div id="enrollTable" style="overflow-x:auto;"></div>
       </div>
 
       <div class="group-block">
-        <h3>운영일 캘린더</h3>
+        <h3>🗓 운영일 캘린더</h3>
         <p class="hint">기본은 월·수(7·8교시+야간), 화·목·금(8교시+야간), 주말은 미운영이에요. 날짜를 눌러서 강제로 바꿀 수 있어요 — 기본 → 강제 운영 → 강제 미운영 순으로 바뀝니다.</p>
         <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
           <button class="link-btn" id="calPrevBtn">◀ 이전 달</button>
@@ -526,7 +569,7 @@
       </div>
 
       <div class="group-block">
-        <h3>학생 불참 사유 신청</h3>
+        <h3>📮 학생 불참 사유 신청</h3>
         <p class="hint">학생이 직접 낸 불참 사유예요. 신청하는 즉시 출석률에서 빠지고, 부당하면 반려하면 다시 결석으로 계산돼요.</p>
         <div style="display:flex; gap:8px; margin-bottom:10px; font-size:12.5px;">
           <label><input type="radio" name="excuseFilter" value="upcoming" checked> 오늘 이후</label>
@@ -536,7 +579,7 @@
       </div>
 
       <div class="group-block">
-        <h3>날짜별 출결 현황</h3>
+        <h3>📊 날짜별 출결 현황</h3>
         <div class="field">
           <input type="date" id="yajaDatePick">
         </div>
@@ -544,7 +587,7 @@
       </div>
 
       <div class="group-block" style="margin-bottom:0;">
-        <h3>기간별 출석률</h3>
+        <h3>📈 기간별 출석률</h3>
         <div style="display:flex; gap:8px; align-items:center; margin-bottom:12px;">
           <input type="date" id="yajaRangeStart" style="flex:1;">
           <span>~</span>
@@ -727,8 +770,6 @@ function switchMainTab(tab){
   document.getElementById("tabBtnYajaAdmin").classList.toggle("active", tab === "yajaadmin");
   document.getElementById("tabBtnYaja").classList.toggle("active", tab === "yaja");
   document.getElementById("tabBtnCounsel").classList.toggle("active", tab === "counsel");
-  const activeBtn = document.querySelector(".main-tabs button.active");
-  if(activeBtn && activeBtn.scrollIntoView) activeBtn.scrollIntoView({inline:"nearest", block:"nearest"});
   document.getElementById("panel-counsel").classList.toggle("active", tab === "counsel");
   document.getElementById("panel-yaja").classList.toggle("active", tab === "yaja");
   document.getElementById("panel-timetable").classList.toggle("active", tab === "timetable");
@@ -1065,9 +1106,13 @@ if(messaging){
 const PARENT_SIGN_BASE_URL = "parent-sign.html"; // 같은 폴더에 있는 학부모 서명 페이지
 
 function setupAbsenceTab(){
-  const showTab = currentProfile && currentProfile.role === "student";
+  const role = currentProfile && currentProfile.role;
+  const showTab = role === "student" || role === "teacher";
   document.getElementById("tabBtnAbsence").style.display = showTab ? "" : "none";
-  if(showTab) subscribeMyAbsences();
+  document.getElementById("absStudentArea").style.display = role === "student" ? "" : "none";
+  document.getElementById("attTeacherArea").style.display = role === "teacher" ? "" : "none";
+  if(role === "student"){ subscribeMyAbsences(); setupAttendanceNoteForm(); }
+  if(role === "teacher") setupAttendanceTeacher();
 
   const etcCb = document.getElementById("absEvidenceEtc");
   const etcInput = document.getElementById("absEtcText");
@@ -2293,11 +2338,11 @@ async function setupCounselTab(){
   const role = currentProfile.role;
   const btn = document.getElementById("tabBtnCounsel");
   if(role === "student"){
-    btn.textContent = "상담"; btn.style.display = "";
+    btn.querySelector(".tl").textContent = "상담"; btn.style.display = "";
     document.getElementById("counselStudentView").style.display = "block";
     await setupStudentCounsel();
   } else if(role === "teacher"){
-    btn.textContent = "상담관리"; btn.style.display = "";
+    btn.querySelector(".tl").textContent = "상담관리"; btn.style.display = "";
     document.getElementById("counselTeacherView").style.display = "block";
     await setupTeacherCounsel();
   } else {
@@ -2531,7 +2576,7 @@ function resetRecordForm(){
   document.getElementById("ctRecCategory").value = "진로";
   document.getElementById("ctRecContent").value = "";
   document.getElementById("ctRecStudent").disabled = false;
-  document.getElementById("ctRecordFormTitle").textContent = "상담 기록 쓰기";
+  document.getElementById("ctRecordFormTitle").textContent = "✏️ 상담 기록 쓰기";
 }
 
 function openRecordFor(counselId){
@@ -2603,6 +2648,199 @@ function renderRecordList(){
       <div class="notice-body" style="margin-top:6px;">${yajaEsc(r.content)}</div>
       <button class="link-btn" style="margin-top:6px;" onclick="openRecordEdit('${r.id}')">수정</button>
     </div>`).join("");
+}
+
+/* =========================================================
+   14. 출결 특이사항 (학생 → 담임 알림)
+   ========================================================= */
+const ATT_KIND_COLOR = { "지각":"var(--ochre)", "결석":"var(--danger)", "조퇴":"#4a6a8a", "결과":"#6b5a8a" };
+
+function attTimeText(n){
+  if(n.kind === "지각" && n.time) return `예상 등교 ${n.time}`;
+  if(n.kind === "조퇴" && n.time) return `조퇴 예정 ${n.time}`;
+  if(n.kind === "결과" && n.periods) return n.periods;
+  return "";
+}
+
+function updateAttForm(){
+  const kind = document.getElementById("attKind").value;
+  const field = document.getElementById("attTimeField");
+  const time = document.getElementById("attTime");
+  const periods = document.getElementById("attPeriods");
+  document.getElementById("attAbsenceHint").style.display = kind === "결석" ? "block" : "none";
+  field.style.display = kind === "결석" ? "none" : "block";
+  time.style.display = kind === "결과" ? "none" : "block";
+  periods.style.display = kind === "결과" ? "block" : "none";
+  document.getElementById("attTimeLabel").textContent =
+    kind === "지각" ? "예상 등교 시간" : kind === "조퇴" ? "조퇴 예정 시간" : "빠지는 교시";
+}
+
+async function setupAttendanceNoteForm(){
+  const d = document.getElementById("attDate");
+  if(!d.value) d.value = yajaDateKey(new Date());
+  d.min = yajaDateKey(new Date());
+  const kind = document.getElementById("attKind");
+  if(!kind.dataset.bound){
+    kind.dataset.bound = "1";
+    kind.addEventListener("change", updateAttForm);
+    document.getElementById("attSubmitBtn").addEventListener("click", submitAttendanceNote);
+  }
+  updateAttForm();
+  await renderMyAttNotes();
+}
+
+async function submitAttendanceNote(){
+  const err = document.getElementById("attError");
+  err.style.display = "none";
+  const show = m => { err.textContent = m; err.style.display = "block"; };
+  const date = document.getElementById("attDate").value;
+  const kind = document.getElementById("attKind").value;
+  const reasonType = document.getElementById("attReasonType").value;
+  const reason = document.getElementById("attReason").value.trim();
+  const time = kind === "지각" || kind === "조퇴" ? document.getElementById("attTime").value : "";
+  const periods = kind === "결과" ? document.getElementById("attPeriods").value.trim() : "";
+  if(!date) return show("날짜를 골라주세요.");
+  if(!reason) return show("사유를 적어주세요.");
+  if(kind === "지각" && !time) return show("예상 등교 시간을 입력해주세요.");
+  if(kind === "조퇴" && !time) return show("조퇴 예정 시간을 입력해주세요.");
+  if(kind === "결과" && !periods) return show("빠지는 교시를 적어주세요.");
+
+  const btn = document.getElementById("attSubmitBtn");
+  btn.disabled = true; btn.textContent = "보내는 중...";
+  try{
+    await db.collection("attendanceNotes").add({
+      studentUid: currentUser.uid, num: currentProfile.num, name: currentProfile.name,
+      date, kind, reasonType, reason, time, periods,
+      status: "open",
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    document.getElementById("attReason").value = "";
+    document.getElementById("attTime").value = "";
+    document.getElementById("attPeriods").value = "";
+    await renderMyAttNotes();
+  }catch(e){
+    console.error("출결 특이사항 전송 실패", e);
+    show("전송에 실패했어요. 잠시 후 다시 해주세요.");
+  }finally{
+    btn.disabled = false; btn.textContent = "선생님께 알리기";
+  }
+}
+
+async function renderMyAttNotes(){
+  const box = document.getElementById("attMyList");
+  try{
+    const snap = await db.collection("attendanceNotes").where("studentUid", "==", currentUser.uid).get();
+    const list = snap.docs.map(d => ({id:d.id, ...d.data()}))
+      .sort((a,b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0)).slice(0, 5);
+    if(list.length === 0){ box.innerHTML = ""; return; }
+    box.innerHTML = `<div style="font-size:12.5px; font-weight:600; color:#8a8270; margin-bottom:4px;">최근 보낸 내용</div>` + list.map(n => `
+      <div style="font-size:13px; padding:6px 0; border-top:1px solid var(--line);">
+        <b style="color:${ATT_KIND_COLOR[n.kind]};">${n.kind}</b> · ${fmtMD(n.date)} · ${yajaEsc(n.reasonType)} · ${yajaEsc(n.reason)}
+        ${attTimeText(n) ? ` · ${yajaEsc(attTimeText(n))}` : ""}
+        ${n.status === "arrived" ? ` · <span style="color:var(--forest-deep);">${n.arrivedBy === "gps" ? "📍 " : ""}도착 ${n.arrivedTime || ""}</span>` : n.status === "checked" ? ` · <span style="color:var(--forest-deep);">선생님 확인</span>` : ""}
+        ${n.kind === "지각" && n.status === "open" && n.date === yajaDateKey(new Date())
+          ? `<div><button class="primary-btn" style="margin-top:8px; padding:11px;" onclick="gpsArrive('${n.id}', this)">📍 학교 도착했어요</button></div>` : ""}
+      </div>`).join("");
+  }catch(e){ console.error(e); box.innerHTML = ""; }
+}
+
+/* ---------- 담임 ---------- */
+function setupAttendanceTeacher(){
+  const d = document.getElementById("attTDate");
+  if(!d.dataset.bound){
+    d.dataset.bound = "1";
+    d.value = yajaDateKey(new Date());
+    d.addEventListener("change", renderAttTeacher);
+    document.getElementById("attTTodayBtn").addEventListener("click", () => { d.value = yajaDateKey(new Date()); renderAttTeacher(); });
+  }
+  renderAttTeacher();
+}
+
+async function renderAttTeacher(){
+  const box = document.getElementById("attTList");
+  const date = document.getElementById("attTDate").value;
+  box.innerHTML = `<p class="hint">불러오는 중...</p>`;
+  try{
+    const snap = await db.collection("attendanceNotes").where("date", "==", date).get();
+    const list = snap.docs.map(d => ({id:d.id, ...d.data()})).sort((a,b) => a.num - b.num);
+    if(list.length === 0){ box.innerHTML = `<p class="hint">이 날 들어온 출결 특이사항이 없어요.</p>`; return; }
+    box.innerHTML = list.map(n => {
+      const done = n.status === "arrived" || n.status === "checked";
+      return `<div style="padding:10px 0; border-bottom:1px solid var(--line); ${done ? "opacity:.6;" : ""}">
+        <div style="font-size:14px;"><b>${n.num}번 ${yajaEsc(n.name)}</b>
+          · <b style="color:${ATT_KIND_COLOR[n.kind]};">${n.kind}</b> (${yajaEsc(n.reasonType)})</div>
+        <div style="font-size:13px; color:#6b6455; margin-top:2px;">${yajaEsc(n.reason)}${attTimeText(n) ? " · " + yajaEsc(attTimeText(n)) : ""}</div>
+        <div style="display:flex; gap:12px; margin-top:6px; font-size:12.5px;">
+          ${n.status === "arrived" ? `<span style="color:var(--forest-deep);">${n.arrivedBy === "gps" ? `📍 GPS 도착 ${n.arrivedTime || ""} (학교에서 ${n.gpsDistance}m)` : `✓ 도착 ${n.arrivedTime || ""}`}</span>`
+            : n.status === "checked" ? `<span style="color:var(--forest-deep);">✓ 확인함</span>`
+            : n.kind === "지각"
+              ? `<button class="link-btn" onclick="markAttNote('${n.id}','arrived')">등교 확인 (지금 시각)</button>`
+              : `<button class="link-btn" onclick="markAttNote('${n.id}','checked')">확인함</button>`}
+          ${done ? `<button class="link-btn" style="color:#a49c88;" onclick="markAttNote('${n.id}','open')">되돌리기</button>` : ""}
+        </div>
+      </div>`;
+    }).join("");
+  }catch(e){
+    console.error("출결 특이사항 로딩 실패", e);
+    box.innerHTML = `<p class="hint" style="color:var(--danger);">불러오지 못했어요 — 보안규칙을 확인해주세요.</p>`;
+  }
+}
+
+async function markAttNote(id, status){
+  const data = { status };
+  if(status === "arrived"){
+    const n = new Date();
+    data.arrivedTime = `${String(n.getHours()).padStart(2,"0")}:${String(n.getMinutes()).padStart(2,"0")}`;
+  }
+  try{
+    await db.collection("attendanceNotes").doc(id).update(data);
+    renderAttTeacher();
+  }catch(e){ console.error(e); alert("저장에 실패했어요."); }
+}
+
+/* ---------- GPS 도착 확인 (좌표는 저장하지 않고 '학교와의 거리'만 남김) ---------- */
+const SCHOOL_POS = { lat: 37.4935402, lng: 127.4945592 }; // 양일고등학교 (양평읍 관문2길 9)
+const SCHOOL_RADIUS_M = 200;
+
+function distanceM(a, b){
+  const R = 6371000, rad = x => x * Math.PI / 180;
+  const dLat = rad(b.lat - a.lat), dLng = rad(b.lng - a.lng);
+  const h = Math.sin(dLat/2)**2 + Math.cos(rad(a.lat)) * Math.cos(rad(b.lat)) * Math.sin(dLng/2)**2;
+  return 2 * R * Math.asin(Math.sqrt(h));
+}
+
+async function gpsArrive(noteId, btn){
+  if(!navigator.geolocation){ alert("이 기기에서는 위치 확인을 쓸 수 없어요. 선생님께 직접 말씀드려주세요."); return; }
+  btn.disabled = true; btn.textContent = "위치 확인 중...";
+  const reset = () => { btn.disabled = false; btn.textContent = "📍 학교 도착했어요"; };
+  navigator.geolocation.getCurrentPosition(async pos => {
+    const here = { lat: pos.coords.latitude, lng: pos.coords.longitude };
+    const dist = Math.round(distanceM(here, SCHOOL_POS));
+    const acc = Math.round(pos.coords.accuracy);
+    if(dist > SCHOOL_RADIUS_M){
+      alert(`학교에서 약 ${dist}m 떨어진 곳으로 확인돼요.\n학교 안이라면 창가나 건물 밖에서 다시 눌러주세요.`);
+      reset(); return;
+    }
+    try{
+      const n = new Date();
+      await db.collection("attendanceNotes").doc(noteId).update({
+        status: "arrived", arrivedBy: "gps",
+        arrivedTime: `${String(n.getHours()).padStart(2,"0")}:${String(n.getMinutes()).padStart(2,"0")}`,
+        arrivedAt: firebase.firestore.FieldValue.serverTimestamp(),
+        gpsDistance: dist, gpsAccuracy: acc,
+      });
+      alert("도착이 확인됐어요. 선생님께 알림이 갔어요.");
+      renderMyAttNotes();
+    }catch(e){
+      console.error("도착 저장 실패", e);
+      alert("저장에 실패했어요. 선생님께 직접 말씀드려주세요.");
+      reset();
+    }
+  }, err => {
+    const msg = err.code === 1 ? "위치 권한이 꺼져 있어요. 휴대폰 설정에서 이 앱(브라우저)의 위치 접근을 허용해주세요."
+      : "위치를 못 잡았어요. 창가나 건물 밖에서 다시 눌러주세요.";
+    alert(msg); reset();
+  }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
 }
 </script>
 </body>
