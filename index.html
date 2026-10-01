@@ -29,6 +29,9 @@
   .brand button{ background:none; border:1px solid var(--line); border-radius:6px; padding:6px 12px; font-size:13px; color:var(--ink); cursor:pointer; font-family:'Noto Sans KR', sans-serif; }
   .brand button:hover{ border-color:var(--ink); }
 
+  .brand-actions{ display:flex; gap:5px; justify-content:flex-end; margin-top:6px; }
+  .brand-actions a, .brand-actions button{ white-space:nowrap; font-size:12px; padding:5px 8px; border:1px solid var(--line); border-radius:6px; background:none; color:var(--ink); text-decoration:none; font-family:'Noto Sans KR', sans-serif; cursor:pointer; line-height:1.3; }
+  #brandRight{ text-align:right; }
   .main-tabs{ display:grid; grid-template-columns:repeat(auto-fit, minmax(96px, 1fr)); gap:8px; margin-bottom:20px; }
   .main-tabs button{ display:flex; flex-direction:column; align-items:center; gap:3px; padding:10px 4px 9px; background:var(--card); border:1px solid var(--line); border-radius:12px; font-family:'Noto Sans KR', sans-serif; font-size:13px; font-weight:500; color:#6b6455; cursor:pointer; transition:transform .12s ease; }
   .main-tabs button .ti{ font-size:22px; line-height:1; }
@@ -171,7 +174,7 @@
 <div class="wrap">
 
   <div class="brand">
-    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1001-5</span></h1>
+    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1001-6</span></h1>
     <div id="brandRight"></div>
   </div>
 
@@ -195,6 +198,20 @@
       </div>
       <button class="primary-btn" id="loginBtn" onclick="handleLogin()">로그인</button>
       <p class="error-msg" id="loginError">번호와 비밀번호를 확인해주세요.</p>
+    </div>
+  </div>
+
+  <!-- 비밀번호 변경 -->
+  <div class="screen" id="screen-password">
+    <div class="login-card">
+      <h2>🔑 비밀번호 바꾸기</h2>
+      <p class="sub" id="pwSub">처음 로그인했어요. 나만 아는 비밀번호로 바꿔주세요.</p>
+      <div class="field"><label for="pwCurrent">지금 비밀번호</label><input type="password" id="pwCurrent" autocomplete="current-password"></div>
+      <div class="field"><label for="pwNew">새 비밀번호 (6자 이상)</label><input type="password" id="pwNew" autocomplete="new-password"></div>
+      <div class="field"><label for="pwNew2">새 비밀번호 확인</label><input type="password" id="pwNew2" autocomplete="new-password"></div>
+      <button class="primary-btn" id="pwSaveBtn">비밀번호 바꾸기</button>
+      <button class="link-btn" id="pwCancelBtn" style="display:none; margin-top:12px;">취소</button>
+      <p class="error-msg" id="pwError"></p>
     </div>
   </div>
 
@@ -738,6 +755,14 @@ auth.onAuthStateChanged(async (user) => {
   currentProfile = doc.exists ? doc.data() : null;
   renderBrandRight();
 
+  if(currentProfile && currentProfile.role === "student" && !currentProfile.pwChanged){
+    openPasswordScreen(true);
+    return;
+  }
+  enterApp();
+});
+
+function enterApp(){
   if(currentProfile && currentProfile.selection){
     showScreen("screen-main");
     renderTimetable(currentProfile.selection);
@@ -753,7 +778,7 @@ auth.onAuthStateChanged(async (user) => {
   } else {
     goToSelectScreen();
   }
-});
+}
 
 /* =========================================================
    3. 화면 전환
@@ -781,8 +806,12 @@ function switchMainTab(tab){
 function renderBrandRight(){
   const el = document.getElementById("brandRight");
   if(!currentUser || !currentProfile){ el.innerHTML = ""; return; }
-  el.innerHTML = `<span class="who">${currentProfile.num}번 ${currentProfile.name}</span> &nbsp;
-    <button onclick="handleLogout()">로그아웃</button>`;
+  el.innerHTML = `<span class="who">${currentProfile.num}번 ${currentProfile.name}</span>
+    <div class="brand-actions">
+      <a href="guide.html" target="_blank">❓ 사용법</a>
+      <button onclick="openPasswordScreen(false)" title="비밀번호 바꾸기" aria-label="비밀번호 바꾸기">🔑</button>
+      <button onclick="handleLogout()">로그아웃</button>
+    </div>`;
 }
 
 /* =========================================================
@@ -2841,6 +2870,62 @@ async function gpsArrive(noteId, btn){
       : "위치를 못 잡았어요. 창가나 건물 밖에서 다시 눌러주세요.";
     alert(msg); reset();
   }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+}
+
+/* =========================================================
+   15. 비밀번호 바꾸기 (첫 로그인 필수 + 언제든 변경)
+   ========================================================= */
+let pwForced = false;
+function openPasswordScreen(forced){
+  pwForced = forced;
+  ["pwCurrent","pwNew","pwNew2"].forEach(id => document.getElementById(id).value = "");
+  document.getElementById("pwError").style.display = "none";
+  document.getElementById("pwSub").textContent = forced
+    ? "처음 로그인했어요. 나만 아는 비밀번호로 바꿔주세요. (친구가 내 이름으로 결석계·상담을 못 내게 하려는 거예요)"
+    : "새 비밀번호를 입력해주세요.";
+  document.getElementById("pwCancelBtn").style.display = forced ? "none" : "inline-block";
+  const save = document.getElementById("pwSaveBtn");
+  if(!save.dataset.bound){
+    save.dataset.bound = "1";
+    save.addEventListener("click", savePassword);
+    document.getElementById("pwCancelBtn").addEventListener("click", () => showScreen("screen-main"));
+  }
+  showScreen("screen-password");
+}
+
+async function savePassword(){
+  const err = document.getElementById("pwError");
+  const show = m => { err.textContent = m; err.style.display = "block"; };
+  err.style.display = "none";
+  const cur = document.getElementById("pwCurrent").value;
+  const nw = document.getElementById("pwNew").value;
+  const nw2 = document.getElementById("pwNew2").value;
+  if(!cur) return show("지금 비밀번호를 입력해주세요.");
+  if(nw.length < 6) return show("새 비밀번호는 6자 이상이어야 해요.");
+  if(nw !== nw2) return show("새 비밀번호 두 칸이 서로 달라요.");
+  if(nw === cur) return show("지금 비밀번호와 다른 비밀번호를 써주세요.");
+  if(/^\d{2}1234$/.test(nw)) return show("처음 비밀번호와 같은 규칙은 쓸 수 없어요.");
+
+  const btn = document.getElementById("pwSaveBtn");
+  btn.disabled = true; btn.textContent = "바꾸는 중...";
+  try{
+    const cred = firebase.auth.EmailAuthProvider.credential(currentUser.email, cur);
+    await currentUser.reauthenticateWithCredential(cred);
+    await currentUser.updatePassword(nw);
+    await db.collection("students").doc(currentUser.uid).set({ pwChanged: true }, {merge:true});
+    currentProfile.pwChanged = true;
+    alert("비밀번호를 바꿨어요. 다음부터는 새 비밀번호로 로그인하세요.");
+    if(pwForced) enterApp(); else showScreen("screen-main");
+  }catch(e){
+    console.error("비밀번호 변경 실패", e);
+    const code = e && e.code || "";
+    if(code.includes("wrong-password") || code.includes("invalid-credential") || code.includes("invalid-login")) show("지금 비밀번호가 틀렸어요.");
+    else if(code.includes("weak-password")) show("너무 쉬운 비밀번호예요. 다른 걸로 해주세요.");
+    else if(code.includes("too-many-requests")) show("너무 여러 번 시도했어요. 잠시 후 다시 해주세요.");
+    else show("바꾸지 못했어요. 잠시 후 다시 해주세요.");
+  }finally{
+    btn.disabled = false; btn.textContent = "비밀번호 바꾸기";
+  }
 }
 </script>
 </body>

@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>2학년 7반 앱 사용법</title>
+<meta name="description" content="양일고 2학년 7반 학급 앱 사용 안내">
+<meta property="og:title" content="📱 2학년 7반 앱 사용법">
+<meta property="og:description" content="시간표·출결·학습계획서·야자·상담까지, 우리 반 앱 쓰는 법">
+<meta property="og:image" content="icons/icon-512.png">
+<link rel="icon" href="icons/favicon-32.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@600;800&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#F6F1E4; --ink:#2B2620; --ink-2:#5d564a; --ink-3:#8a8270;
+    --forest:#3E5C42; --forest-deep:#2A3F2D; --mint:#E3ECDF;
+    --ochre:#B4762A; --butter:#F4E2B8; --line:#DCD2BA; --card:#FFFDF7;
+    --rose:#A5432F; --rose-bg:#F6E1DA;
+  }
+  *{ box-sizing:border-box; }
+  html{ scroll-behavior:smooth; }
+  @media (prefers-reduced-motion:reduce){ html{ scroll-behavior:auto; } }
+  body{ margin:0; background:var(--paper); color:var(--ink); font-family:'Noto Sans KR', sans-serif; font-size:15.5px; line-height:1.7; }
+  .wrap{ max-width:680px; margin:0 auto; padding:0 16px 80px; }
+  h1,h2,h3{ font-family:'Noto Serif KR', serif; margin:0; line-height:1.35; }
+  a{ color:var(--forest-deep); }
+
+  /* 표지 */
+  .cover{ padding:36px 0 26px; border-bottom:2px solid var(--ink); margin-bottom:24px; }
+  .cover-top{ display:flex; align-items:center; gap:14px; }
+  .cover img{ width:64px; height:64px; border-radius:16px; box-shadow:0 2px 0 rgba(0,0,0,.08); }
+  .cover .kicker{ font-size:13px; color:var(--ink-3); }
+  .cover h1{ font-size:30px; font-weight:800; letter-spacing:-0.5px; margin-top:2px; }
+  .cover p{ margin:16px 0 0; color:var(--ink-2); }
+  .open-app{ display:flex; align-items:center; justify-content:center; gap:8px; margin-top:18px; background:var(--forest); color:#fff; text-decoration:none; font-weight:700; border-radius:12px; padding:14px; font-size:16px; }
+  .open-app:active{ background:var(--forest-deep); }
+
+  /* 목차 */
+  .toc{ display:grid; grid-template-columns:repeat(auto-fill, minmax(140px,1fr)); gap:8px; margin:0 0 30px; }
+  .toc a{ display:flex; align-items:center; gap:8px; background:var(--card); border:1px solid var(--line); border-radius:12px; padding:10px 12px; text-decoration:none; color:var(--ink); font-size:14px; font-weight:500; }
+  .toc a span{ font-size:20px; }
+
+  /* 섹션 */
+  section{ margin-bottom:34px; scroll-margin-top:16px; }
+  .sec-head{ display:flex; align-items:center; gap:10px; margin-bottom:12px; }
+  .sec-head .emo{ width:44px; height:44px; flex:none; border-radius:12px; background:var(--card); border:1px solid var(--line); display:flex; align-items:center; justify-content:center; font-size:24px; }
+  .sec-head h2{ font-size:21px; font-weight:800; }
+  .sec-head small{ display:block; font-family:'Noto Sans KR', sans-serif; font-size:12.5px; color:var(--ink-3); font-weight:400; }
+  .card{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:16px 18px; margin-bottom:10px; }
+  .card h3{ font-size:16.5px; margin-bottom:6px; }
+  .card p{ margin:0 0 6px; }
+  .card p:last-child{ margin-bottom:0; }
+  ul.dots{ margin:4px 0 0; padding-left:18px; }
+  ul.dots li{ margin-bottom:3px; }
+  ol.steps{ list-style:none; counter-reset:st; padding:0; margin:0; }
+  ol.steps li{ counter-increment:st; position:relative; padding:0 0 14px 40px; }
+  ol.steps li:last-child{ padding-bottom:0; }
+  ol.steps li::before{ content:counter(st); position:absolute; left:0; top:1px; width:28px; height:28px; border-radius:50%; background:var(--forest); color:#fff; font-weight:700; font-size:14px; display:flex; align-items:center; justify-content:center; }
+  ol.steps li > b:first-child{ display:block; }
+  .tip{ background:var(--mint); border-radius:10px; padding:10px 12px; font-size:14px; margin-top:8px; }
+  .warn{ background:var(--rose-bg); color:#6e2b1d; border-radius:10px; padding:10px 12px; font-size:14px; margin-top:8px; }
+  .pill{ display:inline-block; background:var(--butter); color:#7a5313; border-radius:999px; padding:1px 9px; font-size:12.5px; font-weight:700; margin-right:2px; }
+  table{ width:100%; border-collapse:collapse; font-size:14px; }
+  th, td{ text-align:left; padding:7px 6px; border-bottom:1px solid var(--line); vertical-align:top; }
+  th{ font-size:12.5px; color:var(--ink-3); font-weight:500; }
+  td.t{ white-space:nowrap; font-weight:700; color:var(--forest-deep); }
+
+  /* 보상 */
+  .rewards{ display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .reward{ background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; }
+  .reward .ico{ font-size:28px; line-height:1; }
+  .reward b{ display:block; margin:8px 0 2px; font-size:15px; }
+  .reward span{ font-size:13.5px; color:var(--ink-2); line-height:1.55; display:block; }
+  .score{ display:flex; gap:6px; margin:10px 0 2px; text-align:center; }
+  .score div{ flex:1; background:var(--paper); border-radius:10px; padding:8px 4px; }
+  .score small{ display:block; font-size:11.5px; color:var(--ink-3); }
+  .score strong{ font-size:19px; font-family:'Noto Serif KR', serif; }
+  .score .sum{ background:var(--butter); }
+
+  /* FAQ */
+  details{ background:var(--card); border:1px solid var(--line); border-radius:12px; padding:12px 16px; margin-bottom:8px; }
+  summary{ cursor:pointer; font-weight:700; list-style:none; }
+  summary::-webkit-details-marker{ display:none; }
+  summary::before{ content:"＋ "; color:var(--ochre); }
+  details[open] summary::before{ content:"－ "; }
+  details p{ margin:8px 0 0; font-size:14.5px; color:var(--ink-2); }
+
+  .top-btn{ position:fixed; right:14px; bottom:18px; width:46px; height:46px; border-radius:50%; background:var(--ink); color:#fff; display:flex; align-items:center; justify-content:center; text-decoration:none; font-size:18px; box-shadow:0 3px 10px rgba(0,0,0,.18); }
+  footer{ text-align:center; font-size:12.5px; color:var(--ink-3); margin-top:40px; }
+  @media (max-width:380px){ .rewards{ grid-template-columns:1fr; } .cover h1{ font-size:26px; } }
+</style>
+</head>
+<body id="top">
+<div class="wrap">
+
+  <header class="cover">
+    <div class="cover-top">
+      <img src="icons/icon-192.png" alt="">
+      <div>
+        <div class="kicker">양일고 2학년 7반</div>
+        <h1>우리 반 앱 사용법</h1>
+      </div>
+    </div>
+    <p>시간표, 공지, 출결, 학습계획서, 야자 출석, 상담 신청까지 이 앱 하나로 해요. 처음이라면 <b>① 처음 시작하기</b>만 먼저 따라 하세요.</p>
+    <a class="open-app" href="index.html">📱 앱 열기</a>
+  </header>
+
+  <nav class="toc" aria-label="목차">
+    <a href="#start"><span>🚀</span>처음 시작하기</a>
+    <a href="#timetable"><span>📅</span>시간표</a>
+    <a href="#notice"><span>📢</span>공지사항</a>
+    <a href="#attend"><span>🏫</span>출결관리</a>
+    <a href="#plan"><span>📝</span>학습계획서</a>
+    <a href="#reward"><span>🏆</span>보상</a>
+    <a href="#yaja"><span>🌙</span>야자</a>
+    <a href="#counsel"><span>💬</span>상담</a>
+    <a href="#alarm"><span>🔔</span>알림</a>
+    <a href="#faq"><span>🙋</span>자주 묻는 질문</a>
+  </nav>
+
+  <!-- 처음 시작하기 -->
+  <section id="start">
+    <div class="sec-head"><div class="emo">🚀</div><h2>처음 시작하기<small>딱 한 번만 하면 돼요</small></h2></div>
+    <div class="card">
+      <ol class="steps">
+        <li><b>홈 화면에 앱으로 추가하기</b>
+          아이폰은 <b>사파리</b>로 열고 아래 공유 버튼(□↑) → <b>홈 화면에 추가</b>.<br>
+          안드로이드는 <b>크롬</b>으로 열고 오른쪽 위 ⋮ → <b>홈 화면에 추가</b>.
+          <div class="tip">카톡에서 링크를 누르면 카톡 안에서 열려요. 오른쪽 위 메뉴에서 <b>다른 브라우저로 열기</b>를 눌러주세요.</div>
+        </li>
+        <li><b>로그인</b>
+          번호(예: 3)와 비밀번호를 입력해요. 처음 비밀번호는 선생님이 따로 알려줘요.</li>
+        <li><b>비밀번호 바꾸기</b>
+          처음 로그인하면 바로 나만 아는 비밀번호로 바꾸게 돼요. 친구가 내 이름으로 결석계나 상담을 내지 못하게 하려는 거예요. 나중에도 오른쪽 위 🔑 버튼으로 바꿀 수 있어요.</li>
+        <li><b>선택과목 입력</b>
+          선택과목 A·B·C, 사회문제탐구/과학과제연구, 제2외국어/교육의이해를 고르면 내 시간표와 교실이 자동으로 채워져요.</li>
+        <li><b>알림 켜기</b>
+          📢 공지사항 탭의 초록 배너에서 <b>알림 켜기</b> → <b>허용</b>.
+          <div class="warn">아이폰은 꼭 <b>홈 화면에 추가한 앱 아이콘으로 열어야</b> 알림이 와요. 사파리에서 그냥 열면 알림이 안 와요.</div>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- 시간표 -->
+  <section id="timetable">
+    <div class="sec-head"><div class="emo">📅</div><h2>시간표<small>내 선택과목에 맞춘 시간표</small></h2></div>
+    <div class="card">
+      <p>요일 버튼을 눌러 그날 시간표를 봐요. 이동수업은 <b>교실</b>이 초록색으로 표시돼요.</p>
+      <p>선택과목을 잘못 골랐다면 시간표 맨 아래 <b>선택과목 다시 입력하기</b>를 누르세요.</p>
+    </div>
+  </section>
+
+  <!-- 공지사항 -->
+  <section id="notice">
+    <div class="sec-head"><div class="emo">📢</div><h2>공지사항<small>전체 공지와 나에게 온 메시지</small></h2></div>
+    <div class="card">
+      <ul class="dots">
+        <li>📢 전체 공지는 반 모두에게, 💌 표시는 <b>나에게만</b> 온 메시지예요.</li>
+        <li>안 읽은 공지는 왼쪽에 주황색 줄이 있어요. 누르면 읽음 처리돼요.</li>
+        <li>선생님이 보낸 사진이 있으면 공지 안에서 바로 볼 수 있어요.</li>
+      </ul>
+    </div>
+  </section>
+
+  <!-- 출결관리 -->
+  <section id="attend">
+    <div class="sec-head"><div class="emo">🏫</div><h2>출결관리<small>늦거나 빠질 때</small></h2></div>
+    <div class="card">
+      <h3>🙋 출결 특이사항 알리기</h3>
+      <p>지각·결석·조퇴·결과가 생기면 <b>바로</b> 알려주세요. 선생님 휴대폰에 알림이 가요.</p>
+      <table>
+        <tr><th>출결 내용</th><th>같이 적을 것</th></tr>
+        <tr><td class="t">지각</td><td>예상 등교 시간</td></tr>
+        <tr><td class="t">조퇴</td><td>조퇴 예정 시간</td></tr>
+        <tr><td class="t">결과</td><td>빠지는 교시 (예: 3~4교시)</td></tr>
+        <tr><td class="t">결석</td><td>아래 결석계도 꼭 작성</td></tr>
+      </table>
+      <p style="margin-top:8px;">사유 구분은 <span class="pill">질병</span><span class="pill">인정</span><span class="pill">미인정</span><span class="pill">기타</span> 중에서 고르고, 사유는 짧게 적어요. (예: 감기, 병원 진료)</p>
+    </div>
+    <div class="card">
+      <h3>📍 학교 도착 버튼</h3>
+      <p>지각을 알린 날, 학교에 도착하면 <b>📍 학교 도착했어요</b>를 누르세요. 학교 안인지 위치로 확인한 뒤 도착 시간이 선생님께 전달돼요.</p>
+      <ul class="dots">
+        <li>처음 누르면 위치 권한을 물어요 → <b>허용</b></li>
+        <li>내 위치 좌표는 저장되지 않고 "학교와 몇 m 떨어졌는지"만 남아요.</li>
+        <li>교실 안에서 안 되면 창가나 건물 밖에서 다시 눌러보세요.</li>
+      </ul>
+    </div>
+    <div class="card">
+      <h3>📄 결석계</h3>
+      <ol class="steps">
+        <li><b>앱에서 결석계 작성</b>결석 유형, 기간, 증빙자료, 사유를 입력해요. 증빙서류는 사진으로 올리거나 "실물 제출"을 고르면 돼요.</li>
+        <li><b>학부모님께 링크 보내기</b>제출하면 서명용 링크가 복사돼요. 카톡으로 부모님께 보내주세요.</li>
+        <li><b>부모님 서명 → 자동 제출</b>부모님이 링크에서 서명하면 학교 양식 그대로 선생님께 자동 제출돼요.</li>
+      </ol>
+      <div class="tip">학부모 의견서는 <b>상습적이지 않은 2일 이내 결석</b>에만 쓸 수 있어요.</div>
+    </div>
+  </section>
+
+  <!-- 학습계획서 -->
+  <section id="plan">
+    <div class="sec-head"><div class="emo">📝</div><h2>주간 학습계획서<small>학원 시간 말고, 진짜 내 공부 시간</small></h2></div>
+    <div class="card">
+      <ol class="steps">
+        <li><b>이번 주 목표 3개</b>"수학 미적분 문제 20개"처럼 <b>과목 + 분량</b>으로 구체적으로. "열심히 하기"는 인정 안 돼요.</li>
+        <li><b>요일별 계획</b>학원·과외·학교 자기주도학습(7교시/8교시/야간)·가정 자기주도학습·기타 중 체크하고 내용과 시간을 적어요.</li>
+        <li><b>월요일 24:00까지 제출</b>제출하면 계획 <b>2점</b>. 지나면 잠기고 0점이에요. <b>다음 주 ▶</b>를 눌러 다음 주 계획을 미리 써둘 수 있어요.</li>
+        <li><b>매일 실행 체크</b>계획대로 했으면 체크해요. 그날 <b>15:40부터 다음 날 08:40까지</b>만 체크할 수 있어요. 하루 <b>1점</b>.</li>
+        <li><b>주간 회고</b>잘한 것, 아쉬운 것, 알게 된 것을 자유롭게. 회고를 내야 그 주 점수가 확정돼요. 회고 <b>2점</b>.</li>
+      </ol>
+      <div class="score">
+        <div><small>계획</small><strong>2</strong></div>
+        <div><small>실행 체크</small><strong>7</strong></div>
+        <div><small>회고</small><strong>2</strong></div>
+        <div class="sum"><small>한 주 최대</small><strong>11</strong></div>
+      </div>
+      <p style="margin-top:8px; font-size:14px; color:var(--ink-2);">점수는 성적이 아니라 <b>계획대로 실천했는지</b>로 매겨요. 4주가 한 시즌이에요.</p>
+    </div>
+  </section>
+
+  <!-- 보상 -->
+  <section id="reward">
+    <div class="sec-head"><div class="emo">🏆</div><h2>학습계획서 보상<small>꾸준히 하면 이런 게 있어요</small></h2></div>
+    <div class="rewards">
+      <div class="reward"><div class="ico">🪑</div><b>자리 우선권</b><span>그 주 기준 점수를 넘으면 다음 자리배치 때 원하는 자리를 먼저 골라요.</span></div>
+      <div class="reward"><div class="ico">📖</div><b>생기부 노력 서술</b><span>학기 동안의 실천 기록과 회고를 바탕으로 생기부에 노력 과정을 구체적으로 적어줘요.</span></div>
+      <div class="reward"><div class="ico">📞</div><b>부모님께 칭찬 연락</b><span>꾸준히 실천한 학생은 선생님이 부모님께 직접 칭찬 연락을 드려요.</span></div>
+      <div class="reward"><div class="ico">🎟️</div><b>시즌 문화체험</b><span>4주 시즌 누적 점수 상위 학생은 담임 선생님과 문화체험을 함께 가요.</span></div>
+    </div>
+  </section>
+
+  <!-- 야자 -->
+  <section id="yaja">
+    <div class="sec-head"><div class="emo">🌙</div><h2>야간자율학습(야자)<small>QR로 출석 체크</small></h2></div>
+    <div class="card">
+      <h3>📱 QR 찍기</h3>
+      <p><b>🌙 야자</b> 탭 → <b>내 야자 출석 QR 보기</b>. 교실 태블릿 카메라에 비추면 "띠링" 소리와 함께 출석돼요. 종이 QR 스티커도 똑같이 쓸 수 있어요.</p>
+      <p>입실과 퇴실을 <b>둘 다</b> 찍어야 해요. 입실은 블록 시작 <b>10분 전~15분 후</b>, 퇴실은 끝나기 <b>10분 전~15분 후</b>에만 인정돼요.</p>
+      <table>
+        <tr><th>블록</th><th>시간</th><th>요일</th></tr>
+        <tr><td class="t">7교시</td><td>15:40~16:30</td><td>월·수</td></tr>
+        <tr><td class="t">8교시</td><td>16:40~17:30</td><td>월~금</td></tr>
+        <tr><td class="t">야간1</td><td>18:30~20:00</td><td>월~금</td></tr>
+        <tr><td class="t">야간2</td><td>20:00~21:30</td><td>월~금</td></tr>
+      </table>
+      <div class="tip">내가 <b>신청한 블록만</b> 출석이 돼요. 모의고사 날처럼 야자가 없는 날은 계산에서 빠져요.</div>
+    </div>
+    <div class="card">
+      <h3>🌙 빠지는 날은 미리 사유 내기</h3>
+      <p>야자 탭에서 날짜와 빠지는 블록을 고르고 사유를 적어요. <b>당일까지</b> 낼 수 있고, 지난 날짜는 선생님께 직접 말해야 해요.</p>
+      <p>사유를 낸 블록은 출석률 계산에서 빠져요. 부당한 사유는 선생님이 <b>반려</b>할 수 있고, 반려되면 결석으로 계산돼요.</p>
+    </div>
+    <div class="card">
+      <h3>🏅 이달의 프리미엄</h3>
+      <p>이번 달 출석률이 <b>90% 이상</b>이면 야자 탭에 🏅 배지가 붙어요.</p>
+      <p style="font-size:14px; color:var(--ink-2);">출석률 = 출석 ÷ (신청한 블록 − 사유 낸 블록)</p>
+    </div>
+  </section>
+
+  <!-- 상담 -->
+  <section id="counsel">
+    <div class="sec-head"><div class="emo">💬</div><h2>담임 상담 신청<small>편하게 신청하세요</small></h2></div>
+    <div class="card">
+      <ol class="steps">
+        <li><b>날짜와 시간 고르기</b>월·수 7·8교시, 화·목·금 8교시, 평일 야간 18:30 / 19:30 / 20:30 중에서 골라요. "마감"은 이미 다른 친구가 확정된 시간이에요.</li>
+        <li><b>주제 고르기</b><span class="pill">진로</span><span class="pill">성적</span><span class="pill">교우관계</span><span class="pill">생활</span><span class="pill">기타</span> 중 하나. 미리 하고 싶은 말이 있으면 적어도 돼요.</li>
+        <li><b>선생님 확정 기다리기</b>확정되면 알림이 와요. 선생님 사정으로 어려우면 그것도 알림으로 오니 다른 시간으로 다시 신청하세요.</li>
+      </ol>
+      <div class="tip">상담 시작 <b>3시간 전까지</b> 신청할 수 있어요. 야자 시간과 겹치면 그 블록은 자동으로 사유 처리돼요.</div>
+    </div>
+  </section>
+
+  <!-- 알림 -->
+  <section id="alarm">
+    <div class="sec-head"><div class="emo">🔔</div><h2>이런 알림이 와요<small>해야 할 걸 안 했을 때만 와요</small></h2></div>
+    <div class="card">
+      <table>
+        <tr><th>언제</th><th>내용</th></tr>
+        <tr><td class="t">일 20:00<br>월 18:00</td><td>📝 주간 계획서를 아직 안 냈을 때</td></tr>
+        <tr><td class="t">평일 15:30</td><td>📚 오늘 공부 계획 안내</td></tr>
+        <tr><td class="t">블록 5분 전</td><td>📍 야자 입실 QR 찍기</td></tr>
+        <tr><td class="t">마지막 블록<br>끝나기 5분 전</td><td>🚪 야자 퇴실 QR 찍기</td></tr>
+        <tr><td class="t">매일 22:30</td><td>✔️ 오늘 공부 실행 체크를 안 했을 때</td></tr>
+        <tr><td class="t">일 19:00</td><td>🪞 주간 회고를 안 냈을 때</td></tr>
+        <tr><td class="t">상담 날 08:00</td><td>🗓 오늘 상담 안내</td></tr>
+      </table>
+      <p style="margin-top:8px; font-size:14px; color:var(--ink-2);">공지, 상담 확정·불가 알림은 그때그때 바로 와요.</p>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section id="faq">
+    <div class="sec-head"><div class="emo">🙋</div><h2>자주 묻는 질문</h2></div>
+    <details><summary>알림이 안 와요</summary>
+      <p>① 공지사항 탭에서 알림 켜기를 눌렀는지 ② 휴대폰 설정에서 알림이 허용돼 있는지 확인하세요. 아이폰은 <b>홈 화면에 추가한 아이콘으로</b> 열어야 알림이 와요.</p></details>
+    <details><summary>새 기능이 안 보이거나 화면이 예전 그대로예요</summary>
+      <p>앱을 완전히 껐다가 다시 켜보세요. 그래도 그대로면 주소 끝에 <b>?v=2</b>처럼 아무 숫자를 붙여서 열어보세요. 화면 맨 위 "2학년 7반" 옆 작은 글씨가 버전이에요.</p></details>
+    <details><summary>비밀번호를 잊어버렸어요</summary>
+      <p>선생님께 말하면 처음 비밀번호로 되돌려줘요. 다시 로그인하면 새 비밀번호를 정하면 돼요.</p></details>
+    <details><summary>위치 확인(학교 도착)이 안 돼요</summary>
+      <p>휴대폰 설정에서 브라우저(또는 앱)의 위치 권한을 허용하고, 창가나 건물 밖에서 다시 눌러보세요. 그래도 안 되면 선생님께 직접 말하면 돼요.</p></details>
+    <details><summary>QR이 안 찍혀요</summary>
+      <p>화면 밝기를 올리고 태블릿 카메라에서 한 뼘 정도 떨어져서 비춰보세요. "신청자가 아니에요"가 뜨면 그 블록을 신청하지 않은 거라 선생님께 말해주세요.</p></details>
+    <details><summary>학습계획서를 월요일에 못 냈어요</summary>
+      <p>마감이 지나면 그 주 계획은 잠겨요. 정말 사정이 있었다면 선생님께 말해주세요. 예외로 풀어줄 수 있어요.</p></details>
+  </section>
+
+  <a class="open-app" href="index.html">📱 앱 열기</a>
+  <footer>양일고등학교 2학년 7반 · 궁금한 건 언제든 선생님께</footer>
+</div>
+<a class="top-btn" href="#top" aria-label="맨 위로">↑</a>
+</body>
+</html>
