@@ -174,7 +174,7 @@
 <div class="wrap">
 
   <div class="brand">
-    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1001-7</span></h1>
+    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1005-2</span></h1>
     <div id="brandRight"></div>
   </div>
 
@@ -418,6 +418,7 @@
               <input type="checkbox" id="planOverrideCheck"/>
               담임 예외로 이번 주 계획 잠금 해제
             </label>
+            <button class="link-btn" id="planUnlockBtn" style="display:none; margin-top:8px;">🔓 계획 제출 풀어주기 (학생이 다시 고쳐서 제출)</button>
           </div>
 
           <div class="sp-section-label"><span class="n">3</span>주간 회고</div>
@@ -426,6 +427,7 @@
             <textarea id="reflectText" placeholder="예: 화요일까진 잘 지켰는데 수요일에 학원 갔다와서 그대로 잠들었다." style="min-height:80px;"></textarea>
             <button class="sp-submit-btn" id="submitReflectBtn">회고 제출하고 이번 주 포인트 확정</button>
             <div class="sp-locked-note" id="reflectLockedNote" style="display:none;">제출 완료 — 이번 주 기록은 더 이상 수정할 수 없습니다.</div>
+            <button class="link-btn" id="reflectUnlockBtn" style="display:none; margin-top:8px;">🔓 회고 제출 풀어주기</button>
           </div>
 
           <div class="sp-teacher" id="teacherBox">
@@ -1427,7 +1429,8 @@ function subscribeMyAbsences(){
 
     const now = new Date();
     const planDeadline = planDeadlineFor(monday);
-    const planLocked = !spState.planOverride && (spState.planSubmitted || spState.reflectSubmitted || now >= planDeadline);
+    // 제출해도 마감(월 24:00) 전까지는 학생이 고칠 수 있음 — 고친 내용은 자동 저장
+    const planLocked = !spState.planOverride && (spState.reflectSubmitted || now >= planDeadline);
     const canEditPlan = !planLocked && !spViewerIsTeacher;
 
     const goalsBox = document.getElementById("goalsBox");
@@ -1561,13 +1564,18 @@ function subscribeMyAbsences(){
     if(spViewerIsTeacher){
       planBtn.style.display = "none";
       planNote.className = "sp-plan-note";
-      planNote.textContent = spState.planSubmitted ? "계획 제출 완료." : "아직 계획을 제출하지 않았어요.";
+      planNote.textContent = spState.planSubmitted ? "계획 제출 완료." : spState.planOverride ? "🔓 잠금 해제됨 — 학생이 고쳐서 다시 제출하기를 기다리는 중이에요." : "아직 계획을 제출하지 않았어요.";
     } else if(spState.planOverride){
       planBtn.style.display = "block";
       planNote.className = "sp-plan-note warn";
       planNote.textContent = "담임 예외로 잠금이 해제된 상태입니다 — 지금 제출하면 계획 점수 2점을 받습니다.";
       planBtn.disabled = spState.goals.some(g => !g.trim());
       planBtn.textContent = "주간 계획 제출 (목표 + 요일별 계획 확정)";
+    } else if(spState.planSubmitted && !planLocked){
+      planBtn.style.display = "block";
+      planNote.className = "sp-plan-note done";
+      planNote.textContent = "제출 완료 — 계획 점수 2점 확정. 월요일 24:00 전까지는 위에서 바로 고칠 수 있어요 (자동 저장).";
+      planBtn.disabled = true; planBtn.textContent = "제출 완료 · 마감 전 수정 가능";
     } else if(spState.planSubmitted){
       planBtn.style.display = "block";
       planNote.className = "sp-plan-note done";
@@ -1601,9 +1609,26 @@ function subscribeMyAbsences(){
         spState.planOverride = e.target.checked;
         spSaveWeek(); spRender();
       };
+      overrideBox.style.display = spState.planSubmitted ? "none" : "flex";
     } else {
       overrideBox.style.display = "none";
     }
+
+    // 담임: 이미 제출한 계획/회고를 다시 풀어주기
+    const planUnlockBtn = document.getElementById("planUnlockBtn");
+    planUnlockBtn.style.display = spViewerIsTeacher && spState.planSubmitted && !spState.reflectSubmitted ? "block" : "none";
+    planUnlockBtn.onclick = async ()=>{
+      if(!confirm("계획 제출을 풀어줄까요?\n학생이 고쳐서 다시 제출하면 계획 점수 2점이 유지돼요.")) return;
+      spState.planSubmitted = false; spState.planOverride = true;
+      spUpdateScores(); await spSaveWeek(); spRender();
+    };
+    const reflectUnlockBtn = document.getElementById("reflectUnlockBtn");
+    reflectUnlockBtn.style.display = spViewerIsTeacher && spState.reflectSubmitted ? "block" : "none";
+    reflectUnlockBtn.onclick = async ()=>{
+      if(!confirm("회고 제출을 풀어줄까요?\n학생이 회고와 체크를 고친 뒤 다시 제출해야 포인트가 확정돼요.")) return;
+      spState.reflectSubmitted = false;
+      spUpdateScores(); await spSaveWeek(); spRender();
+    };
 
     const reflectText = document.getElementById("reflectText");
     reflectText.value = spState.reflectText;
