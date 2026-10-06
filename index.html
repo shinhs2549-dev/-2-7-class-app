@@ -182,7 +182,7 @@
 <div class="wrap">
 
   <div class="brand">
-    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1006-4</span></h1>
+    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1006-5</span></h1>
     <div id="brandRight"></div>
   </div>
 
@@ -1169,9 +1169,14 @@ async function registerFcmToken(throwOnError){
   try{
     const swReg = await navigator.serviceWorker.register("firebase-messaging-sw.js");
     const token = await messaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
-    await db.collection("students").doc(currentUser.uid).set({
-      fcmTokens: firebase.firestore.FieldValue.arrayUnion(token)
-    }, {merge:true});
+    // 이 기기의 예전 토큰은 지우고 새 토큰만 남김 (같은 폰에 알림이 여러 번 오는 문제 방지)
+    const ref = db.collection("students").doc(currentUser.uid);
+    let prev = null; try{ prev = localStorage.getItem("c27_fcmToken"); }catch(e){}
+    if(prev && prev !== token){
+      await ref.set({ fcmTokens: firebase.firestore.FieldValue.arrayRemove(prev) }, {merge:true}).catch(()=>{});
+    }
+    await ref.set({ fcmTokens: firebase.firestore.FieldValue.arrayUnion(token) }, {merge:true});
+    try{ localStorage.setItem("c27_fcmToken", token); }catch(e){}
     return token;
   } catch(e){
     console.error("FCM 토큰 등록 실패:", e);
@@ -1209,7 +1214,8 @@ async function runPushTest(){
   if(perm === "default") perm = await Notification.requestPermission();
   if(perm !== "granted"){ add("❌ <b>알림이 차단돼 있어요.</b> 휴대폰 설정 → 앱 → (크롬 또는 2-7 앱) → 알림을 허용하고, 주소창 왼쪽 자물쇠 → 권한 → 알림도 허용해주세요."); return; }
   add("✅ 알림 권한 허용됨");
-  try{ await registerFcmToken(true); }
+  let myToken = null;
+  try{ myToken = await registerFcmToken(true); }
   catch(e){ add(`❌ 기기 등록 실패 (${yajaEsc(e.code || e.message || "알 수 없음")}). 앱을 완전히 닫았다가 다시 열어 테스트해주세요.`); return; }
   add("✅ 이 기기를 알림 받을 기기로 등록했어요.");
   add("⏳ 서버에 테스트 알림을 요청하는 중... (최대 20초)");
@@ -1222,6 +1228,14 @@ async function runPushTest(){
     if(!d || !d.done || finished) return;
     finished = true; unsub(); lines.pop();
     if(d.sent > 0) add(`✅ 서버가 알림을 보냈어요 (등록된 기기 ${d.tokens}대 중 ${d.sent}대 성공).<br>앱이 열려 있으면 화면에 창이 뜨고, 닫혀 있으면 알림창에 와요. <b>그래도 안 보이면</b> 휴대폰의 방해금지·절전 모드를 확인해주세요.`);
+    if(d.tokens > 2 && myToken){
+      add(`⚠️ 이 계정에 기기가 <b>${d.tokens}대</b> 등록돼 있어요. 같은 알림이 여러 번 온다면 정리해주세요.<br><button class="primary-btn" style="margin-top:6px; padding:10px;" id="pushCleanBtn">🧹 이 기기만 남기고 정리</button>`);
+      document.getElementById("pushCleanBtn").onclick = async () => {
+        await db.collection("students").doc(currentUser.uid).set({ fcmTokens: [myToken] }, {merge:true});
+        alert("정리했어요. 다른 폰·PC는 앱을 다시 열면 자동으로 다시 등록돼요.");
+        document.getElementById("pushCleanBtn").disabled = true;
+      };
+    }
     else add("❌ 서버는 동작하지만 이 기기로 보내지 못했어요. 앱을 닫았다가 다시 열고 한 번 더 테스트해주세요.");
   }, () => {});
   setTimeout(() => {
@@ -1260,8 +1274,13 @@ async function requestNotificationPermission(){
 
 // 앱이 열려있는 동안 푸시가 오면 처리 (포그라운드)
 if(messaging){
+  let lastFg = { k:"", t:0 };
   messaging.onMessage(payload => {
-    alert(`📢 ${payload.notification.title}\n${payload.notification.body}`);
+    const n = payload.notification || payload.data || {};
+    const k = (n.title || "") + "|" + (n.body || "");
+    if(k === lastFg.k && Date.now() - lastFg.t < 10000) return; // 같은 알림 중복 표시 막기
+    lastFg = { k, t: Date.now() };
+    alert(`📢 ${n.title || ""}\n${n.body || ""}`);
   });
 }
 

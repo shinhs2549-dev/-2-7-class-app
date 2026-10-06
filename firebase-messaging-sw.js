@@ -13,10 +13,11 @@ firebase.initializeApp({
 
 const messaging = firebase.messaging();
 
-// 앱을 닫아둔 상태에서 알림이 오면 이 코드가 실행되어 휴대폰 알림창에 띄워줍니다.
+// 알림(notification)이 담긴 메시지는 Firebase가 알아서 알림창에 띄워줌.
+// 여기서 또 띄우면 같은 알림이 2개씩 뜨므로, 데이터만 온 경우에만 직접 띄움.
 messaging.onBackgroundMessage((payload) => {
-  self.registration.showNotification(payload.notification.title, {
-    body: payload.notification.body,
-    icon: "/icon-192.png" // 원하는 앱 아이콘 이미지가 있으면 같은 경로에 넣어주세요 (없어도 동작함)
-  });
+  if (payload.notification) return;
+  const d = payload.data || {};
+  if (!d.title) return;
+  self.registration.showNotification(d.title, { body: d.body || "", icon: "icons/icon-192.png", tag: d.tag || undefined });
 });
