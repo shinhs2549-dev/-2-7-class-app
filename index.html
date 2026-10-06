@@ -130,6 +130,12 @@
   .sp-period-chip{ display:flex; align-items:center; gap:3px; font-size:11px; border:1px solid var(--line); border-radius:12px; padding:2px 8px; cursor:pointer; color:#8a8270; }
   .sp-period-chip.on{ background:#DCE8DC; border-color:var(--forest); color:var(--forest-deep); }
   .sp-period-chip input{ accent-color:var(--forest); width:12px; height:12px; }
+  .sp-period-chip .ne{ font-size:9.5px; color:#b0a58c; }
+  .sp-qr-row{ display:flex; flex-wrap:wrap; gap:4px; margin:4px 0 0 22px; }
+  .sp-qr{ font-size:10.5px; padding:1px 7px; border-radius:10px; background:#EEE9DD; color:#8a8270; }
+  .sp-qr.qr, .sp-qr.exc{ background:#DCE8DC; color:var(--forest-deep); }
+  .sp-qr.miss{ background:#F3DDD6; color:var(--danger); }
+  .sp-qr.wait{ background:#F1DDB2; color:#8a5f14; }
   .sp-check-row{ display:flex; align-items:center; justify-content:space-between; gap:8px; flex-wrap:wrap; }
   .sp-check-row .deadline{ font-size:10.5px; color:#8a8270; }
   .sp-check-right{ display:flex; align-items:center; gap:8px; }
@@ -174,7 +180,7 @@
 <div class="wrap">
 
   <div class="brand">
-    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1005-2</span></h1>
+    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1006-1</span></h1>
     <div id="brandRight"></div>
   </div>
 
@@ -1278,6 +1284,7 @@ function subscribeMyAbsences(){
   let spTargetUid = null;   // 지금 보고 있는 학생의 uid
   let spViewerIsTeacher = false;
   let spState = null;
+  let spYaja = { enroll:{}, overrides:{}, att:new Set(), exc:new Set() }; // 야자 신청·QR 기록 (계획서 연동용)
 
   function pad(n){ return n.toString().padStart(2,"0"); }
   function fmtDate(d){ return `${d.getMonth()+1}/${d.getDate()}`; }
@@ -1319,7 +1326,7 @@ function subscribeMyAbsences(){
         homeSelf: { on:false, detail:"" },
         etc: { on:false, detail:"" },
       },
-      checked: false, doneAt: "",
+      checked: false, doneAt: "", autoQr: false,
     };
   }
   function defaultState(){
@@ -1356,6 +1363,7 @@ function subscribeMyAbsences(){
           }
           nd.checked = !!d.checked;
           nd.doneAt = typeof d.doneAt === "string" ? d.doneAt : "";
+          nd.autoQr = !!d.autoQr;
         }
         return nd;
       });
@@ -1366,6 +1374,99 @@ function subscribeMyAbsences(){
     if(typeof s.reflectSubmitted !== "boolean") s.reflectSubmitted = false;
     if(typeof s.teacherFeedback !== "string") s.teacherFeedback = "";
     return s;
+  }
+
+  /* ---------- 야자 연동 ----------
+     1) 야자 신청 → 계획서 '학교 자기주도학습' 자동 채움 (빼는 건 안 함)
+     2) 야자 QR 기록 → 그날 '계획대로 공부했음' 자동 인증 / QR 없으면 직접 체크 불가 */
+  async function spLoadYaja(monday){
+    const end = new Date(monday); end.setDate(end.getDate()+6);
+    const startStr = isoKey(monday), endStr = isoKey(end);
+    const y = { enroll:{}, overrides:{}, att:new Set(), exc:new Set() };
+    try{
+      const [stuDoc, ovSnap, attSnap, excSnap] = await Promise.all([
+        db.collection("students").doc(spTargetUid).get(),
+        db.collection("yajaCalendarOverrides")
+          .where(firebase.firestore.FieldPath.documentId(), ">=", startStr)
+          .where(firebase.firestore.FieldPath.documentId(), "<=", endStr).get(),
+        db.collection("yajaAttendance").where("studentUid", "==", spTargetUid).get(),
+        db.collection("yajaExcuses").where("studentUid", "==", spTargetUid).get(),
+      ]);
+      y.enroll = (stuDoc.exists && stuDoc.data().yajaEnroll) || {};
+      ovSnap.forEach(d => { y.overrides[d.id] = d.data().operating; });
+      attSnap.forEach(d => { const r = d.data(); if(r.date < startStr || r.date > endStr) return;
+        if(r.checkInAt) y.att.add(`${r.date}_${r.block}`);
+        if(r.excused) y.exc.add(`${r.date}_${r.block}`); });
+      excSnap.forEach(d => { const r = d.data(); if(r.date < startStr || r.date > endStr) return;
+        if(r.status !== "rejected") y.exc.add(`${r.date}_${r.block}`); });
+    }catch(e){ console.error("야자 기록 불러오기 실패", e); }
+    spYaja = y;
+  }
+
+  // 계획서 교시(p7/p8/night) → 그날 실제 야자 블록 중 '신청 + 운영'인 것
+  function spYajaBlocks(monday, idx, pkey){
+    const d = new Date(monday); d.setDate(d.getDate()+idx);
+    const dow = d.getDay(), key = isoKey(d);
+    const ov = spYaja.overrides[key];
+    const operating = yajaEffectiveBlocks(dow, ov === undefined ? null : ov).map(b => b.key);
+    const enr = spYaja.enroll[dow] || {};
+    const cands = pkey === "night" ? ["night1","night2"] : [pkey];
+    return { date:d, key, blocks: cands.filter(b => operating.includes(b) && enr[b]), operating: cands.some(b => operating.includes(b)) };
+  }
+
+  // 그날 학교 자습 인증 상태
+  function spSchoolCheck(monday, idx){
+    const sc = spState.days[idx].cats.schoolSelf;
+    if(!sc || !sc.on) return null;
+    const items = [];
+    periodsForDay(idx).forEach(p => {
+      if(!sc.periods[p.key]) return;
+      const info = spYajaBlocks(monday, idx, p.key);
+      if(!info.blocks.length){ items.push({ label:p.label, st: info.operating ? "none" : "off" }); return; }
+      const hit = b => spYaja.att.has(`${info.key}_${b}`), ex = b => spYaja.exc.has(`${info.key}_${b}`);
+      let st;
+      if(info.blocks.every(b => hit(b) || ex(b))) st = info.blocks.some(hit) ? "qr" : "exc";
+      else if(info.blocks.some(b => !hit(b) && !ex(b) && !yajaBlockIsPast(info.date, YAJA_ALL_BLOCKS.find(x => x.key === b)))) st = "wait";
+      else st = "miss";
+      items.push({ label:p.label, st });
+    });
+    const ok = items.every(i => i.st !== "wait" && i.st !== "miss");
+    return { items, ok, hasQr: items.some(i => i.st === "qr") };
+  }
+
+  function spOtherCatsOn(day){
+    return ["academy","tutoring","homeSelf","etc"].some(k => day.cats[k] && day.cats[k].on);
+  }
+
+  // 1) 야자 신청 내용을 계획서에 채우기 (한 주에 한 번, 제출 전·마감 전에만)
+  function spPrefillFromYaja(monday){
+    if(spViewerIsTeacher || spState.yajaPrefilled || spState.planSubmitted) return false;
+    if(new Date() >= planDeadlineFor(monday)) return false;
+    let changed = false;
+    for(let idx = 0; idx < 5; idx++){
+      const sc = spState.days[idx].cats.schoolSelf;
+      periodsForDay(idx).forEach(p => {
+        if(spYajaBlocks(monday, idx, p.key).blocks.length && !sc.periods[p.key]){
+          sc.on = true; sc.periods[p.key] = true; changed = true;
+        }
+      });
+    }
+    spState.yajaPrefilled = true;
+    return true;
+  }
+
+  // 2) QR 출석이 확인된 날은 자동으로 '계획대로 공부했음' 체크 (학교 자습만 계획한 날)
+  function spAutoCheckFromQr(monday){
+    if(spViewerIsTeacher || spState.reflectSubmitted) return false;
+    const today = isoKey(new Date());
+    let changed = false;
+    spState.days.forEach((day, idx) => {
+      const d = new Date(monday); d.setDate(d.getDate()+idx);
+      if(isoKey(d) > today || day.checked || spOtherCatsOn(day)) return;
+      const r = spSchoolCheck(monday, idx);
+      if(r && r.items.length && r.ok && r.hasQr){ day.checked = true; day.autoQr = true; day.doneAt = ""; changed = true; }
+    });
+    return changed;
   }
 
   async function spLoadWeek(){
@@ -1394,6 +1495,10 @@ function subscribeMyAbsences(){
       }catch(e){ /* 지난주 기록 없음 */ }
       if(!spViewerIsTeacher) spSaveWeek();
     }
+    await spLoadYaja(monday);
+    const pre = spPrefillFromYaja(monday);
+    const auto = spAutoCheckFromQr(monday);
+    if(pre || auto){ spUpdateScores(); spSaveWeek(); }
     spRender();
   }
 
@@ -1470,7 +1575,8 @@ function subscribeMyAbsences(){
       } else {
         badge = `<span class="sp-badge open">결과체크 가능</span>`;
       }
-      const timeDoneHtml = day.checked
+      if(day.checked && day.autoQr && !notYetOpen) badge = `<span class="sp-badge done">완료 · QR 인증</span>`;
+      const timeDoneHtml = day.checked && !day.autoQr
         ? `<div class="sp-time-done">완료 시각 <input type="time" data-idx="${idx}" value="${spEscapeHtml(day.doneAt)}" ${(!canCheck)?"disabled":""}/></div>`
         : "";
       const catsHtml = CATS.map(cat=>{
@@ -1480,17 +1586,22 @@ function subscribeMyAbsences(){
           if(avail.length === 0) return "";
           const chips = avail.map(p=>{
             const on = cd.periods[p.key];
+            const enrolled = spYajaBlocks(monday, idx, p.key).blocks.length > 0;
             return `<label class="sp-period-chip ${on?'on':''}">
                       <input type="checkbox" data-idx="${idx}" data-cat="${cat.key}" data-period="${p.key}" ${on?"checked":""} ${canEditPlan?"":"disabled"}/>
-                      ${p.label}
+                      ${p.label}${enrolled ? "" : `<span class="ne">미신청</span>`}
                     </label>`;
           }).join("");
+          const r = isoKey(dDate) <= isoKey(now) ? spSchoolCheck(monday, idx) : null;
+          const ST = { qr:"✅ QR 출석", exc:"📝 사유 인정", wait:"⏳ 아직", miss:"❌ QR 기록 없음", none:"· 야자 미신청", off:"· 야자 없는 날" };
+          const qrRow = r && r.items.length
+            ? `<div class="sp-qr-row">${r.items.map(i => `<span class="sp-qr ${i.st}">${i.label} ${ST[i.st]}</span>`).join("")}</div>` : "";
           return `<div class="sp-cat-row">
                     <label class="sp-cat-toggle">
                       <input type="checkbox" class="sp-cat-check" data-idx="${idx}" data-cat="${cat.key}" ${cd.on?"checked":""} ${canEditPlan?"":"disabled"}/>
                       <span>${cat.label}</span>
                     </label>
-                    ${cd.on ? `<div class="sp-period-chips">${chips}</div>` : ""}
+                    ${cd.on ? `<div class="sp-period-chips">${chips}</div>${qrRow}` : ""}
                   </div>`;
         }
         return `<div class="sp-cat-row">
@@ -1553,7 +1664,16 @@ function subscribeMyAbsences(){
         if(cb.classList.contains("disabled")) return;
         const idx = Number(cb.dataset.idx);
         const day = spState.days[idx];
+        if(!day.checked){
+          const r = spSchoolCheck(monday, idx);
+          if(r && !r.ok){
+            const bad = r.items.filter(i => i.st === "miss" || i.st === "wait").map(i => i.label).join(", ");
+            alert(`학교 자습(${bad})은 야자 QR 출석 기록이 있어야 체크할 수 있어요.\n출석했는데 기록이 없다면 선생님께 말씀드려주세요.`);
+            return;
+          }
+        }
         day.checked = !day.checked;
+        day.autoQr = false;
         day.doneAt = day.checked ? nowTimeStr() : "";
         spUpdateScores(); spSaveWeek(); spRender();
       });
