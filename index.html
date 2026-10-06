@@ -69,6 +69,8 @@
   .period-row{ display:grid; grid-template-columns:64px 1fr auto; gap:2px 14px; align-items:center; background:var(--card); border:1px solid var(--line); border-top:none; padding:13px 16px; }
   .period-row:first-of-type{ border-top:1px solid var(--line); }
   .period-row.empty{ opacity:0.4; }
+  .period-row.now{ background:#E6EFE4; box-shadow:inset 4px 0 0 var(--forest); }
+  .period-row.now .p-num::after{ content:"지금"; display:block; font-size:10px; font-weight:700; color:var(--forest-deep); }
   .p-num{ font-family:'Noto Serif KR', serif; font-weight:700; font-size:15px; color:var(--ochre); }
   .p-time{ grid-column:1; grid-row:2; font-size:11px; color:#a49c88; }
   .p-subject{ font-size:15.5px; font-weight:500; }
@@ -180,7 +182,7 @@
 <div class="wrap">
 
   <div class="brand">
-    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1006-2</span></h1>
+    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1006-3</span></h1>
     <div id="brandRight"></div>
   </div>
 
@@ -899,13 +901,19 @@ async function handleSaveSelection(){
 /* =========================================================
    5. 개인 시간표 렌더링
    ========================================================= */
-let currentDayIndex = 0;
+// 앱을 열면 오늘 요일 시간표가 먼저 보임 (토·일은 월요일)
+let currentDayIndex = (() => { const d = new Date().getDay(); return d >= 1 && d <= 5 ? d - 1 : 0; })();
+function nowPeriodIndex(){
+  const n = new Date(), m = n.getHours() * 60 + n.getMinutes();
+  return PERIOD_TIMES.findIndex(t => { const [a, b] = t.split("~").map(x => { const [h, mm] = x.split(":").map(Number); return h * 60 + mm; }); return m >= a && m < b; });
+}
 function renderTimetable(selection){
   const tabsEl = document.getElementById("dayTabs");
   tabsEl.innerHTML = "";
   DAYS.forEach((day, idx) => {
     const btn = document.createElement("button");
-    btn.textContent = day;
+    const isToday = new Date().getDay() === idx + 1;
+    btn.textContent = isToday ? `${day}·오늘` : day;
     if(idx === currentDayIndex) btn.classList.add("active");
     btn.onclick = () => { currentDayIndex = idx; renderTimetable(selection); };
     tabsEl.appendChild(btn);
@@ -919,7 +927,8 @@ function renderTimetable(selection){
   periods.forEach((p, i) => {
     const periodNum = i + 1;
     const row = document.createElement("div");
-    row.className = "period-row" + (p ? "" : " empty");
+    const isNow = new Date().getDay() === currentDayIndex + 1 && nowPeriodIndex() === i;
+    row.className = "period-row" + (p ? "" : " empty") + (isNow ? " now" : "");
     let subject, teacherOrRoom, roomTag, isFixed;
 
     if(!p){ subject="공강"; teacherOrRoom=""; roomTag=""; isFixed=true; }
