@@ -32,8 +32,8 @@
   .brand-actions{ display:flex; gap:5px; justify-content:flex-end; margin-top:6px; }
   .brand-actions a, .brand-actions button{ white-space:nowrap; font-size:12px; padding:5px 8px; border:1px solid var(--line); border-radius:6px; background:none; color:var(--ink); text-decoration:none; font-family:'Noto Sans KR', sans-serif; cursor:pointer; line-height:1.3; }
   #brandRight{ text-align:right; }
-  .main-tabs{ display:grid; grid-template-columns:repeat(auto-fit, minmax(96px, 1fr)); gap:8px; margin-bottom:20px; }
-  .main-tabs button{ display:flex; flex-direction:column; align-items:center; gap:3px; padding:10px 4px 9px; background:var(--card); border:1px solid var(--line); border-radius:12px; font-family:'Noto Sans KR', sans-serif; font-size:13px; font-weight:500; color:#6b6455; cursor:pointer; transition:transform .12s ease; }
+  .main-tabs{ display:grid; grid-template-columns:repeat(4, 1fr); gap:7px; margin-bottom:20px; }
+  .main-tabs button{ display:flex; flex-direction:column; align-items:center; gap:3px; padding:10px 4px 9px; background:var(--card); border:1px solid var(--line); border-radius:12px; font-family:'Noto Sans KR', sans-serif; font-size:12.5px; font-weight:500; color:#6b6455; cursor:pointer; transition:transform .12s ease; white-space:nowrap; }
   .main-tabs button .ti{ font-size:22px; line-height:1; }
   .main-tabs button:active{ transform:scale(.96); }
   .main-tabs button.active{ color:#fff; background:var(--forest); border-color:var(--forest); }
@@ -182,7 +182,7 @@
 <div class="wrap">
 
   <div class="brand">
-    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1006-3</span></h1>
+    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1006-4</span></h1>
     <div id="brandRight"></div>
   </div>
 
@@ -264,6 +264,7 @@
       <button id="tabBtnYaja" onclick="switchMainTab('yaja')" style="display:none;"><span class="ti">🌙</span><span class="tl">야자</span></button>
       <button id="tabBtnCounsel" onclick="switchMainTab('counsel')" style="display:none;"><span class="ti">💬</span><span class="tl">상담</span></button>
       <button id="tabBtnYajaAdmin" onclick="switchMainTab('yajaadmin')" style="display:none;"><span class="ti">🦉</span><span class="tl">야자관리</span></button>
+      <button id="tabBtnSuggest" onclick="switchMainTab('suggest')" style="display:none;"><span class="ti">📮</span><span class="tl">건의함</span></button>
     </div>
 
     <div class="tab-panel active" id="panel-timetable">
@@ -276,9 +277,11 @@
 
     <div class="tab-panel" id="panel-notice">
       <div class="notif-banner" id="notifBanner" style="display:none;">
-        <span>새 공지가 오면 휴대폰으로 바로 알림을 받을 수 있어요.</span>
-        <button onclick="requestNotificationPermission()">알림 켜기</button>
+        <span id="notifBannerText">새 공지가 오면 휴대폰으로 바로 알림을 받을 수 있어요.</span>
+        <button id="notifBannerBtn" onclick="requestNotificationPermission()">알림 켜기</button>
       </div>
+      <div style="text-align:right; margin:-6px 0 10px;"><button class="link-btn" onclick="runPushTest()">🔔 알림이 안 와요? 테스트하기</button></div>
+      <div class="group-block" id="pushTestBox" style="display:none;"></div>
       <div id="noticeWriteBox"></div>
       <div id="noticeList"></div>
     </div>
@@ -553,6 +556,38 @@
       </div>
     </div>
 
+    <div class="tab-panel" id="panel-suggest">
+      <div id="sgStudentView" style="display:none;">
+        <div class="group-block">
+          <h3>📮 건의함 · 바라는 점</h3>
+          <p class="hint">학급 생활, 수업, 시설, 행사, 이 앱까지 — 바라는 점을 편하게 보내주세요. 선생님이 읽고 답장하면 알림이 가요.</p>
+          <div class="field"><label>분류</label>
+            <select id="sgCategory"><option>학급 생활</option><option>수업·학습</option><option>시설·환경</option><option>행사·활동</option><option>학급 앱</option><option>기타</option></select>
+          </div>
+          <div class="field"><label>내용</label><textarea id="sgContent" maxlength="1000" style="min-height:110px;" placeholder="예: 청소 구역을 한 달마다 바꿨으면 좋겠어요."></textarea></div>
+          <label style="display:flex; align-items:center; gap:6px; font-size:13.5px; margin-bottom:4px;"><input type="checkbox" id="sgAnon"> 익명으로 보내기</label>
+          <p class="hint" style="margin-top:0;">익명으로 보내면 선생님 화면에 이름과 번호가 보이지 않아요.</p>
+          <button class="primary-btn" id="sgSubmitBtn">보내기</button>
+          <p class="error-msg" id="sgError"></p>
+        </div>
+        <div class="group-block">
+          <h3>내가 보낸 건의</h3>
+          <div id="sgMyList"><p class="hint">불러오는 중...</p></div>
+        </div>
+      </div>
+      <div id="sgTeacherView" style="display:none;">
+        <div class="group-block">
+          <h3>📮 건의함</h3>
+          <div style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:10px;" id="sgFilter">
+            <button class="link-btn" data-f="open" style="font-weight:700;">처리 전</button>
+            <button class="link-btn" data-f="all">전체</button>
+            <button class="link-btn" data-f="done">처리 완료</button>
+          </div>
+          <div id="sgTList"><p class="hint">불러오는 중...</p></div>
+        </div>
+      </div>
+    </div>
+
     <div class="tab-panel" id="panel-yajaadmin">
       <div class="group-block">
         <h3>🧑‍🎓 야자 신청자 설정</h3>
@@ -802,6 +837,7 @@ function enterApp(){
     setupMyQr();
     setupMyYajaTab();
     setupCounselTab();
+    setupSuggestTab();
   } else {
     goToSelectScreen();
   }
@@ -829,6 +865,8 @@ function switchMainTab(tab){
   document.getElementById("panel-absence").classList.toggle("active", tab === "absence");
   document.getElementById("panel-studyplan").classList.toggle("active", tab === "studyplan");
   document.getElementById("panel-yajaadmin").classList.toggle("active", tab === "yajaadmin");
+  document.getElementById("tabBtnSuggest").classList.toggle("active", tab === "suggest");
+  document.getElementById("panel-suggest").classList.toggle("active", tab === "suggest");
 }
 function renderBrandRight(){
   const el = document.getElementById("brandRight");
@@ -896,6 +934,7 @@ async function handleSaveSelection(){
   setupMyQr();
   setupMyYajaTab();
   setupCounselTab();
+  setupSuggestTab();
 }
 
 /* =========================================================
@@ -1125,22 +1164,85 @@ function subscribeNotices(){
 /* =========================================================
    7. 푸시 알림 — FCM 토큰 등록
    ========================================================= */
-async function registerFcmToken(){
-  if(!messaging) return;
+async function registerFcmToken(throwOnError){
+  if(!messaging) return null;
   try{
     const swReg = await navigator.serviceWorker.register("firebase-messaging-sw.js");
     const token = await messaging.getToken({ vapidKey: VAPID_KEY, serviceWorkerRegistration: swReg });
     await db.collection("students").doc(currentUser.uid).set({
       fcmTokens: firebase.firestore.FieldValue.arrayUnion(token)
     }, {merge:true});
+    return token;
   } catch(e){
     console.error("FCM 토큰 등록 실패:", e);
+    if(throwOnError) throw e;
+    return null;
   }
+}
+
+function pushEnv(){
+  const ua = navigator.userAgent;
+  return {
+    kakao: /KAKAOTALK/i.test(ua),
+    ios: /iPhone|iPad|iPod/i.test(ua),
+    standalone: (window.matchMedia && matchMedia("(display-mode: standalone)").matches) || navigator.standalone === true,
+    supported: !!messaging && ("Notification" in window) && ("serviceWorker" in navigator),
+  };
+}
+
+/* 알림 자가진단: 지원 → 권한 → 기기 등록 → 서버가 실제로 보내는지 */
+async function runPushTest(){
+  const box = document.getElementById("pushTestBox");
+  box.style.display = "block";
+  const lines = [];
+  const draw = () => { box.innerHTML = `<h3 style="margin-bottom:8px;">🔔 알림 테스트</h3>` + lines.map(l => `<div style="font-size:13.5px; padding:5px 0; border-top:1px solid var(--line);">${l}</div>`).join(""); };
+  const add = l => { lines.push(l); draw(); };
+  const env = pushEnv();
+  if(env.kakao){ add("❌ <b>카카오톡 안에서 열려 있어요.</b> 카톡 브라우저는 알림을 받을 수 없어요. 오른쪽 위 ⋮ → <b>다른 브라우저로 열기</b>(크롬·사파리)를 해주세요."); return; }
+  if(!env.supported){
+    if(env.ios && !env.standalone) add("❌ <b>아이폰은 홈 화면에 추가해야 알림을 받을 수 있어요.</b> 사파리 아래쪽 공유 버튼 → <b>홈 화면에 추가</b> → 홈 화면의 2-7 아이콘으로 열어서 다시 테스트해주세요. (iOS 16.4 이상)");
+    else add("❌ 이 브라우저는 알림을 지원하지 않아요. 크롬(안드로이드)이나 홈 화면에 추가한 앱(아이폰)으로 열어주세요.");
+    return;
+  }
+  add("✅ 이 브라우저는 알림을 받을 수 있어요.");
+  let perm = Notification.permission;
+  if(perm === "default") perm = await Notification.requestPermission();
+  if(perm !== "granted"){ add("❌ <b>알림이 차단돼 있어요.</b> 휴대폰 설정 → 앱 → (크롬 또는 2-7 앱) → 알림을 허용하고, 주소창 왼쪽 자물쇠 → 권한 → 알림도 허용해주세요."); return; }
+  add("✅ 알림 권한 허용됨");
+  try{ await registerFcmToken(true); }
+  catch(e){ add(`❌ 기기 등록 실패 (${yajaEsc(e.code || e.message || "알 수 없음")}). 앱을 완전히 닫았다가 다시 열어 테스트해주세요.`); return; }
+  add("✅ 이 기기를 알림 받을 기기로 등록했어요.");
+  add("⏳ 서버에 테스트 알림을 요청하는 중... (최대 20초)");
+  let ref;
+  try{ ref = await db.collection("pushTests").add({ uid: currentUser.uid, createdAt: firebase.firestore.FieldValue.serverTimestamp() }); }
+  catch(e){ lines.pop(); add("❌ 테스트 요청을 저장하지 못했어요 — 선생님이 보안규칙(최신본)을 게시해야 해요."); return; }
+  let finished = false;
+  const unsub = ref.onSnapshot(snap => {
+    const d = snap.data();
+    if(!d || !d.done || finished) return;
+    finished = true; unsub(); lines.pop();
+    if(d.sent > 0) add(`✅ 서버가 알림을 보냈어요 (등록된 기기 ${d.tokens}대 중 ${d.sent}대 성공).<br>앱이 열려 있으면 화면에 창이 뜨고, 닫혀 있으면 알림창에 와요. <b>그래도 안 보이면</b> 휴대폰의 방해금지·절전 모드를 확인해주세요.`);
+    else add("❌ 서버는 동작하지만 이 기기로 보내지 못했어요. 앱을 닫았다가 다시 열고 한 번 더 테스트해주세요.");
+  }, () => {});
+  setTimeout(() => {
+    if(finished) return;
+    finished = true; unsub(); lines.pop();
+    add("❌ <b>알림 서버가 응답하지 않아요.</b> 휴대폰 문제가 아니라 서버 문제예요 — 선생님께 알려주세요. (functions 배포 확인 필요)");
+  }, 20000);
 }
 
 function setupNotificationBanner(){
   const banner = document.getElementById("notifBanner");
-  if(!messaging || !("Notification" in window)) { banner.style.display = "none"; return; }
+  const env = pushEnv();
+  if(env.kakao || (!env.supported && env.ios && !env.standalone)){
+    document.getElementById("notifBannerText").textContent = env.kakao
+      ? "카카오톡 안에서는 알림을 받을 수 없어요. 크롬·사파리로 열어주세요."
+      : "아이폰은 '홈 화면에 추가'한 아이콘으로 열어야 알림을 받을 수 있어요.";
+    const b = document.getElementById("notifBannerBtn");
+    b.textContent = "방법 보기"; b.onclick = runPushTest;
+    banner.style.display = "flex"; return;
+  }
+  if(!env.supported) { banner.style.display = "none"; return; }
   if(Notification.permission === "granted"){
     banner.style.display = "none";
     registerFcmToken(); // 권한은 이미 있는데 토큰 저장이 안 됐을 수 있으니 조용히 다시 시도
@@ -3059,6 +3161,122 @@ async function gpsArrive(noteId, btn){
       : "위치를 못 잡았어요. 창가나 건물 밖에서 다시 눌러주세요.";
     alert(msg); reset();
   }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+}
+
+/* =========================================================
+   16. 건의함 · 바라는 점
+   ========================================================= */
+const SG_STATUS = { new:"접수", review:"검토 중", done:"반영", hold:"보류" };
+const SG_COLOR = { new:"#8a5f14", review:"#4a6a8a", done:"var(--forest-deep)", hold:"#8a8270" };
+function sgWhen(ts){ const d = ts && ts.toDate ? ts.toDate() : null; return d ? `${d.getMonth()+1}/${d.getDate()} ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}` : ""; }
+
+function setupSuggestTab(){
+  const role = currentProfile && currentProfile.role;
+  const btn = document.getElementById("tabBtnSuggest");
+  if(role !== "student" && role !== "teacher"){ btn.style.display = "none"; return; }
+  btn.style.display = "";
+  document.getElementById("sgStudentView").style.display = role === "student" ? "block" : "none";
+  document.getElementById("sgTeacherView").style.display = role === "teacher" ? "block" : "none";
+  if(role === "student"){
+    const b = document.getElementById("sgSubmitBtn");
+    if(!b.dataset.bound){ b.dataset.bound = "1"; b.addEventListener("click", submitSuggestion); }
+    renderMySuggestions();
+  } else {
+    const f = document.getElementById("sgFilter");
+    if(!f.dataset.bound){
+      f.dataset.bound = "1";
+      f.querySelectorAll("button").forEach(x => x.addEventListener("click", () => {
+        sgFilter = x.dataset.f;
+        f.querySelectorAll("button").forEach(y => y.style.fontWeight = y === x ? "700" : "400");
+        renderSuggestTeacher();
+      }));
+    }
+    renderSuggestTeacher();
+  }
+}
+
+async function submitSuggestion(){
+  const err = document.getElementById("sgError"); err.style.display = "none";
+  const content = document.getElementById("sgContent").value.trim();
+  if(content.length < 5){ err.textContent = "내용을 5글자 이상 적어주세요."; err.style.display = "block"; return; }
+  const anon = document.getElementById("sgAnon").checked;
+  const btn = document.getElementById("sgSubmitBtn");
+  btn.disabled = true; btn.textContent = "보내는 중...";
+  try{
+    await db.collection("suggestions").add({
+      studentUid: currentUser.uid, anonymous: anon,
+      num: anon ? null : currentProfile.num, name: anon ? "" : currentProfile.name,
+      category: document.getElementById("sgCategory").value, content,
+      status: "new", reply: "",
+      createdAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    document.getElementById("sgContent").value = "";
+    document.getElementById("sgAnon").checked = false;
+    alert("보냈어요! 선생님이 답장하면 알림이 가요.");
+    renderMySuggestions();
+  }catch(e){
+    console.error("건의 전송 실패", e);
+    err.textContent = "보내지 못했어요. 잠시 후 다시 해주세요."; err.style.display = "block";
+  }finally{ btn.disabled = false; btn.textContent = "보내기"; }
+}
+
+async function renderMySuggestions(){
+  const box = document.getElementById("sgMyList");
+  try{
+    const snap = await db.collection("suggestions").where("studentUid", "==", currentUser.uid).get();
+    const list = snap.docs.map(d => ({id:d.id, ...d.data()}))
+      .sort((a,b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+    if(!list.length){ box.innerHTML = `<p class="hint">아직 보낸 건의가 없어요.</p>`; return; }
+    box.innerHTML = list.map(x => `
+      <div style="padding:10px 0; border-top:1px solid var(--line);">
+        <div style="font-size:12.5px; color:#8a8270;">${yajaEsc(x.category)} · ${sgWhen(x.createdAt)}${x.anonymous ? " · 익명" : ""}
+          · <b style="color:${SG_COLOR[x.status] || "#8a8270"};">${SG_STATUS[x.status] || x.status}</b></div>
+        <div style="font-size:14px; margin-top:3px; white-space:pre-wrap;">${yajaEsc(x.content)}</div>
+        ${x.reply ? `<div style="margin-top:6px; padding:8px 10px; background:#EEF3EC; border-radius:8px; font-size:13.5px; white-space:pre-wrap;">💬 <b>선생님</b> ${yajaEsc(x.reply)}</div>` : ""}
+      </div>`).join("");
+  }catch(e){ console.error(e); box.innerHTML = `<p class="hint">불러오지 못했어요.</p>`; }
+}
+
+let sgFilter = "open";
+async function renderSuggestTeacher(){
+  const box = document.getElementById("sgTList");
+  box.innerHTML = `<p class="hint">불러오는 중...</p>`;
+  try{
+    const snap = await db.collection("suggestions").get();
+    let list = snap.docs.map(d => ({id:d.id, ...d.data()}))
+      .sort((a,b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
+    if(sgFilter === "open") list = list.filter(x => x.status === "new" || x.status === "review");
+    if(sgFilter === "done") list = list.filter(x => x.status === "done" || x.status === "hold");
+    if(!list.length){ box.innerHTML = `<p class="hint">${sgFilter === "open" ? "처리할 건의가 없어요." : "건의가 없어요."}</p>`; return; }
+    box.innerHTML = list.map(x => `
+      <div style="padding:12px 0; border-top:1px solid var(--line);" data-id="${x.id}">
+        <div style="font-size:13px;"><b>${x.anonymous ? "🙈 익명" : `${x.num}번 ${yajaEsc(x.name)}`}</b>
+          <span style="color:#8a8270;"> · ${yajaEsc(x.category)} · ${sgWhen(x.createdAt)}</span></div>
+        <div style="font-size:14px; margin-top:4px; white-space:pre-wrap;">${yajaEsc(x.content)}</div>
+        <div style="display:flex; gap:6px; margin-top:8px; align-items:center;">
+          <select class="sg-status" style="padding:6px; border:1px solid var(--line); border-radius:6px;">
+            ${Object.entries(SG_STATUS).map(([k,v]) => `<option value="${k}" ${x.status===k?"selected":""}>${v}</option>`).join("")}
+          </select>
+          <span style="font-size:12px; color:#8a8270;">${x.repliedAt ? "답장 " + sgWhen(x.repliedAt) : ""}</span>
+        </div>
+        <textarea class="sg-reply" style="width:100%; min-height:60px; margin-top:6px;" placeholder="답장 (학생에게 알림이 가요)">${yajaEsc(x.reply || "")}</textarea>
+        <button class="primary-btn sg-save" style="margin-top:6px; padding:10px;">저장</button>
+      </div>`).join("");
+    box.querySelectorAll(".sg-save").forEach(b => b.addEventListener("click", async () => {
+      const row = b.closest("[data-id]");
+      const reply = row.querySelector(".sg-reply").value.trim();
+      let status = row.querySelector(".sg-status").value;
+      if(reply && status === "new") status = "review";
+      const data = { status, reply };
+      if(reply) data.repliedAt = firebase.firestore.FieldValue.serverTimestamp();
+      b.disabled = true; b.textContent = "저장 중...";
+      try{ await db.collection("suggestions").doc(row.dataset.id).update(data); renderSuggestTeacher(); }
+      catch(e){ console.error(e); alert("저장에 실패했어요."); b.disabled = false; b.textContent = "저장"; }
+    }));
+  }catch(e){
+    console.error("건의 불러오기 실패", e);
+    box.innerHTML = `<p class="hint" style="color:var(--danger);">불러오지 못했어요 — 보안규칙(최신본)을 게시했는지 확인해주세요.</p>`;
+  }
 }
 
 /* =========================================================
