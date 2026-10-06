@@ -142,10 +142,12 @@ const FIREBASE_CONFIG = {
   messagingSenderId: "304110691750",
   appId: "1:304110691750:web:7b7ce68828f538802adb67"
 };
-firebase.initializeApp(FIREBASE_CONFIG);
-const auth = firebase.auth();
-const db = firebase.firestore();
-const storage = firebase.storage();
+// 학급 어플(index.html)과 같은 주소라서, 기본 앱을 쓰면 학생 로그인이 풀려요 → 별도 앱 + 저장 안 함
+const fbApp = firebase.initializeApp(FIREBASE_CONFIG, "parentSign");
+const auth = fbApp.auth();
+const authReady = auth.setPersistence(firebase.auth.Auth.Persistence.NONE).catch(()=>{});
+const db = fbApp.firestore();
+const storage = fbApp.storage();
 
 const params = new URLSearchParams(location.search);
 const absenceId = params.get("id");
@@ -169,6 +171,7 @@ function showMsg(text, isErr){
 async function init(){
   if(!absenceId){ showMsg("잘못된 링크예요.", true); return; }
   try{
+    await authReady;
     await auth.signInAnonymously();
     const doc = await db.collection("absences").doc(absenceId).get();
     if(!doc.exists){ showMsg("결석계를 찾을 수 없어요.", true); return; }

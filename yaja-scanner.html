@@ -130,9 +130,10 @@ const EMAIL_DOMAIN = "2hak7ban.app";
 // ⚠️ QR 발급기(yaja-qr-issuer.html)의 "비밀키"와 반드시 똑같아야 합니다.
 const SECRET_KEY = "yangil-yaja-2026";
 
-firebase.initializeApp(FIREBASE_CONFIG);
-const auth = firebase.auth();
-const db = firebase.firestore();
+// 학급 어플(index.html)과 로그인이 섞이지 않도록 별도 앱으로 씀
+const fbApp = firebase.initializeApp(FIREBASE_CONFIG, "yajaScanner");
+const auth = fbApp.auth();
+const db = fbApp.firestore();
 function numToEmail(num){ return `s${num}@${EMAIL_DOMAIN}`; }
 
 let gateUser = null, gateProfile = null;

@@ -180,7 +180,7 @@
 <div class="wrap">
 
   <div class="brand">
-    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1006-1</span></h1>
+    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1006-2</span></h1>
     <div id="brandRight"></div>
   </div>
 
@@ -752,7 +752,8 @@ function handleLogout(){
 }
 
 // 로그인 상태가 바뀔 때마다 자동 실행 (새로고침해도 로그인 유지됨)
-auth.onAuthStateChanged(async (user) => {
+auth.onAuthStateChanged(user => handleAuthUser(user));
+async function handleAuthUser(user){
   currentUser = user;
   if(!user){
     currentProfile = null;
@@ -760,8 +761,23 @@ auth.onAuthStateChanged(async (user) => {
     showScreen("screen-login");
     return;
   }
-  const doc = await db.collection("students").doc(user.uid).get();
-  currentProfile = doc.exists ? doc.data() : null;
+  // 학부모 서명(익명)·자리배치·스캐너 전용 계정으로 남아 있던 로그인은 정리하고 로그인 화면으로
+  let doc = null;
+  if(!user.isAnonymous){
+    try{ doc = await db.collection("students").doc(user.uid).get(); }
+    catch(e){
+      // 인터넷이 잠깐 끊긴 경우 — 로그아웃하지 않고 잠시 뒤 다시 시도
+      console.error("프로필 불러오기 실패", e);
+      setTimeout(() => { if(auth.currentUser === user) handleAuthUser(user); }, 3000);
+      return;
+    }
+  }
+  currentProfile = doc && doc.exists ? doc.data() : null;
+  if(!currentProfile || !["student","teacher"].includes(currentProfile.role)){
+    currentProfile = null; renderBrandRight();
+    await auth.signOut();
+    return;
+  }
   renderBrandRight();
 
   if(currentProfile && currentProfile.role === "student" && !currentProfile.pwChanged){
@@ -769,7 +785,7 @@ auth.onAuthStateChanged(async (user) => {
     return;
   }
   enterApp();
-});
+}
 
 function enterApp(){
   if(currentProfile && currentProfile.selection){

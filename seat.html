@@ -926,10 +926,11 @@ const FIREBASE_CONFIG = {
 };
 const EMAIL_DOMAIN = "2hak7ban.app"; // 학급 어플 index.html과 동일해야 함
 
-firebase.initializeApp(FIREBASE_CONFIG);
-const gateAuth = firebase.auth();
-const gateDb = firebase.firestore();
-const gateStorage = firebase.storage();
+// 학급 어플(index.html)과 로그인이 섞이지 않도록 별도 앱으로 씀
+const fbApp = firebase.initializeApp(FIREBASE_CONFIG, "seatTool");
+const gateAuth = fbApp.auth();
+const gateDb = fbApp.firestore();
+const gateStorage = fbApp.storage();
 let gateUser = null, gateProfile = null;
 
 function numToEmail(num){ return `s${num}@${EMAIL_DOMAIN}`; }
