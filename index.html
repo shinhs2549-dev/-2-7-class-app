@@ -182,7 +182,7 @@
 <div class="wrap">
 
   <div class="brand">
-    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1006-5</span></h1>
+    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1008-1</span></h1>
     <div id="brandRight"></div>
   </div>
 
@@ -294,6 +294,29 @@
           <div style="display:flex; gap:8px; align-items:center; margin-bottom:10px;">
             <input type="date" id="attTDate" style="flex:1; padding:9px; border:1px solid var(--line); border-radius:6px;">
             <button class="link-btn" id="attTTodayBtn">오늘</button>
+            <button class="link-btn" id="attTNewBtn" style="font-weight:700;">➕ 직접 입력</button>
+          </div>
+          <div id="attTForm" style="display:none; background:#F6F3EA; border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:12px;">
+            <div style="font-weight:700; margin-bottom:8px;" id="attTFormTitle">출결 직접 입력</div>
+            <div class="field"><label>학생</label><select id="attTStudent"></select></div>
+            <div class="field"><label>날짜</label><input type="date" id="attTFDate"></div>
+            <div style="display:flex; gap:8px;">
+              <div class="field" style="flex:1;"><label>출결 내용</label>
+                <select id="attTKind"><option>지각</option><option>결석</option><option>조퇴</option><option>결과</option></select></div>
+              <div class="field" style="flex:1;"><label>사유 구분</label>
+                <select id="attTReasonType"><option>질병</option><option>인정</option><option>미인정</option><option>기타</option></select></div>
+            </div>
+            <div class="field" id="attTTimeField">
+              <label id="attTTimeLabel">등교 시각</label>
+              <input type="time" id="attTTime">
+              <input type="text" id="attTPeriods" placeholder="예: 3~4교시" style="display:none;">
+            </div>
+            <div class="field" style="margin-bottom:8px;"><label>사유·메모</label><input type="text" id="attTReason" placeholder="예: 병원 진료 (진료확인서 받음)"></div>
+            <div style="display:flex; gap:8px;">
+              <button class="primary-btn" id="attTSaveBtn" style="flex:2; margin-top:0;">저장</button>
+              <button class="primary-btn" id="attTCancelBtn" style="flex:1; margin-top:0; background:#fff; color:var(--ink); border:1px solid var(--line);">취소</button>
+            </div>
+            <p class="error-msg" id="attTError"></p>
           </div>
           <div id="attTList"></div>
         </div>
@@ -2977,8 +3000,8 @@ function renderRecordList(){
 const ATT_KIND_COLOR = { "지각":"var(--ochre)", "결석":"var(--danger)", "조퇴":"#4a6a8a", "결과":"#6b5a8a" };
 
 function attTimeText(n){
-  if(n.kind === "지각" && n.time) return `예상 등교 ${n.time}`;
-  if(n.kind === "조퇴" && n.time) return `조퇴 예정 ${n.time}`;
+  if(n.kind === "지각" && n.time) return n.createdBy === "teacher" ? `등교 ${n.time}` : `예상 등교 ${n.time}`;
+  if(n.kind === "조퇴" && n.time) return n.createdBy === "teacher" ? `조퇴 ${n.time}` : `조퇴 예정 ${n.time}`;
   if(n.kind === "결과" && n.periods) return n.periods;
   return "";
 }
@@ -3055,9 +3078,9 @@ async function renderMyAttNotes(){
       .sort((a,b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0)).slice(0, 5);
     renderArriveCard(list);
     if(list.length === 0){ box.innerHTML = ""; return; }
-    box.innerHTML = `<div style="font-size:12.5px; font-weight:600; color:#8a8270; margin-bottom:4px;">최근 보낸 내용</div>` + list.map(n => `
+    box.innerHTML = `<div style="font-size:12.5px; font-weight:600; color:#8a8270; margin-bottom:4px;">최근 출결 기록</div>` + list.map(n => `
       <div style="font-size:13px; padding:6px 0; border-top:1px solid var(--line);">
-        <b style="color:${ATT_KIND_COLOR[n.kind]};">${n.kind}</b> · ${fmtMD(n.date)} · ${yajaEsc(n.reasonType)} · ${yajaEsc(n.reason)}
+        <b style="color:${ATT_KIND_COLOR[n.kind]};">${n.kind}</b> · ${fmtMD(n.date)} · ${yajaEsc(n.reasonType)}${n.reason ? " · " + yajaEsc(n.reason) : ""}${n.createdBy === "teacher" ? ` <span style="font-size:11px; color:#8a8270;">(선생님 기록)</span>` : ""}
         ${attTimeText(n) ? ` · ${yajaEsc(attTimeText(n))}` : ""}
         ${n.status === "arrived" ? ` · <span style="color:var(--forest-deep);">${n.arrivedBy === "gps" ? "📍 " : ""}도착 ${n.arrivedTime || ""}</span>` : n.status === "checked" ? ` · <span style="color:var(--forest-deep);">선생님 확인</span>` : ""}
       </div>`).join("");
@@ -3091,6 +3114,10 @@ function setupAttendanceTeacher(){
     d.value = yajaDateKey(new Date());
     d.addEventListener("change", renderAttTeacher);
     document.getElementById("attTTodayBtn").addEventListener("click", () => { d.value = yajaDateKey(new Date()); renderAttTeacher(); });
+    document.getElementById("attTNewBtn").addEventListener("click", () => openAttTForm(null));
+    document.getElementById("attTCancelBtn").addEventListener("click", () => { document.getElementById("attTForm").style.display = "none"; });
+    document.getElementById("attTKind").addEventListener("change", updateAttTForm);
+    document.getElementById("attTSaveBtn").addEventListener("click", saveAttTForm);
   }
   renderAttTeacher();
 }
@@ -3102,12 +3129,13 @@ async function renderAttTeacher(){
   try{
     const snap = await db.collection("attendanceNotes").where("date", "==", date).get();
     const list = snap.docs.map(d => ({id:d.id, ...d.data()})).sort((a,b) => a.num - b.num);
-    if(list.length === 0){ box.innerHTML = `<p class="hint">이 날 들어온 출결 특이사항이 없어요.</p>`; return; }
+    attTCache = {}; list.forEach(n => { attTCache[n.id] = n; });
+    if(list.length === 0){ box.innerHTML = `<p class="hint">이 날 들어온 출결 특이사항이 없어요. 위 ➕ 직접 입력으로 기록할 수 있어요.</p>`; return; }
     box.innerHTML = list.map(n => {
       const done = n.status === "arrived" || n.status === "checked";
       return `<div style="padding:10px 0; border-bottom:1px solid var(--line); ${done ? "opacity:.6;" : ""}">
         <div style="font-size:14px;"><b>${n.num}번 ${yajaEsc(n.name)}</b>
-          · <b style="color:${ATT_KIND_COLOR[n.kind]};">${n.kind}</b> (${yajaEsc(n.reasonType)})</div>
+          · <b style="color:${ATT_KIND_COLOR[n.kind]};">${n.kind}</b> (${yajaEsc(n.reasonType)})${n.createdBy === "teacher" ? ` <span style="font-size:11px; color:#8a8270;">· 담임 입력</span>` : n.editedAt ? ` <span style="font-size:11px; color:#8a8270;">· 담임 수정</span>` : ""}</div>
         <div style="font-size:13px; color:#6b6455; margin-top:2px;">${yajaEsc(n.reason)}${attTimeText(n) ? " · " + yajaEsc(attTimeText(n)) : ""}</div>
         <div style="display:flex; gap:12px; margin-top:6px; font-size:12.5px;">
           ${n.status === "arrived" ? `<span style="color:var(--forest-deep);">${n.arrivedBy === "gps" ? `📍 GPS 도착 ${n.arrivedTime || ""} (학교에서 ${n.gpsDistance}m)` : `✓ 도착 ${n.arrivedTime || ""}`}</span>`
@@ -3115,7 +3143,9 @@ async function renderAttTeacher(){
             : n.kind === "지각"
               ? `<button class="link-btn" onclick="markAttNote('${n.id}','arrived')">등교 확인 (지금 시각)</button>`
               : `<button class="link-btn" onclick="markAttNote('${n.id}','checked')">확인함</button>`}
-          ${done ? `<button class="link-btn" style="color:#a49c88;" onclick="markAttNote('${n.id}','open')">되돌리기</button>` : ""}
+          ${done && n.createdBy !== "teacher" ? `<button class="link-btn" style="color:#a49c88;" onclick="markAttNote('${n.id}','open')">되돌리기</button>` : ""}
+          <button class="link-btn" onclick="openAttTForm('${n.id}')">✏️ 수정</button>
+          <button class="link-btn" style="color:var(--danger);" onclick="deleteAttNote('${n.id}')">삭제</button>
         </div>
       </div>`;
     }).join("");
@@ -3123,6 +3153,95 @@ async function renderAttTeacher(){
     console.error("출결 특이사항 로딩 실패", e);
     box.innerHTML = `<p class="hint" style="color:var(--danger);">불러오지 못했어요 — 보안규칙을 확인해주세요.</p>`;
   }
+}
+
+/* ---------- 담임: 출결 직접 입력·수정·삭제 ---------- */
+let attTCache = {}, attTEditId = null, attTStudents = null;
+
+function updateAttTForm(){
+  const kind = document.getElementById("attTKind").value;
+  document.getElementById("attTTimeField").style.display = kind === "결석" ? "none" : "block";
+  document.getElementById("attTTime").style.display = kind === "결과" ? "none" : "block";
+  document.getElementById("attTPeriods").style.display = kind === "결과" ? "block" : "none";
+  const editingStudentNote = attTEditId && attTCache[attTEditId] && attTCache[attTEditId].createdBy !== "teacher";
+  document.getElementById("attTTimeLabel").textContent =
+    kind === "지각" ? (editingStudentNote ? "예상 등교 시간" : "등교 시각") : kind === "조퇴" ? "조퇴 시각" : "빠진 교시";
+}
+
+async function openAttTForm(id){
+  const form = document.getElementById("attTForm");
+  const sel = document.getElementById("attTStudent");
+  document.getElementById("attTError").style.display = "none";
+  if(!attTStudents){
+    const snap = await db.collection("students").where("role", "==", "student").get();
+    attTStudents = snap.docs.map(d => ({uid:d.id, ...d.data()})).sort((a,b) => a.num - b.num);
+    sel.innerHTML = `<option value="">학생 선택</option>` + attTStudents.map(s => `<option value="${s.uid}">${s.num}번 ${yajaEsc(s.name)}</option>`).join("");
+  }
+  attTEditId = id;
+  const n = id ? attTCache[id] : null;
+  document.getElementById("attTFormTitle").textContent = n ? `✏️ ${n.num}번 ${n.name} 출결 수정` : "➕ 출결 직접 입력";
+  sel.value = n ? n.studentUid : "";
+  sel.disabled = !!n;
+  document.getElementById("attTFDate").value = n ? n.date : document.getElementById("attTDate").value;
+  document.getElementById("attTKind").value = n ? n.kind : "지각";
+  document.getElementById("attTReasonType").value = n ? n.reasonType : "질병";
+  document.getElementById("attTTime").value = n ? (n.time || "") : "";
+  document.getElementById("attTPeriods").value = n ? (n.periods || "") : "";
+  document.getElementById("attTReason").value = n ? (n.reason || "") : "";
+  updateAttTForm();
+  form.style.display = "block";
+  form.scrollIntoView({ behavior:"smooth", block:"start" });
+}
+
+async function saveAttTForm(){
+  const err = document.getElementById("attTError");
+  const show = m => { err.textContent = m; err.style.display = "block"; };
+  err.style.display = "none";
+  const uid = document.getElementById("attTStudent").value;
+  const date = document.getElementById("attTFDate").value;
+  const kind = document.getElementById("attTKind").value;
+  const reasonType = document.getElementById("attTReasonType").value;
+  const reason = document.getElementById("attTReason").value.trim();
+  const time = kind === "지각" || kind === "조퇴" ? document.getElementById("attTTime").value : "";
+  const periods = kind === "결과" ? document.getElementById("attTPeriods").value.trim() : "";
+  if(!uid) return show("학생을 골라주세요.");
+  if(!date) return show("날짜를 골라주세요.");
+  if(kind === "결과" && !periods) return show("빠진 교시를 적어주세요.");
+  const btn = document.getElementById("attTSaveBtn");
+  btn.disabled = true; btn.textContent = "저장 중...";
+  try{
+    const FV = firebase.firestore.FieldValue;
+    if(attTEditId){
+      const old = attTCache[attTEditId];
+      const data = { date, kind, reasonType, reason, time, periods, editedAt: FV.serverTimestamp() };
+      if(old.createdBy === "teacher" && kind === "지각") data.arrivedTime = time;
+      if(old.kind === "지각" && kind !== "지각" && old.status === "arrived") data.status = "checked";
+      await db.collection("attendanceNotes").doc(attTEditId).update(data);
+    } else {
+      const st = attTStudents.find(s => s.uid === uid);
+      await db.collection("attendanceNotes").add({
+        studentUid: uid, num: st.num, name: st.name,
+        date, kind, reasonType, reason, time, periods,
+        status: kind === "지각" ? "arrived" : "checked",
+        arrivedTime: kind === "지각" ? time : "",
+        createdBy: "teacher",
+        createdAt: FV.serverTimestamp(),
+      });
+    }
+    document.getElementById("attTForm").style.display = "none";
+    document.getElementById("attTDate").value = date;
+    renderAttTeacher();
+  }catch(e){
+    console.error("출결 저장 실패", e);
+    show("저장에 실패했어요 — 보안규칙(최신본)을 게시했는지 확인해주세요.");
+  }finally{ btn.disabled = false; btn.textContent = "저장"; }
+}
+
+async function deleteAttNote(id){
+  const n = attTCache[id];
+  if(!n || !confirm(`${n.num}번 ${n.name} · ${n.kind} 기록을 삭제할까요?\n삭제하면 되돌릴 수 없어요.`)) return;
+  try{ await db.collection("attendanceNotes").doc(id).delete(); renderAttTeacher(); }
+  catch(e){ console.error(e); alert("삭제에 실패했어요 — 보안규칙(최신본)을 게시했는지 확인해주세요."); }
 }
 
 async function markAttNote(id, status){
