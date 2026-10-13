@@ -265,7 +265,9 @@
     <p class="desc">번호 1번부터 순서대로, 미리 무작위로 섞인 좌석에 배정합니다. 배정 버튼을 누르면 큰 화면으로 한 명씩 순서대로 자리가 채워집니다.</p>
     <div class="row">
       <button id="assignBtn">🎲 자리 배정하기</button>
+      <button class="ghost" id="loadAppResultBtn">📥 학급 앱 결과 불러오기 (자리 신청)</button>
     </div>
+    <div id="appSyncStatus" style="font-size:12px; color:var(--ink-soft); margin-top:6px;"></div>
     <div id="assignMsg"></div>
     <div style="margin-top:14px;">
       <label style="font-size:13px; color:var(--ink-soft); display:block; margin-bottom:4px;">안내 문구 (결과·인쇄물 하단에 표시, 줄바꿈으로 여러 줄 · 비워두면 표시 안 함)</label>
@@ -404,6 +406,7 @@ async function saveState(){
   safeSet('roster', JSON.stringify(students));
   safeSet('seatGender', JSON.stringify(seatGender));
   safeSet('forbiddenPairs', JSON.stringify(forbiddenPairs));
+  if(typeof syncConfigToApp === 'function') syncConfigToApp();
 }
 async function loadState(){
   const r1=await safeGet('roster'); if(r1) try{students=JSON.parse(r1);}catch(e){}
@@ -740,6 +743,7 @@ function startReveal(result){
 
   function placeOne(st){
     const seat=result.seatOfStudent[st.no];
+    if(!seat) return; // 결과에 없는 학생(명단 차이)은 건너뜀
     const cell=cellRefs[seat.key];
     cell.textContent=`${st.no}. ${st.name}`;
     cell.classList.remove('empty');
@@ -972,6 +976,59 @@ gateAuth.onAuthStateChanged(async (user) => {
   // 로그인 성공 + 자리배치 전용 계정 확인됨 → 도구 화면 표시
   document.getElementById('authGate').style.display = 'none';
   document.getElementById('appRoot').style.display = 'block';
+  syncConfigToApp();
+});
+
+// ---------- 학급 앱 '자리 신청'과 연동 ----------
+// 이 도구의 설정(명단·성별·남녀 책상·고정 좌석·짝 금지)을 학급 앱이 쓸 수 있도록 올려둠 (담임·자리배치 계정만 읽기 가능)
+let syncT=null;
+function syncConfigToApp(){
+  if(!gateUser || !gateProfile || gateProfile.role!=='seatbot' || !students.length) return;
+  clearTimeout(syncT);
+  syncT=setTimeout(async ()=>{
+    const el=document.getElementById('appSyncStatus');
+    try{
+      await gateDb.collection('seatConfig').doc('main').set({
+        roster: students.map(st=>({num:st.no, name:st.name, gender:st.gender, pinnedSeat:st.pinnedSeat||''})),
+        seatGender, forbiddenPairs,
+        avoidRepeat: document.getElementById('avoidRepeatChk').checked,
+        updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+      if(el) el.textContent=`☁️ 학급 앱 자리 신청에 설정 연결됨 (${new Date().toLocaleTimeString('ko-KR')})`;
+    }catch(e){
+      console.error('설정 연동 실패', e);
+      if(el) el.textContent='⚠ 학급 앱으로 설정을 보내지 못했어요 (보안규칙 확인).';
+    }
+  }, 600);
+}
+document.getElementById('avoidRepeatChk').addEventListener('change', ()=>syncConfigToApp());
+
+document.getElementById('loadAppResultBtn').addEventListener('click', async ()=>{
+  const msgBox=document.getElementById('assignMsg');
+  msgBox.innerHTML='';
+  try{
+    const snap=await gateDb.collection('seatRounds').where('status','==','published').get();
+    if(snap.empty){ msgBox.innerHTML='<div class="msg err">학급 앱에서 발표된 자리 결과가 아직 없어요.</div>'; return; }
+    const ts=v=>v&&v.toMillis?v.toMillis():0;
+    const r=snap.docs.map(d=>d.data()).sort((a,b)=>ts(b.publishedAt)-ts(a.publishedAt))[0];
+    const assignment={}, seatOfStudent={};
+    const seatMap={}; allSeats().forEach(x=>seatMap[x.key]=x);
+    Object.entries(r.result||{}).forEach(([k,n])=>{ assignment[k]=n; if(seatMap[k]) seatOfStudent[n]=seatMap[k]; });
+    // 명단에 없는 번호가 있으면 앱의 이름으로 임시 추가
+    Object.entries(r.names||{}).forEach(([n,name])=>{ if(!students.some(st=>st.no===+n)) students.push({no:+n, name, gender:'남'}); });
+    currentAssignment={assignment, seatOfStudent};
+    const toSave={};
+    Object.entries(seatOfStudent).forEach(([n,seat])=>{
+      const partnerKey=seatKey(seat.s,seat.r,seat.c===0?1:0);
+      toSave[n]={seat:seat.key, partnerNo: assignment[partnerKey]||null};
+    });
+    lastAssignment=toSave; safeSet('lastAssignment', JSON.stringify(toSave));
+    msgBox.innerHTML=`<div class="msg ok">학급 앱 자리 신청 결과(${new Date(ts(r.publishedAt)).toLocaleString('ko-KR')})를 불러왔어요.</div>`;
+    startReveal(currentAssignment);
+  }catch(e){
+    console.error(e);
+    msgBox.innerHTML='<div class="msg err">불러오지 못했어요 (보안규칙 확인).</div>';
+  }
 });
 
 async function findTeacherUid(){

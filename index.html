@@ -178,6 +178,23 @@
   .ov-fb{ margin-top:8px; display:none; }
   .ov-fb textarea{ width:100%; min-height:54px; border:1px solid var(--line); border-radius:6px; padding:7px; font-family:inherit; font-size:13px; }
   .ov-q{ font-size:11.5px; padding:2px 8px; border:1px solid var(--line); border-radius:12px; background:#fff; margin:4px 4px 0 0; cursor:pointer; font-family:inherit; }
+  .seat-podium{ text-align:center; font-size:12px; background:#E6DFCC; border-radius:6px; padding:4px; margin:0 auto 10px; width:40%; color:#6b6455; }
+  .seat-grid{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:10px; }
+  .seat-sec{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:4px 2px; }
+  .seat-cell{ position:relative; min-height:42px; border:1px solid var(--line); border-radius:6px; background:#fff; font-size:11px; display:flex; flex-direction:column; align-items:center; justify-content:center; text-align:center; overflow:hidden; line-height:1.2; padding:2px; cursor:default; word-break:keep-all; }
+  .seat-cell.pick{ cursor:pointer; }
+  .seat-cell.off{ background:repeating-linear-gradient(45deg,#f4f1e8,#f4f1e8 5px,#e9e4d6 5px,#e9e4d6 10px); color:#b0a58c; }
+  .seat-cell.chosen{ background:#DCE8DC; border-color:var(--forest); font-weight:700; color:var(--forest-deep); }
+  .seat-cell.mine{ background:var(--forest); color:#fff; border-color:var(--forest); font-weight:700; }
+  .seat-cell.sel{ outline:3px solid var(--ochre); }
+  .seat-cell .rk{ position:absolute; top:-7px; left:-5px; background:var(--ochre); color:#fff; font-size:10px; border-radius:9px; padding:0 5px; }
+  .seat-cell .hw{ display:block; font-size:9px; color:#8a8270; font-weight:400; }
+  .seat-cell.mine .hw{ color:#dfe9df; }
+  .seat-timer{ font-size:28px; font-weight:700; color:var(--forest-deep); text-align:center; font-variant-numeric:tabular-nums; }
+  .seat-chip{ display:inline-block; font-size:12px; padding:2px 8px; border-radius:11px; margin:0 4px 4px 0; background:#EEE9DD; color:#8a8270; }
+  .seat-chip.on{ background:#DCE8DC; color:var(--forest-deep); }
+  .seat-tbl{ width:100%; font-size:12px; border-collapse:collapse; }
+  .seat-tbl td, .seat-tbl th{ border-bottom:1px solid var(--line); padding:4px 3px; text-align:left; }
   .sp-teacher-readout{ font-size:12.5px; background:#F1DDB2; border-radius:6px; padding:8px 10px; margin-top:4px; color:#5c3f10; min-height:20px; }
   .sp-score-grid{ display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:6px; text-align:center; margin-top:8px; }
   .sp-score-cell{ background:var(--card); border:1px solid var(--line); border-radius:8px; padding:8px 4px; }
@@ -197,7 +214,7 @@
 <div class="wrap">
 
   <div class="brand">
-    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1013-1</span></h1>
+    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1013-2</span></h1>
     <div id="brandRight"></div>
   </div>
 
@@ -280,6 +297,7 @@
       <button id="tabBtnCounsel" onclick="switchMainTab('counsel')" style="display:none;"><span class="ti">💬</span><span class="tl">상담</span></button>
       <button id="tabBtnYajaAdmin" onclick="switchMainTab('yajaadmin')" style="display:none;"><span class="ti">🦉</span><span class="tl">야자관리</span></button>
       <button id="tabBtnSuggest" onclick="switchMainTab('suggest')" style="display:none;"><span class="ti">📮</span><span class="tl">건의함</span></button>
+      <button id="tabBtnSeat" onclick="switchMainTab('seat')" style="display:none;"><span class="ti">🪑</span><span class="tl">자리</span></button>
     </div>
 
     <div class="tab-panel active" id="panel-timetable">
@@ -610,6 +628,16 @@
       </div>
     </div>
 
+    <div class="tab-panel" id="panel-seat">
+      <div class="group-block" id="seatStatusBox"><p class="hint">불러오는 중...</p></div>
+      <div class="group-block" id="seatMapBox" style="display:none;">
+        <div id="seatMapTitle" style="font-weight:700; margin-bottom:8px;"></div>
+        <div id="seatMap"></div>
+        <div id="seatMapFoot" style="margin-top:10px;"></div>
+      </div>
+      <div class="group-block" id="seatExtraBox" style="display:none;"></div>
+    </div>
+
     <div class="tab-panel" id="panel-suggest">
       <div id="sgStudentView" style="display:none;">
         <div class="group-block">
@@ -727,6 +755,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
 <script src="yaja-common.js"></script>
+<script src="seat-common.js"></script>
 <script>
 /* =========================================================
    0. Firebase 설정 — ⚠️ 콘솔에서 복사한 값으로 반드시 교체하세요
@@ -893,6 +922,7 @@ function enterApp(){
     setupMyYajaTab();
     setupCounselTab();
     setupSuggestTab();
+    setupSeatTab();
   } else {
     goToSelectScreen();
   }
@@ -921,6 +951,9 @@ function switchMainTab(tab){
   document.getElementById("panel-studyplan").classList.toggle("active", tab === "studyplan");
   document.getElementById("panel-yajaadmin").classList.toggle("active", tab === "yajaadmin");
   document.getElementById("tabBtnSuggest").classList.toggle("active", tab === "suggest");
+  document.getElementById("tabBtnSeat").classList.toggle("active", tab === "seat");
+  document.getElementById("panel-seat").classList.toggle("active", tab === "seat");
+  if(tab === "seat") seatOnTabOpen();
   document.getElementById("panel-suggest").classList.toggle("active", tab === "suggest");
 }
 function renderBrandRight(){
@@ -990,6 +1023,7 @@ async function handleSaveSelection(){
   setupMyYajaTab();
   setupCounselTab();
   setupSuggestTab();
+  setupSeatTab();
 }
 
 /* =========================================================
@@ -3580,6 +3614,366 @@ async function renderSuggestTeacher(){
     console.error("건의 불러오기 실패", e);
     box.innerHTML = `<p class="hint" style="color:var(--danger);">불러오지 못했어요 — 보안규칙(최신본)을 게시했는지 확인해주세요.</p>`;
   }
+}
+
+/* =========================================================
+   17. 자리 신청 (눈치게임) — 학생 1·2·3지망 → 담임 배정 → 발표
+   ========================================================= */
+let seatRounds = [], seatUnsub = null, seatTimer = null, seatMyChoices = [], seatMyRound = null, seatSaveT = null;
+let seatTeacher = { proxyNum: null, preview: null, swapSel: null, cfg: null };
+const seatTs = v => v ? (v.toMillis ? v.toMillis() : v._ms || (v.seconds ? v.seconds * 1000 : (typeof v === "number" ? v : 0))) : 0;
+const seatMMSS = ms => { const t = Math.max(0, Math.ceil(ms / 1000)); return `${String(Math.floor(t / 60)).padStart(2, "0")}:${String(t % 60).padStart(2, "0")}`; };
+const seatIsOpen = r => r && r.status === "open" && Date.now() < seatTs(r.closesAt);
+const seatLatest = () => seatRounds[0] || null;
+const seatLatestPublished = () => seatRounds.find(r => r.status === "published") || null;
+const seatHowShort = h => !h ? "" : h.startsWith("지망 실패") ? "실패→랜덤" : h.startsWith("미신청") ? "랜덤" : h === "담임 조정" ? "조정" : h;
+
+function setupSeatTab(){
+  const role = currentProfile && currentProfile.role;
+  const btn = document.getElementById("tabBtnSeat");
+  if(role !== "student" && role !== "teacher"){ btn.style.display = "none"; return; }
+  btn.style.display = "";
+  if(seatUnsub) return;
+  seatUnsub = db.collection("seatRounds").onSnapshot(snap => {
+    // 방금 만든 회차는 서버 시각이 아직 없을 수 있음 → 가장 최신으로 취급
+    const ct = r => seatTs(r.createdAt) || Number.MAX_SAFE_INTEGER;
+    seatRounds = snap.docs.map(d => ({ id:d.id, ...d.data() })).sort((a,b) => ct(b) - ct(a));
+    if(document.getElementById("panel-seat").classList.contains("active")) seatRender();
+  }, e => console.error("자리 회차 불러오기 실패", e));
+}
+function seatOnTabOpen(){ seatRender(); }
+
+// 좌석표 그리기 (학생 시점: 교탁이 위)
+function seatDrawMap(cellFn){
+  const secs = [];
+  for(let s = 0; s < SEAT_SECTIONS; s++){
+    let cells = "";
+    for(let r = 0; r < SEAT_ROWS; r++) for(let c = 0; c < SEAT_COLS; c++){
+      const k = seatKeyOf(s, r, c), x = cellFn(k);
+      cells += `<div class="seat-cell ${x.cls || ""}" data-k="${k}">${x.html || ""}</div>`;
+    }
+    secs.push(`<div class="seat-sec">${cells}</div>`);
+  }
+  document.getElementById("seatMap").innerHTML = `<div class="seat-podium">교탁 (칠판)</div><div class="seat-grid">${secs.join("")}</div>`;
+}
+
+function seatRender(){
+  clearInterval(seatTimer); seatTimer = null;
+  if(currentProfile.role === "teacher") seatRenderTeacher(); else seatRenderStudent();
+  if(seatIsOpen(seatLatest())) seatTimer = setInterval(() => {
+    const el = document.getElementById("seatTimerNum");
+    const r = seatLatest();
+    if(!seatIsOpen(r)){ clearInterval(seatTimer); seatRender(); return; }
+    if(el) el.textContent = seatMMSS(seatTs(r.closesAt) - Date.now());
+  }, 500);
+}
+
+/* ---------- 학생 ---------- */
+async function seatRenderStudent(){
+  const status = document.getElementById("seatStatusBox"), mapBox = document.getElementById("seatMapBox");
+  document.getElementById("seatExtraBox").style.display = "none";
+  const r = seatLatest(), myNum = currentProfile.num;
+  if(!r){ status.innerHTML = `<h3>🪑 자리</h3><p class="hint">아직 자리 신청이 열린 적이 없어요. 선생님이 열면 알림이 와요.</p>`; mapBox.style.display = "none"; return; }
+
+  if(r.status === "open"){
+    if(seatMyRound !== r.id){
+      const myApp = await db.collection("seatApps").doc(`${r.id}_${currentUser.uid}`).get().catch(() => null);
+      seatMyChoices = ((myApp && myApp.exists && myApp.data().choices) || []).slice();
+      seatMyRound = r.id;
+    }
+    const open = seatIsOpen(r);
+    status.innerHTML = open
+      ? `<h3>🪑 자리 신청 중</h3><div class="seat-timer">⏱ <span id="seatTimerNum">${seatMMSS(seatTs(r.closesAt) - Date.now())}</span></div>
+         <p class="hint" style="text-align:center;">자리를 눌러 <b>1지망 → 2지망 → 3지망</b> 순서로 고르세요. 다시 누르면 취소돼요. 고르면 바로 저장돼요.</p>`
+      : `<h3>🪑 신청 마감</h3><p class="hint">선생님이 자리를 배정하고 있어요. 발표되면 알림이 와요.</p>`;
+    const rules = r.rules || {}, g = (rules.genders || {})[myNum], prev = (rules.prevSeat || {})[myNum];
+    const pinned = new Set(rules.pinnedSeats || []);
+    const blocked = k => pinned.has(k) || k === prev || (g && rules.seatGender && rules.seatGender[k] && rules.seatGender[k] !== "무관" && rules.seatGender[k] !== g);
+    mapBox.style.display = "block";
+    document.getElementById("seatMapTitle").textContent = open ? "원하는 자리 고르기" : "내가 고른 자리";
+    seatDrawMap(k => {
+      const rank = seatMyChoices.indexOf(k);
+      if(blocked(k)) return { cls:"off", html: k === prev ? "직전<br>자리" : pinned.has(k) ? "고정" : "" };
+      return { cls: (rank >= 0 ? "chosen " : "") + (open ? "pick" : ""), html: rank >= 0 ? `<span class="rk">${rank + 1}</span>${rank + 1}지망` : "" };
+    });
+    document.getElementById("seatMapFoot").innerHTML =
+      `<div style="font-size:13px;">${[0,1,2].map(i => `${i + 1}지망: <b>${seatMyChoices[i] ? seatLabelOf(seatMyChoices[i]) : "—"}</b>`).join("<br>")}</div>
+       <div id="seatSaveNote" class="hint" style="margin-top:6px;">${seatMyChoices.length ? "✓ 저장됨" + (open ? " · 마감 전까지 바꿀 수 있어요" : "") : open ? "아직 고르지 않았어요. 안 고르면 남는 자리에 무작위로 배정돼요." : "신청하지 않았어요 — 남는 자리에 무작위로 배정돼요."}</div>`;
+    if(open) document.querySelectorAll("#seatMap .seat-cell.pick").forEach(el => el.onclick = () => {
+      const k = el.dataset.k, i = seatMyChoices.indexOf(k);
+      if(i >= 0) seatMyChoices.splice(i, 1);
+      else if(seatMyChoices.length < 3) seatMyChoices.push(k);
+      else { alert("3지망까지 골랐어요. 바꾸려면 고른 자리를 다시 눌러 취소하세요."); return; }
+      seatRenderStudent();
+      clearTimeout(seatSaveT);
+      seatSaveT = setTimeout(() => seatSaveMyChoices(r.id), 300);
+    });
+    return;
+  }
+  // 발표된 결과
+  const pub = seatLatestPublished();
+  if(!pub){ status.innerHTML = `<h3>🪑 자리</h3><p class="hint">발표된 자리가 아직 없어요.</p>`; mapBox.style.display = "none"; return; }
+  const myKey = Object.keys(pub.result || {}).find(k => pub.result[k] === myNum);
+  const how = (pub.how || {})[myNum] || "";
+  status.innerHTML = `<h3>🪑 내 자리</h3>
+    <div style="font-size:20px; font-weight:700; color:var(--forest-deep);">${myKey ? seatLabelOf(myKey) : "배정 없음"}</div>
+    <div class="hint">${how ? how + " · " : ""}${pub.publishedAt ? new Date(seatTs(pub.publishedAt)).toLocaleDateString("ko-KR") + " 발표" : ""}</div>`;
+  mapBox.style.display = "block";
+  document.getElementById("seatMapTitle").textContent = "우리 반 자리";
+  const names = pub.names || {};
+  seatDrawMap(k => { const n = pub.result[k]; return n ? { cls: n === myNum ? "mine" : "", html: `${n} ${yajaEsc(names[n] || "")}` } : { cls:"off" }; });
+  document.getElementById("seatMapFoot").innerHTML = "";
+}
+
+async function seatSaveMyChoices(roundId){
+  const note = document.getElementById("seatSaveNote");
+  try{
+    await db.collection("seatApps").doc(`${roundId}_${currentUser.uid}`).set({
+      roundId, uid: currentUser.uid, num: currentProfile.num, choices: seatMyChoices.slice(0, 3),
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    });
+    if(note) note.textContent = seatMyChoices.length ? "✓ 저장됨 · 마감 전까지 바꿀 수 있어요" : "모두 취소했어요.";
+  }catch(e){
+    console.error("자리 신청 저장 실패", e);
+    if(note){ note.textContent = "⚠ 저장 실패 — 마감됐거나 인터넷이 끊겼어요."; note.style.color = "var(--danger)"; }
+  }
+}
+
+/* ---------- 담임 ---------- */
+async function seatLoadConfig(){
+  try{ const d = await db.collection("seatConfig").doc("main").get(); return d.exists ? d.data() : null; }
+  catch(e){ console.error(e); return null; }
+}
+async function seatClassRoster(cfg){
+  const snap = await db.collection("students").where("role", "==", "student").get();
+  const byNum = {}; snap.forEach(d => { const x = d.data(); if(x.name !== "테스트") byNum[x.num] = { uid:d.id, num:x.num, name:x.name }; });
+  if(cfg && Array.isArray(cfg.roster) && cfg.roster.length){
+    return cfg.roster.filter(x => byNum[x.num]).map(x => ({ ...byNum[x.num], gender: x.gender || "", pinnedSeat: x.pinnedSeat || "" })).sort((a,b) => a.num - b.num);
+  }
+  return Object.values(byNum).map(x => ({ ...x, gender:"", pinnedSeat:"" })).sort((a,b) => a.num - b.num);
+}
+function seatPrevFromPublished(pub){
+  const prevSeat = {}, prevPartner = {};
+  if(pub && pub.result) Object.entries(pub.result).forEach(([k, n]) => {
+    prevSeat[n] = k; const p = pub.result[seatPartnerKey(k)]; if(p) prevPartner[n] = p;
+  });
+  return { prevSeat, prevPartner };
+}
+
+async function seatRenderTeacher(){
+  const status = document.getElementById("seatStatusBox"), mapBox = document.getElementById("seatMapBox"), extra = document.getElementById("seatExtraBox");
+  const r = seatLatest();
+  extra.style.display = "none";
+
+  // A. 신청 중
+  if(seatIsOpen(r)){
+    const apps = await seatLoadApps(r.id);
+    const names = (r.rules && r.rules.names) || {};
+    const nums = Object.keys(names).map(Number).sort((a,b) => a - b);
+    const done = new Set(Object.keys(apps).map(Number));
+    status.innerHTML = `<h3>🪑 자리 신청 중</h3><div class="seat-timer">⏱ <span id="seatTimerNum">${seatMMSS(seatTs(r.closesAt) - Date.now())}</span></div>
+      <div style="font-size:13px; margin:8px 0 6px;">신청 <b>${done.size}</b> / ${nums.length}명</div>
+      <div>${nums.map(n => `<span class="seat-chip ${done.has(n) ? "on" : ""}">${n} ${yajaEsc(names[n])}</span>`).join("")}</div>
+      <div style="display:flex; gap:12px; margin-top:8px;">
+        <button class="link-btn" id="seatRefreshBtn">↻ 새로고침</button>
+        <button class="link-btn" id="seatProxyBtn">✋ 대신 입력</button>
+        <button class="link-btn" id="seatCloseNowBtn" style="color:var(--danger);">⏹ 지금 마감</button>
+      </div>`;
+    document.getElementById("seatRefreshBtn").onclick = () => seatRender();
+    document.getElementById("seatCloseNowBtn").onclick = async () => {
+      if(!confirm("지금 신청을 마감할까요?")) return;
+      await db.collection("seatRounds").doc(r.id).update({ status:"closed" }); 
+    };
+    document.getElementById("seatProxyBtn").onclick = () => seatProxyUI(r, apps);
+    mapBox.style.display = "none";
+    if(seatTeacher.proxyNum) seatProxyUI(r, apps);
+    return;
+  }
+
+  // B. 마감됨 → 배정
+  if(r && (r.status === "open" || r.status === "closed")){
+    const apps = await seatLoadApps(r.id);
+    status.innerHTML = `<h3>🪑 신청 마감 · 배정 대기</h3>
+      <p class="hint">신청 ${Object.keys(apps).length}명. 배정을 실행하면 미리보기가 나오고, <b>발표</b>를 눌러야 학생에게 공개돼요.</p>
+      <button class="primary-btn" id="seatRunBtn">🎲 배정 실행</button>
+      <button class="link-btn" id="seatCancelBtn" style="margin-top:8px; color:#a49c88;">이번 회차 취소</button>`;
+    document.getElementById("seatRunBtn").onclick = () => seatRunAndPreview(r, apps);
+    document.getElementById("seatCancelBtn").onclick = async () => {
+      if(!confirm("이번 신청 회차를 취소할까요? (자리는 그대로 유지돼요)")) return;
+      await db.collection("seatRounds").doc(r.id).update({ status:"cancelled" });
+    };
+    if(seatTeacher.preview && seatTeacher.preview.roundId === r.id){ document.getElementById("seatRunBtn").style.display = "none"; seatShowPreview(r); }
+    else mapBox.style.display = "none";
+    return;
+  }
+
+  // C. 신청 열기 (+ 최근 발표 자리)
+  seatTeacher.cfg = await seatLoadConfig();
+  const cfg = seatTeacher.cfg;
+  const cfgLine = cfg
+    ? `자리배치 도구 설정 연결됨 · 명단 ${(cfg.roster || []).length}명 · 남/여 책상 ${Object.values(cfg.seatGender || {}).filter(v => v && v !== "무관").length}석 · 고정 ${(cfg.roster || []).filter(x => x.pinnedSeat).length}명`
+    : `⚠️ 자리배치 도구(seat.html) 설정이 아직 없어요. 도구를 한 번 열면 성별 책상·짝 금지·고정 좌석이 자동으로 연결돼요. (없어도 신청은 가능)`;
+  status.innerHTML = `<h3>🪑 자리 신청 열기</h3>
+    <p class="hint">열면 학생들에게 알림이 가고, 정한 시간 동안 1·2·3지망을 받아요. 우선권은 <b>최근 4주 학습계획서 포인트</b> → 회고 제출 횟수 → 무작위 순이에요.</p>
+    <div style="display:flex; gap:8px; align-items:center;">
+      <select id="seatDur" style="padding:8px; border:1px solid var(--line); border-radius:6px;"><option value="180">3분</option><option value="300" selected>5분</option><option value="600">10분</option></select>
+      <button class="primary-btn" id="seatOpenBtn" style="margin-top:0; flex:1;">🪑 자리 신청 열기</button>
+    </div>
+    <p class="hint" style="margin-top:8px; font-size:12px;">${cfgLine}</p>`;
+  document.getElementById("seatOpenBtn").onclick = () => seatOpenRound(Number(document.getElementById("seatDur").value));
+  const pub = seatLatestPublished();
+  if(pub){
+    mapBox.style.display = "block";
+    document.getElementById("seatMapTitle").textContent = `최근 발표 자리 (${new Date(seatTs(pub.publishedAt)).toLocaleDateString("ko-KR")})`;
+    const names = pub.names || {};
+    seatDrawMap(k => { const n = pub.result[k]; return n ? { html:`${n} ${yajaEsc(names[n] || "")}<span class="hw">${yajaEsc(seatHowShort((pub.how || {})[n]))}</span>` } : { cls:"off" }; });
+    document.getElementById("seatMapFoot").innerHTML = `<p class="hint">전자칠판에서 공개하려면 자리배치 도구의 <b>📥 학급 앱 결과 불러오기</b>를 누르세요.</p>`;
+  } else mapBox.style.display = "none";
+}
+
+async function seatLoadApps(roundId){
+  const snap = await db.collection("seatApps").where("roundId", "==", roundId).get();
+  const apps = {}; snap.forEach(d => { const x = d.data(); if(x.choices && x.choices.length) apps[x.num] = x.choices; });
+  return apps;
+}
+
+async function seatOpenRound(durSec){
+  const btn = document.getElementById("seatOpenBtn"); btn.disabled = true; btn.textContent = "여는 중...";
+  try{
+    const cfg = seatTeacher.cfg;
+    const roster = await seatClassRoster(cfg);
+    const prev = seatPrevFromPublished(seatLatestPublished());
+    const genders = {}, names = {}, pinnedSeats = [];
+    roster.forEach(x => { names[x.num] = x.name; if(x.gender) genders[x.num] = x.gender; if(x.pinnedSeat) pinnedSeats.push(x.pinnedSeat); });
+    const FV = firebase.firestore.FieldValue;
+    const ref = await db.collection("seatRounds").add({
+      status:"preparing", durationSec: durSec, createdAt: FV.serverTimestamp(),
+      rules: { seatGender: (cfg && cfg.seatGender) || {}, pinnedSeats, prevSeat: prev.prevSeat, genders, names },
+    });
+    const created = await ref.get();
+    const nowMs = seatTs(created.data().createdAt) || Date.now(); // 서버 시각 기준
+    await ref.update({ status:"open", closesAt: firebase.firestore.Timestamp.fromMillis(nowMs + durSec * 1000) });
+  }catch(e){
+    console.error("자리 신청 열기 실패", e);
+    alert("열지 못했어요 — 보안규칙(최신본)을 게시했는지 확인해주세요.");
+    btn.disabled = false; btn.textContent = "🪑 자리 신청 열기";
+  }
+}
+
+function seatProxyUI(r, apps){
+  const extra = document.getElementById("seatExtraBox"), mapBox = document.getElementById("seatMapBox");
+  const names = (r.rules && r.rules.names) || {};
+  const nums = Object.keys(names).map(Number).sort((a,b) => a - b);
+  extra.style.display = "block";
+  extra.innerHTML = `<h3>✋ 대신 입력</h3><p class="hint">폰이 없거나 늦은 학생의 지망을 대신 넣어요.</p>
+    <select id="seatProxySel" style="width:100%; padding:8px; border:1px solid var(--line); border-radius:6px;">
+      <option value="">학생 선택</option>${nums.map(n => `<option value="${n}" ${seatTeacher.proxyNum === n ? "selected" : ""}>${n}번 ${yajaEsc(names[n])}${apps[n] ? " (신청함)" : ""}</option>`).join("")}
+    </select>`;
+  document.getElementById("seatProxySel").onchange = e => { seatTeacher.proxyNum = Number(e.target.value) || null; seatTeacher.proxyChoices = (apps[seatTeacher.proxyNum] || []).slice(); seatProxyUI(r, apps); };
+  if(!seatTeacher.proxyNum){ mapBox.style.display = "none"; return; }
+  const n = seatTeacher.proxyNum, ch = seatTeacher.proxyChoices = seatTeacher.proxyChoices || (apps[n] || []).slice();
+  const rules = r.rules || {}, g = (rules.genders || {})[n], prev = (rules.prevSeat || {})[n], pinned = new Set(rules.pinnedSeats || []);
+  const blocked = k => pinned.has(k) || k === prev || (g && rules.seatGender && rules.seatGender[k] && rules.seatGender[k] !== "무관" && rules.seatGender[k] !== g);
+  mapBox.style.display = "block";
+  document.getElementById("seatMapTitle").textContent = `${n}번 ${names[n]} 지망 고르기`;
+  seatDrawMap(k => { const i = ch.indexOf(k); return blocked(k) ? { cls:"off" } : { cls:"pick " + (i >= 0 ? "chosen" : ""), html: i >= 0 ? `<span class="rk">${i + 1}</span>${i + 1}지망` : "" }; });
+  document.querySelectorAll("#seatMap .seat-cell.pick").forEach(el => el.onclick = () => {
+    const k = el.dataset.k, i = ch.indexOf(k);
+    if(i >= 0) ch.splice(i, 1); else if(ch.length < 3) ch.push(k);
+    seatProxyUI(r, apps);
+  });
+  document.getElementById("seatMapFoot").innerHTML = `<button class="primary-btn" id="seatProxySave">저장</button>`;
+  document.getElementById("seatProxySave").onclick = async () => {
+    const st = (await seatClassRoster(null)).find(x => x.num === n);
+    await db.collection("seatApps").doc(`${r.id}_${st.uid}`).set({ roundId:r.id, uid:st.uid, num:n, choices:ch.slice(0,3), byTeacher:true, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+    seatTeacher.proxyNum = null; seatTeacher.proxyChoices = null; extra.style.display = "none";
+    seatRender();
+  };
+}
+
+// 최근 4주(지난주까지) 학습계획서 포인트
+async function seatLoadPoints(roster){
+  const mon = new Date(); mon.setHours(0,0,0,0); mon.setDate(mon.getDate() - ((mon.getDay() + 6) % 7));
+  const weeks = [1,2,3,4].map(i => { const d = new Date(mon); d.setDate(d.getDate() - 7 * i); return yajaDateKey(d); });
+  const byUid = {}; roster.forEach(x => { byUid[x.uid] = x.num; });
+  const points = {}; roster.forEach(x => { points[x.num] = { pts:0, refl:0 }; });
+  const snaps = await Promise.all(weeks.map(w => db.collection("studyplans").where("weekKey", "==", w).get()));
+  snaps.forEach(sn => sn.forEach(d => {
+    const p = d.data(), n = byUid[p.studentUid];
+    if(n === undefined) return;
+    points[n].pts += seatWeekScore(p);
+    if(p.reflectSubmitted) points[n].refl += 1;
+  }));
+  return { points, weeks };
+}
+
+async function seatRunAndPreview(r, apps){
+  const btn = document.getElementById("seatRunBtn"); if(btn){ btn.disabled = true; btn.textContent = "계산 중..."; }
+  try{
+    const cfg = await seatLoadConfig();
+    const roster = await seatClassRoster(cfg);
+    const { points, weeks } = await seatLoadPoints(roster);
+    const prev = seatPrevFromPublished(seatLatestPublished());
+    const pinned = {}; roster.forEach(x => { if(x.pinnedSeat) pinned[x.num] = x.pinnedSeat; });
+    const res = seatRunAssignment({
+      students: roster.map(x => ({ num:x.num, name:x.name, gender:x.gender })),
+      apps, points, pinned, prevSeat: prev.prevSeat, prevPartner: prev.prevPartner,
+      seatGender: (cfg && cfg.seatGender) || {}, forbiddenPairs: (cfg && cfg.forbiddenPairs) || [],
+      avoidRepeat: !cfg || cfg.avoidRepeat !== false,
+    });
+    if(!res.ok){ alert(res.error); if(btn){ btn.disabled = false; btn.textContent = "🎲 배정 실행"; } return; }
+    const names = {}; roster.forEach(x => { names[x.num] = x.name; });
+    seatTeacher.preview = { roundId:r.id, result:res.assignment, how:res.how, order:res.order, points, weeks, names };
+    seatTeacher.swapSel = null;
+    seatRender();
+  }catch(e){
+    console.error("배정 실패", e); alert("배정 중 오류가 났어요.");
+    if(btn){ btn.disabled = false; btn.textContent = "🎲 배정 실행"; }
+  }
+}
+
+function seatShowPreview(r){
+  const pv = seatTeacher.preview, mapBox = document.getElementById("seatMapBox"), extra = document.getElementById("seatExtraBox");
+  mapBox.style.display = "block";
+  document.getElementById("seatMapTitle").innerHTML = `배정 미리보기 <span class="hint" style="font-weight:400;">· 두 자리를 차례로 누르면 서로 바꿔요</span>`;
+  seatDrawMap(k => {
+    const n = pv.result[k];
+    return { cls:"pick " + (n ? "" : "off ") + (pv.swapSel === k || seatTeacher.swapSel === k ? "sel" : ""),
+      html: n ? `${n} ${yajaEsc(pv.names[n] || "")}<span class="hw">${yajaEsc(seatHowShort(pv.how[n]))}</span>` : "" };
+  });
+  document.querySelectorAll("#seatMap .seat-cell").forEach(el => el.onclick = () => {
+    const k = el.dataset.k;
+    if(!seatTeacher.swapSel){ seatTeacher.swapSel = k; seatShowPreview(r); return; }
+    const a = seatTeacher.swapSel; seatTeacher.swapSel = null;
+    if(a !== k){
+      const na = pv.result[a], nb = pv.result[k];
+      if(nb !== undefined) pv.result[a] = nb; else delete pv.result[a];
+      if(na !== undefined) pv.result[k] = na; else delete pv.result[k];
+      [na, nb].forEach(n => { if(n !== undefined) pv.how[n] = "담임 조정"; });
+    }
+    seatShowPreview(r);
+  });
+  document.getElementById("seatMapFoot").innerHTML = `<div style="display:flex; gap:8px;">
+      <button class="primary-btn" id="seatPublishBtn" style="flex:2; margin-top:0;">📢 학생에게 발표</button>
+      <button class="primary-btn" id="seatRerunBtn" style="flex:1; margin-top:0; background:#fff; color:var(--ink); border:1px solid var(--line);">🔁 다시 실행</button></div>`;
+  document.getElementById("seatRerunBtn").onclick = async () => { if(confirm("무작위 부분이 다시 정해져요. 다시 실행할까요?")) seatRunAndPreview(r, await seatLoadApps(r.id)); };
+  document.getElementById("seatPublishBtn").onclick = async () => {
+    if(!confirm("이 자리로 발표할까요? 학생들에게 알림이 가요.")) return;
+    try{
+      await db.collection("seatRounds").doc(r.id).update({
+        status:"published", result: pv.result, how: pv.how, names: pv.names,
+        publishedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+      seatTeacher.preview = null;
+    }catch(e){ console.error(e); alert("발표에 실패했어요."); }
+  };
+  // 우선순위 표 (담임만)
+  extra.style.display = "block";
+  const lbl = k => k ? seatLabelOf(k).replace("분단 ", "-").replace("줄 ", "-").replace("왼쪽","좌").replace("오른쪽","우") : "";
+  extra.innerHTML = `<h3>📊 신청자 우선순위</h3><p class="hint">최근 4주(${pv.weeks[3].slice(5)} ~ ${pv.weeks[0].slice(5)} 주) 포인트 · 회고 횟수 순. 학생에게는 공개되지 않아요.</p>
+    <table class="seat-tbl"><tr><th>#</th><th>학생</th><th>점</th><th>회고</th><th>지망</th><th>결과</th></tr>
+    ${pv.order.map((o, i) => `<tr><td>${i + 1}</td><td>${o.num} ${yajaEsc(pv.names[o.num] || "")}</td><td>${o.pts}</td><td>${o.refl}</td>
+      <td style="font-size:11px;">${(o.choices || []).map(lbl).join(" / ")}</td><td>${yajaEsc(pv.how[o.num] || "")}</td></tr>`).join("")}</table>`;
 }
 
 /* =========================================================
