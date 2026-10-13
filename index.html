@@ -163,6 +163,21 @@
   .sp-teacher{ margin-top:14px; border-top:1px dashed var(--line); padding-top:12px; }
   .sp-teacher label{ font-size:12px; font-weight:600; }
   .sp-teacher textarea{ width:100%; border:1px solid var(--line); border-radius:6px; padding:8px; font-family:inherit; font-size:12.5px; min-height:40px; margin-top:4px; background:#fff; color:var(--ink); }
+  .sp-mode-btn{ flex:1; padding:9px 6px; border:1px solid var(--line); border-radius:8px; background:var(--card); font-family:inherit; font-size:13px; color:#6b6455; cursor:pointer; }
+  .sp-mode-btn.on{ background:var(--forest); color:#fff; border-color:var(--forest); }
+  .ov-group{ margin-bottom:14px; }
+  .ov-group > h4{ font-size:14px; margin:0 0 6px; }
+  .ov-chip{ display:inline-block; font-size:12.5px; padding:3px 9px; border-radius:12px; background:#F3DDD6; color:var(--danger); margin:0 4px 4px 0; }
+  .ov-card{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-bottom:8px; }
+  .ov-card.done{ opacity:.7; }
+  .ov-card .hd{ display:flex; justify-content:space-between; align-items:center; font-size:14px; }
+  .ov-reason{ display:inline-block; font-size:11px; padding:1px 7px; border-radius:10px; background:#F1DDB2; color:#8a5f14; margin:4px 4px 0 0; }
+  .ov-goals{ font-size:12.5px; margin:6px 0 2px; padding-left:18px; }
+  .ov-goals li{ margin:1px 0; }
+  .ov-meta{ font-size:12px; color:#8a8270; }
+  .ov-fb{ margin-top:8px; display:none; }
+  .ov-fb textarea{ width:100%; min-height:54px; border:1px solid var(--line); border-radius:6px; padding:7px; font-family:inherit; font-size:13px; }
+  .ov-q{ font-size:11.5px; padding:2px 8px; border:1px solid var(--line); border-radius:12px; background:#fff; margin:4px 4px 0 0; cursor:pointer; font-family:inherit; }
   .sp-teacher-readout{ font-size:12.5px; background:#F1DDB2; border-radius:6px; padding:8px 10px; margin-top:4px; color:#5c3f10; min-height:20px; }
   .sp-score-grid{ display:grid; grid-template-columns:1fr 1fr 1fr 1fr; gap:6px; text-align:center; margin-top:8px; }
   .sp-score-cell{ background:var(--card); border:1px solid var(--line); border-radius:8px; padding:8px 4px; }
@@ -182,7 +197,7 @@
 <div class="wrap">
 
   <div class="brand">
-    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1008-1</span></h1>
+    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1013-1</span></h1>
     <div id="brandRight"></div>
   </div>
 
@@ -426,6 +441,21 @@
           </div>
         </div>
 
+        <div id="spTeacherModeRow" style="display:none; gap:6px; margin-bottom:12px;">
+          <button class="sp-mode-btn on" data-m="overview">📋 주간 피드백 모아보기</button>
+          <button class="sp-mode-btn" data-m="single">👤 학생별 보기</button>
+        </div>
+
+        <div id="spOverview" style="display:none;">
+          <div class="sp-weeknav">
+            <button id="ovPrevBtn">◀ 이전 주</button>
+            <span class="sp-weekrange" id="ovWeekLabel"></span>
+            <button id="ovNextBtn">다음 주 ▶</button>
+          </div>
+          <div id="ovSummary" style="font-size:13px; color:#6b6455; margin:6px 0 10px;"></div>
+          <div id="ovBody"><p class="hint">불러오는 중...</p></div>
+        </div>
+
         <div class="sp-target-row" id="spTeacherSelectRow" style="display:none;">
           <span>학생 선택</span>
           <select id="spStudentSelect"></select>
@@ -466,7 +496,8 @@
 
           <div class="sp-teacher" id="teacherBox">
             <label>담임 피드백 (주 1회)</label>
-            <textarea id="teacherFeedback" placeholder="회고를 읽고 한 줄 남겨주세요"></textarea>
+            <textarea id="teacherFeedback" placeholder="계획·회고를 읽고 한 줄 남겨주세요"></textarea>
+            <button class="primary-btn" id="teacherFeedbackSend" style="display:none; margin-top:6px; padding:9px;">피드백 보내기 (학생에게 알림)</button>
             <div class="sp-teacher-readout" id="teacherReadout" style="display:none;"></div>
           </div>
 
@@ -583,11 +614,11 @@
       <div id="sgStudentView" style="display:none;">
         <div class="group-block">
           <h3>📮 건의함 · 바라는 점</h3>
-          <p class="hint">학급 생활, 수업, 시설, 행사, 이 앱까지 — 바라는 점을 편하게 보내주세요. 선생님이 읽고 답장하면 알림이 가요.</p>
+          <p class="hint">학급 생활, 수업, 시설, 행사, 이 앱까지 — 바라는 점을 편하게 보내주세요. <b>칭찬하고 싶은 친구나 선행 이야기</b>도 '💐 칭찬·선행'으로 알려주세요. 선생님이 읽고 답장하면 알림이 가요.</p>
           <div class="field"><label>분류</label>
-            <select id="sgCategory"><option>학급 생활</option><option>수업·학습</option><option>시설·환경</option><option>행사·활동</option><option>학급 앱</option><option>기타</option></select>
+            <select id="sgCategory"><option>💐 칭찬·선행</option><option>학급 생활</option><option>수업·학습</option><option>시설·환경</option><option>행사·활동</option><option>학급 앱</option><option>기타</option></select>
           </div>
-          <div class="field"><label>내용</label><textarea id="sgContent" maxlength="1000" style="min-height:110px;" placeholder="예: 청소 구역을 한 달마다 바꿨으면 좋겠어요."></textarea></div>
+          <div class="field"><label>내용</label><textarea id="sgContent" maxlength="1000" style="min-height:110px;" placeholder="예: 청소 구역을 한 달마다 바꿨으면 좋겠어요. / 💐 OO가 무거운 짐 드는 걸 도와줬어요."></textarea></div>
           <label style="display:flex; align-items:center; gap:6px; font-size:13.5px; margin-bottom:4px;"><input type="checkbox" id="sgAnon"> 익명으로 보내기</label>
           <p class="hint" style="margin-top:0;">익명으로 보내면 선생님 화면에 이름과 번호가 보이지 않아요.</p>
           <button class="primary-btn" id="sgSubmitBtn">보내기</button>
@@ -605,6 +636,7 @@
             <button class="link-btn" data-f="open" style="font-weight:700;">처리 전</button>
             <button class="link-btn" data-f="all">전체</button>
             <button class="link-btn" data-f="done">처리 완료</button>
+            <button class="link-btn" data-f="praise">💐 칭찬·선행</button>
           </div>
           <div id="sgTList"><p class="hint">불러오는 중...</p></div>
         </div>
@@ -1676,11 +1708,13 @@ function subscribeMyAbsences(){
     const monday = spCurrentWeekMonday();
     const docId = spDocId(spTargetUid, monday);
     try{
+      // 담임 피드백은 따로 저장되므로 여기서는 건드리지 않음 (덮어쓰기 방지)
+      const { teacherFeedback, feedbackAt, ...rest } = spState;
       await db.collection("studyplans").doc(docId).set({
         studentUid: spTargetUid,
         weekKey: isoKey(monday),
-        ...spState
-      });
+        ...rest
+      }, { merge: true });
     }catch(e){ console.error("주간계획 저장 실패", e); }
   }
 
@@ -1952,9 +1986,19 @@ function subscribeMyAbsences(){
       teacherArea.style.display = "block";
       teacherReadout.style.display = "none";
       teacherArea.value = spState.teacherFeedback;
-      teacherArea.oninput = (e)=>{ spState.teacherFeedback = e.target.value; spSaveWeek(); };
+      teacherArea.oninput = (e)=>{ spState.teacherFeedback = e.target.value; };
+      const sendBtn = document.getElementById("teacherFeedbackSend");
+      sendBtn.style.display = "block";
+      sendBtn.onclick = async ()=>{
+        sendBtn.disabled = true;
+        const ok = await spSendFeedback(spTargetUid, isoKey(monday), teacherArea.value.trim());
+        if(ok) spState.teacherFeedback = teacherArea.value.trim();
+        sendBtn.disabled = false;
+        if(ok) alert("피드백을 보냈어요.");
+      };
     } else {
       teacherArea.style.display = "none";
+      document.getElementById("teacherFeedbackSend").style.display = "none";
       teacherReadout.style.display = "block";
       teacherReadout.textContent = spState.teacherFeedback ? spState.teacherFeedback : "아직 담임 피드백이 없습니다.";
     }
@@ -1992,16 +2036,136 @@ function subscribeMyAbsences(){
   });
 
   // 이 탭이 열릴 때 호출 (main.js의 setupAbsenceTab과 같은 타이밍에 실행)
+  /* ---------- 담임: 주간 피드백 모아보기 ---------- */
+  let spTeacherMode = "overview", ovWeekOffset = 0, spJumpWeekOffset = 0, spStudentSelectEl = null;
+
+  function spSetTeacherMode(m){
+    spTeacherMode = m;
+    document.querySelectorAll("#spTeacherModeRow .sp-mode-btn").forEach(b => b.classList.toggle("on", b.dataset.m === m));
+    document.getElementById("spOverview").style.display = m === "overview" ? "block" : "none";
+    document.getElementById("spTeacherSelectRow").style.display = m === "single" ? "flex" : "none";
+    document.getElementById("spBody").style.display = (m === "single" && spTargetUid) ? "block" : "none";
+    if(m === "overview") renderOverview();
+  }
+
+  // 계획서 분류: 미제출 / 확인 필요(이유) / 양호
+  function spClassify(plan){
+    if(!plan || !plan.planSubmitted) return { group:"missing", reasons:[] };
+    const reasons = [];
+    const goals = (plan.goals || []).map(g => (g || "").trim());
+    if(goals.some(g => g && !/[0-9]/.test(g))) reasons.push("분량(숫자) 없는 목표");
+    if(goals.some(g => g && g.length < 6)) reasons.push("목표가 너무 짧음");
+    const days = plan.days || [];
+    const selfDays = days.filter(d => d && d.cats && ((d.cats.schoolSelf && d.cats.schoolSelf.on) || (d.cats.homeSelf && d.cats.homeSelf.on))).length;
+    const academyDays = days.filter(d => d && d.cats && ((d.cats.academy && d.cats.academy.on) || (d.cats.tutoring && d.cats.tutoring.on))).length;
+    if(selfDays === 0) reasons.push(academyDays ? "학원만 있고 자습 계획 없음" : "자습 계획 없음");
+    return { group: reasons.length ? "check" : "good", reasons, selfDays, academyDays };
+  }
+
+  async function spSendFeedback(uid, weekKey, text){
+    if(!text){ alert("피드백 내용을 적어주세요."); return false; }
+    try{
+      await db.collection("studyplans").doc(`${uid}_${weekKey}`).update({
+        teacherFeedback: text,
+        feedbackAt: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+      return true;
+    }catch(e){ console.error("피드백 저장 실패", e); alert("저장에 실패했어요."); return false; }
+  }
+
+  const OV_QUICK = ["목표가 구체적이라 좋아요 👍", "목표에 분량(숫자)을 넣어보자.", "학원 말고 혼자 공부하는 시간도 꼭 넣어보자.", "야자 시간을 잘 활용해보자!", "이번 주도 응원해 💪"];
+
+  async function renderOverview(){
+    const body = document.getElementById("ovBody");
+    const monday = getMondayOf(new Date()); monday.setDate(monday.getDate() + ovWeekOffset * 7);
+    const sunday = new Date(monday); sunday.setDate(sunday.getDate() + 6);
+    const wk = isoKey(monday);
+    document.getElementById("ovWeekLabel").textContent = `${fmtDate(monday)} ~ ${fmtDate(sunday)}${ovWeekOffset===0 ? " (이번 주)" : ovWeekOffset===1 ? " (다음 주)" : ""}`;
+    document.getElementById("ovNextBtn").disabled = ovWeekOffset >= 1;
+    body.innerHTML = `<p class="hint">불러오는 중...</p>`;
+    try{
+      const [stuSnap, planSnap] = await Promise.all([
+        db.collection("students").where("role", "==", "student").get(),
+        db.collection("studyplans").where("weekKey", "==", wk).get(),
+      ]);
+      const plans = {}; planSnap.forEach(d => { plans[d.data().studentUid] = d.data(); });
+      const students = stuSnap.docs.map(d => ({uid:d.id, ...d.data()})).filter(x => x.name !== "테스트").sort((a,b) => a.num - b.num);
+      const groups = { missing:[], check:[], good:[] };
+      students.forEach(st => { const p = plans[st.uid]; const c = spClassify(p); groups[c.group].push({ st, p, c }); });
+      const fbDone = [...groups.check, ...groups.good].filter(x => x.p.feedbackAt).length;
+      const deadlinePassed = new Date() >= planDeadlineFor(monday);
+      document.getElementById("ovSummary").innerHTML =
+        `제출 <b>${groups.check.length + groups.good.length}</b>명 · 미제출 <b>${groups.missing.length}</b>명 · 피드백 완료 <b>${fbDone}</b>명` +
+        (deadlinePassed ? "" : ` <span style="color:#8a5f14;">(월요일 24:00 마감 전)</span>`);
+
+      const card = ({ st, p, c }) => {
+        const goals = (p.goals || []).filter(g => (g || "").trim());
+        const done = !!p.feedbackAt;
+        return `<div class="ov-card ${done ? "done" : ""}" data-uid="${st.uid}">
+          <div class="hd"><b>${st.num}번 ${yajaEsc(st.name)}</b>
+            <span style="font-size:12px;">${done ? "✅ 피드백 완료" : ""}</span></div>
+          ${c.reasons.map(r => `<span class="ov-reason">⚠️ ${r}</span>`).join("")}
+          <ol class="ov-goals">${goals.map(g => `<li>${yajaEsc(g)}</li>`).join("") || "<li>(목표 없음)</li>"}</ol>
+          <div class="ov-meta">자습 계획 ${c.selfDays}일 · 학원·과외 ${c.academyDays}일${p.reflectSubmitted ? " · 회고 제출" : ""}</div>
+          ${p.reflectSubmitted && p.reflectText ? `<div class="ov-meta" style="margin-top:3px; color:#6b6455;">🪞 ${yajaEsc(p.reflectText)}</div>` : ""}
+          ${done ? `<div class="ov-meta" style="margin-top:4px; color:var(--forest-deep);">💬 ${yajaEsc(p.teacherFeedback)}</div>` : ""}
+          <div style="margin-top:6px; display:flex; gap:10px;">
+            <button class="link-btn ov-open">✏️ ${done ? "피드백 고치기" : "피드백 쓰기"}</button>
+            <button class="link-btn ov-detail">계획서 자세히</button>
+          </div>
+          <div class="ov-fb">
+            <textarea placeholder="한두 줄 피드백 (학생에게 알림이 가요)">${yajaEsc(p.teacherFeedback || "")}</textarea>
+            <div>${OV_QUICK.map(q => `<button class="ov-q" type="button">${q}</button>`).join("")}</div>
+            <button class="primary-btn ov-send" style="margin-top:6px; padding:9px;">보내기</button>
+          </div>
+        </div>`;
+      };
+      body.innerHTML =
+        `<div class="ov-group"><h4>🔴 미제출 (${groups.missing.length})</h4>
+          ${groups.missing.map(({st}) => `<span class="ov-chip">${st.num} ${yajaEsc(st.name)}</span>`).join("") || `<p class="hint">없어요 👏</p>`}</div>` +
+        `<div class="ov-group"><h4>🟡 확인 필요 (${groups.check.length})</h4>${groups.check.map(card).join("") || `<p class="hint">없어요 👏</p>`}</div>` +
+        `<div class="ov-group"><h4>🟢 양호 (${groups.good.length})</h4>${groups.good.map(card).join("") || `<p class="hint">없어요</p>`}</div>`;
+
+      body.querySelectorAll(".ov-card").forEach(el => {
+        const fb = el.querySelector(".ov-fb"), ta = fb.querySelector("textarea");
+        el.querySelector(".ov-open").onclick = () => { fb.style.display = fb.style.display === "block" ? "none" : "block"; if(fb.style.display === "block") ta.focus(); };
+        el.querySelectorAll(".ov-q").forEach(q => q.onclick = () => { ta.value = (ta.value.trim() ? ta.value.trim() + " " : "") + q.textContent; ta.focus(); });
+        el.querySelector(".ov-send").onclick = async (e) => {
+          e.target.disabled = true;
+          const ok = await spSendFeedback(el.dataset.uid, wk, ta.value.trim());
+          e.target.disabled = false;
+          if(ok) renderOverview();
+        };
+        el.querySelector(".ov-detail").onclick = async () => {
+          spJumpWeekOffset = ovWeekOffset;
+          spSetTeacherMode("single");
+          if(spStudentSelectEl){ spStudentSelectEl.value = el.dataset.uid; spStudentSelectEl.dispatchEvent(new Event("change")); }
+        };
+      });
+    }catch(e){
+      console.error("주간 피드백 불러오기 실패", e);
+      body.innerHTML = `<p class="hint" style="color:var(--danger);">불러오지 못했어요.</p>`;
+    }
+  }
+
   window.setupStudyplanTab = async function(){
     if(!currentProfile) return;
     spViewerIsTeacher = currentProfile.role === "teacher";
     document.getElementById("teacherBox").style.display = "block";
 
     if(spViewerIsTeacher){
-      document.getElementById("spTeacherSelectRow").style.display = "flex";
-      document.getElementById("spBody").style.display = "none";
+      const modeRow = document.getElementById("spTeacherModeRow");
+      modeRow.style.display = "flex";
+      if(!modeRow.dataset.bound){
+        modeRow.dataset.bound = "1";
+        modeRow.querySelectorAll(".sp-mode-btn").forEach(b => b.addEventListener("click", () => spSetTeacherMode(b.dataset.m)));
+        document.getElementById("ovPrevBtn").addEventListener("click", () => { ovWeekOffset -= 1; renderOverview(); });
+        document.getElementById("ovNextBtn").addEventListener("click", () => { if(ovWeekOffset < 1){ ovWeekOffset += 1; renderOverview(); } });
+      }
+      spSetTeacherMode(spTeacherMode);
       const sel = document.getElementById("spStudentSelect");
       if(!sel.dataset.loaded){
+        spStudentSelectEl = sel;
         sel.dataset.loaded = "1";
         const snap = await db.collection("students").where("role", "==", "student").get();
         const list = snap.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b)=>a.num-b.num);
@@ -2010,7 +2174,7 @@ function subscribeMyAbsences(){
         sel.addEventListener("change", async ()=>{
           if(!sel.value){ document.getElementById("spBody").style.display = "none"; return; }
           spTargetUid = sel.value;
-          spWeekOffset = 0;
+          spWeekOffset = spJumpWeekOffset; spJumpWeekOffset = 0;
           document.getElementById("spBody").style.display = "block";
           await spLoadWeek();
         });
@@ -3385,9 +3549,10 @@ async function renderSuggestTeacher(){
       .sort((a,b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
     if(sgFilter === "open") list = list.filter(x => x.status === "new" || x.status === "review");
     if(sgFilter === "done") list = list.filter(x => x.status === "done" || x.status === "hold");
+    if(sgFilter === "praise") list = list.filter(x => (x.category || "").includes("칭찬"));
     if(!list.length){ box.innerHTML = `<p class="hint">${sgFilter === "open" ? "처리할 건의가 없어요." : "건의가 없어요."}</p>`; return; }
     box.innerHTML = list.map(x => `
-      <div style="padding:12px 0; border-top:1px solid var(--line);" data-id="${x.id}">
+      <div style="padding:12px ${x.category && x.category.includes("칭찬") ? "10px; background:#FBF3E2; border-radius:8px" : "0"}; border-top:1px solid var(--line);" data-id="${x.id}">
         <div style="font-size:13px;"><b>${x.anonymous ? "🙈 익명" : `${x.num}번 ${yajaEsc(x.name)}`}</b>
           <span style="color:#8a8270;"> · ${yajaEsc(x.category)} · ${sgWhen(x.createdAt)}</span></div>
         <div style="font-size:14px; margin-top:4px; white-space:pre-wrap;">${yajaEsc(x.content)}</div>
