@@ -214,7 +214,7 @@
 <div class="wrap">
 
   <div class="brand">
-    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1013-3</span></h1>
+    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1013-4</span></h1>
     <div id="brandRight"></div>
   </div>
 
@@ -2508,10 +2508,10 @@ function subscribeMyAbsences(){
 
       const students = Object.entries(yajaRosterMap).map(([num, s]) => ({num:Number(num), ...s})).sort((a,b)=>a.num-b.num);
 
-      let html = `<table style="width:100%; border-collapse:collapse; font-size:12.5px;">
+      let html = `<div style="overflow-x:auto;"><table style="width:100%; border-collapse:collapse; font-size:12.5px;">
         <tr style="border-bottom:1.5px solid var(--ink);">
           <th style="text-align:left; padding:6px 4px;">번호</th><th style="text-align:left; padding:6px 4px;">이름</th>
-          ${blocks.map(b=>`<th style="padding:6px 4px;">${b.label}</th>`).join("")}
+          ${blocks.map(b=>`<th style="padding:6px 2px;">${b.label.replace("블록","")}</th>`).join("")}
         </tr>`;
       students.forEach(s => {
         html += `<tr style="border-bottom:1px solid var(--line);"><td style="padding:6px 4px;">${s.num}</td><td style="padding:6px 4px;">${s.name}</td>`;
@@ -2533,15 +2533,15 @@ function subscribeMyAbsences(){
           } else if(sx && sx.status !== "rejected"){
             cellHtml = `<span style="color:var(--ochre);" title="${yajaEsc(sx.reason)}">학생사유</span>`;
           } else {
-            cellHtml = `<span style="font-size:11px; color:var(--danger);">${sx ? "반려됨 · " : ""}미입실</span><br>
-              <button class="link-btn" style="font-size:11px;" onclick="yajaManualIn('${s.num}','${s.name}','${dateStr}','${b.key}','${b.label}')">출석 처리</button>
-              <button class="link-btn" style="font-size:11px;" onclick="yajaExcuse('${s.num}','${s.name}','${dateStr}','${b.key}','${b.label}')">사유</button>`;
+            cellHtml = `<div style="font-size:11px; color:var(--danger);">${sx ? "반려됨 · " : ""}미입실</div>
+              <button class="link-btn" style="font-size:11px; display:block; margin:2px auto; " onclick="yajaManualIn('${s.num}','${s.name}','${dateStr}','${b.key}','${b.label}')">✓출석</button>
+              <button class="link-btn" style="font-size:11px; display:block; margin:2px auto; " onclick="yajaExcuse('${s.num}','${s.name}','${dateStr}','${b.key}','${b.label}')">✎사유</button>`;
           }
-          html += `<td style="padding:6px 4px; text-align:center;">${cellHtml}</td>`;
+          html += `<td style="padding:6px 2px; text-align:center;">${cellHtml}</td>`;
         });
         html += `</tr>`;
       });
-      html += `</table>`;
+      html += `</table></div>`;
       box.innerHTML = html;
     }catch(e){
       console.error("날짜별 출결 표 로딩 실패", e);
