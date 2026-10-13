@@ -214,7 +214,7 @@
 <div class="wrap">
 
   <div class="brand">
-    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1013-2</span></h1>
+    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1013-3</span></h1>
     <div id="brandRight"></div>
   </div>
 
@@ -2527,13 +2527,15 @@ function subscribeMyAbsences(){
           if(rec && rec.checkInAt){
             const inTime = rec.checkInAt.toDate ? rec.checkInAt.toDate().toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"}) : "";
             const outTime = rec.checkOutAt ? (rec.checkOutAt.toDate ? rec.checkOutAt.toDate().toLocaleTimeString("ko-KR",{hour:"2-digit",minute:"2-digit"}) : "") : "";
-            cellHtml = `<span style="color:var(--forest-deep);">${inTime}${outTime ? "~"+outTime : ""}</span>`;
+            cellHtml = `<span style="color:var(--forest-deep);">${rec.manual ? "담임 처리" : inTime + (outTime ? "~"+outTime : "")}</span>`;
           } else if(rec && rec.excused){
             cellHtml = `<span style="color:#8a8270;" title="${yajaEsc(rec.excuseReason)}">사유인정</span>`;
           } else if(sx && sx.status !== "rejected"){
             cellHtml = `<span style="color:var(--ochre);" title="${yajaEsc(sx.reason)}">학생사유</span>`;
           } else {
-            cellHtml = `<button class="link-btn" style="font-size:11px;" onclick="yajaExcuse('${s.num}','${s.name}','${dateStr}','${b.key}','${b.label}')">${sx ? "반려됨 · " : ""}미입실 · 사유입력</button>`;
+            cellHtml = `<span style="font-size:11px; color:var(--danger);">${sx ? "반려됨 · " : ""}미입실</span><br>
+              <button class="link-btn" style="font-size:11px;" onclick="yajaManualIn('${s.num}','${s.name}','${dateStr}','${b.key}','${b.label}')">출석 처리</button>
+              <button class="link-btn" style="font-size:11px;" onclick="yajaExcuse('${s.num}','${s.name}','${dateStr}','${b.key}','${b.label}')">사유</button>`;
           }
           html += `<td style="padding:6px 4px; text-align:center;">${cellHtml}</td>`;
         });
@@ -2546,6 +2548,18 @@ function subscribeMyAbsences(){
       box.innerHTML = `<p class="hint" style="color:var(--danger);">불러오지 못했어요 — 콘솔(F12)에서 에러를 확인해주세요. (보안규칙이 최신 상태인지도 확인해보세요)</p>`;
     }
   }
+
+  // QR 오류·깜빡함 등으로 기록이 없을 때 담임이 직접 출석 처리
+  window.yajaManualIn = async function(num, name, dateStr, blockKey, blockLabel){
+    if(!confirm(`${num}번 ${name} · ${blockLabel}\n출석으로 처리할까요?`)) return;
+    const student = yajaRosterMap[num];
+    await db.collection("yajaAttendance").doc(`${dateStr}_${num}_${blockKey}`).set({
+      studentUid: student.uid, num: Number(num), name,
+      date: dateStr, block: blockKey, blockLabel,
+      checkInAt: firebase.firestore.FieldValue.serverTimestamp(), manual: true,
+    }, {merge:true});
+    renderDayTable();
+  };
 
   window.yajaExcuse = async function(num, name, dateStr, blockKey, blockLabel){
     const reason = prompt(`${num}번 ${name} · ${blockLabel}\n결석 사유를 입력해주세요 (사유 인정 처리):`);

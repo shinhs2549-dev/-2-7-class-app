@@ -223,6 +223,19 @@ function currentPhase(){
   return null;
 }
 
+// 같은 시각에 '앞 블록 퇴실'과 '뒤 블록 입실' 시간대가 겹칠 수 있음 (예: 19:50~20:15 야간1 퇴실 = 야간2 입실)
+function currentPhases(){
+  const now = new Date();
+  const nowMin = now.getHours()*60 + now.getMinutes();
+  const out = [];
+  for(const b of yajaEffectiveBlocks(now.getDay(), todayOverride)){
+    const startMin = yajaToMinutes(b.start), endMin = yajaToMinutes(b.end);
+    if(nowMin >= startMin - CHECKIN_BEFORE && nowMin <= startMin + CHECKIN_AFTER) out.push({ block: b, phase: "checkin" });
+    if(nowMin >= endMin - CHECKOUT_BEFORE && nowMin <= endMin + CHECKOUT_AFTER) out.push({ block: b, phase: "checkout" });
+  }
+  return out;
+}
+
 function updateBlockStatus(){
   const el = document.getElementById("blockStatus");
   const p = currentPhase();
@@ -232,7 +245,7 @@ function updateBlockStatus(){
       : `오늘은 지금 인정되는 출석 시간대가 아니에요.`;
     return;
   }
-  el.innerHTML = `<b>${p.block.label}</b> ${p.phase === "checkin" ? "입실" : "퇴실"} 인정 시간대예요.`;
+  el.innerHTML = currentPhases().map(x => `<b>${x.block.label}</b> ${x.phase === "checkin" ? "입실" : "퇴실"}`).join(" · ") + " 인정 시간대예요.";
 }
 
 /* ---------- 스캐너 ---------- */
@@ -404,53 +417,53 @@ async function handleCode(text){
     return;
   }
 
-  const p = currentPhase();
-  if(!p){
+  const phases = currentPhases();
+  if(!phases.length){
     showFeedback("warn", "⏰", student.name, "지금은 출석 인정 시간이 아니에요.");
     return;
   }
-
   const nowDow = new Date().getDay();
-  if(!yajaIsEnrolled(student.yajaEnroll, nowDow, p.block.key)){
-    showFeedback("bad", "✕", student.name, `오늘 ${p.block.label} 야자 신청자가 아니에요.`);
+  // 이 학생이 신청한 블록의 처리만 골라냄 (연속 블록이면 퇴실+입실을 한 번에)
+  const mine = phases.filter(x => yajaIsEnrolled(student.yajaEnroll, nowDow, x.block.key));
+  if(!mine.length){
+    showFeedback("bad", "✕", student.name, `오늘 ${phases.map(x => x.block.label).join("/")} 야자 신청자가 아니에요.`);
     return;
   }
 
   const date = yajaDateKey(new Date());
-  const docId = `${date}_${num}_${p.block.key}`;
   const room = document.getElementById("roomSelect").value;
-  const ref = db.collection("yajaAttendance").doc(docId);
-
+  const done = [], info = [];
   try{
-    const existing = await ref.get();
-    if(p.phase === "checkin"){
-      if(existing.exists && existing.data().checkInAt){
-        showFeedback("warn", "ℹ️", student.name, `이미 ${p.block.label} 입실 처리됐어요.`);
-        return;
+    // 퇴실 먼저, 그다음 입실
+    mine.sort((a,b) => (a.phase === "checkout" ? 0 : 1) - (b.phase === "checkout" ? 0 : 1));
+    for(const p of mine){
+      const ref = db.collection("yajaAttendance").doc(`${date}_${num}_${p.block.key}`);
+      const existing = await ref.get();
+      if(p.phase === "checkin"){
+        if(existing.exists && existing.data().checkInAt){ info.push(`${p.block.label} 입실은 이미 됨`); continue; }
+        await ref.set({
+          studentUid: student.uid, num, name: student.name,
+          date, block: p.block.key, blockLabel: p.block.label, room,
+          checkInAt: firebase.firestore.FieldValue.serverTimestamp(),
+        }, {merge:true});
+        done.push(`${p.block.label} 입실`);
+      } else {
+        if(!existing.exists || !existing.data().checkInAt){ info.push(`${p.block.label} 입실 기록 없음`); continue; }
+        if(existing.data().checkOutAt){ info.push(`${p.block.label} 퇴실은 이미 됨`); continue; }
+        await ref.set({ checkOutAt: firebase.firestore.FieldValue.serverTimestamp() }, {merge:true});
+        done.push(`${p.block.label} 퇴실`);
       }
-      await ref.set({
-        studentUid: student.uid, num, name: student.name,
-        date, block: p.block.key, blockLabel: p.block.label, room,
-        checkInAt: firebase.firestore.FieldValue.serverTimestamp(),
-      }, {merge:true});
-      showFeedback("good", "✓", student.name, `${p.block.label} 입실 완료`);
-      addLog(`${num}번 ${student.name} · ${p.block.label} 입실`);
-    } else {
-      if(!existing.exists || !existing.data().checkInAt){
-        showFeedback("warn", "⚠️", student.name, "입실 기록이 없어서 퇴실 처리할 수 없어요.");
-        return;
-      }
-      if(existing.data().checkOutAt){
-        showFeedback("warn", "ℹ️", student.name, `이미 ${p.block.label} 퇴실 처리됐어요.`);
-        return;
-      }
-      await ref.set({ checkOutAt: firebase.firestore.FieldValue.serverTimestamp() }, {merge:true});
-      showFeedback("good", "✓", student.name, `${p.block.label} 퇴실 완료`);
-      addLog(`${num}번 ${student.name} · ${p.block.label} 퇴실`);
     }
   }catch(e){
     console.error(e);
     showFeedback("bad", "✕", student.name, "저장 중 오류가 발생했어요.");
+    return;
+  }
+  if(done.length){
+    showFeedback("good", "✓", student.name, done.join(" + ") + " 완료");
+    addLog(`${num}번 ${student.name} · ${done.join(" + ")}`);
+  } else {
+    showFeedback("warn", "ℹ️", student.name, info.join(" · "));
   }
 }
 </script>
