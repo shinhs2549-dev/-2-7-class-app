@@ -214,7 +214,7 @@
 <div class="wrap">
 
   <div class="brand">
-    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1019-1</span></h1>
+    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1019-2</span></h1>
     <div id="brandRight"></div>
   </div>
 
@@ -3754,9 +3754,10 @@ async function seatSaveMyChoices(roundId){
 }
 
 /* ---------- 담임 ---------- */
+let seatConfigError = null;
 async function seatLoadConfig(){
-  try{ const d = await db.collection("seatConfig").doc("main").get(); return d.exists ? d.data() : null; }
-  catch(e){ console.error(e); return null; }
+  try{ seatConfigError = null; const d = await db.collection("seatConfig").doc("main").get(); return d.exists ? d.data() : null; }
+  catch(e){ console.error(e); seatConfigError = e; return null; }
 }
 async function seatClassRoster(cfg){
   const snap = await db.collection("students").where("role", "==", "student").get();
@@ -3917,6 +3918,7 @@ async function seatSecretUI(){
   const opts = `<option value="">선택</option>` + roster.map(x => `<option value="${x.num}">${x.num} ${yajaEsc(x.name)}</option>`).join("");
   extra.style.display = "block";
   extra.innerHTML = `<h3>🔒 짝 금지 (숨김)</h3>
+    ${seatConfigError ? `<p class="hint" style="color:var(--danger);">⚠️ 설정을 읽을 권한이 없어요 — Firebase 콘솔에 보안규칙 최신본(rules12)을 게시해주세요.</p>` : ""}
     <p class="hint">여기 등록한 두 학생은 자리 신청·무작위 배정 모두에서 짝(같은 책상)이 되지 않아요. 학생에게는 보이지 않아요.</p>
     <div style="display:flex; gap:6px; align-items:center;">
       <select id="fpA" style="flex:1; padding:7px;">${opts}</select><span>↔</span>
@@ -3929,8 +3931,13 @@ async function seatSecretUI(){
         <button class="link-btn" data-i="${i}" style="color:var(--danger);">삭제</button></div>`).join("") : `<p class="hint">등록된 조합이 없어요.</p>`}</div>
     <button class="link-btn" id="fpClose" style="margin-top:8px;">닫기</button>`;
   const save = async (list) => {
-    await db.collection("seatConfig").doc("main").set({ forbiddenPairs: list }, { merge: true });
-    seatSecretUI();
+    try{
+      await db.collection("seatConfig").doc("main").set({ forbiddenPairs: list }, { merge: true });
+      seatSecretUI();
+    }catch(e){
+      console.error("짝 금지 저장 실패", e);
+      alert("저장하지 못했어요.\n보안규칙 최신본(rules12)이 게시돼 있는지 확인해주세요.\n(" + (e.code || e.message || "") + ")");
+    }
   };
   document.getElementById("fpAdd").onclick = async () => {
     const a = Number(document.getElementById("fpA").value), b = Number(document.getElementById("fpB").value);
