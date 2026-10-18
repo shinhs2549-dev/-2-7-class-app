@@ -976,6 +976,14 @@ gateAuth.onAuthStateChanged(async (user) => {
   // 로그인 성공 + 자리배치 전용 계정 확인됨 → 도구 화면 표시
   document.getElementById('authGate').style.display = 'none';
   document.getElementById('appRoot').style.display = 'block';
+  // 학급 앱에서 추가한 짝 금지 조합을 먼저 합친 뒤 올림
+  try{
+    const remote = await gateDb.collection('seatConfig').doc('main').get();
+    const rp = (remote.exists && remote.data().forbiddenPairs) || [];
+    let added = 0;
+    rp.forEach(([x,y])=>{ if(!forbiddenPairs.some(p=>(p[0]===x&&p[1]===y)||(p[0]===y&&p[1]===x))){ forbiddenPairs.push([x,y]); added++; } });
+    if(added){ safeSet('forbiddenPairs', JSON.stringify(forbiddenPairs)); if(typeof renderPairList==='function') renderPairList(); }
+  }catch(e){ console.error('앱 짝 금지 목록 불러오기 실패', e); }
   syncConfigToApp();
 });
 

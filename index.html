@@ -214,7 +214,7 @@
 <div class="wrap">
 
   <div class="brand">
-    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1013-4</span></h1>
+    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1019-1</span></h1>
     <div id="brandRight"></div>
   </div>
 
@@ -3728,10 +3728,10 @@ async function seatRenderStudent(){
   const pub = seatLatestPublished();
   if(!pub){ status.innerHTML = `<h3>🪑 자리</h3><p class="hint">발표된 자리가 아직 없어요.</p>`; mapBox.style.display = "none"; return; }
   const myKey = Object.keys(pub.result || {}).find(k => pub.result[k] === myNum);
-  const how = (pub.how || {})[myNum] || "";
+  // 몇 지망으로 배정됐는지(사유)는 학생에게 보여주지 않음
   status.innerHTML = `<h3>🪑 내 자리</h3>
     <div style="font-size:20px; font-weight:700; color:var(--forest-deep);">${myKey ? seatLabelOf(myKey) : "배정 없음"}</div>
-    <div class="hint">${how ? how + " · " : ""}${pub.publishedAt ? new Date(seatTs(pub.publishedAt)).toLocaleDateString("ko-KR") + " 발표" : ""}</div>`;
+    <div class="hint">${pub.publishedAt ? new Date(seatTs(pub.publishedAt)).toLocaleDateString("ko-KR") + " 발표" : ""}</div>`;
   mapBox.style.display = "block";
   document.getElementById("seatMapTitle").textContent = "우리 반 자리";
   const names = pub.names || {};
@@ -3833,8 +3833,10 @@ async function seatRenderTeacher(){
       <select id="seatDur" style="padding:8px; border:1px solid var(--line); border-radius:6px;"><option value="180">3분</option><option value="300" selected>5분</option><option value="600">10분</option></select>
       <button class="primary-btn" id="seatOpenBtn" style="margin-top:0; flex:1;">🪑 자리 신청 열기</button>
     </div>
-    <p class="hint" style="margin-top:8px; font-size:12px;">${cfgLine}</p>`;
+    <p class="hint" style="margin-top:8px; font-size:12px;">${cfgLine}</p>
+    <button class="link-btn" id="seatSecretBtn" style="font-size:11px; color:#b0a58c;">⚙︎ 고급</button>`;
   document.getElementById("seatOpenBtn").onclick = () => seatOpenRound(Number(document.getElementById("seatDur").value));
+  document.getElementById("seatSecretBtn").onclick = () => seatSecretUI();
   const pub = seatLatestPublished();
   if(pub){
     mapBox.style.display = "block";
@@ -3905,6 +3907,43 @@ function seatProxyUI(r, apps){
   };
 }
 
+// 담임 전용: 짝 금지(숨김) 목록 편집 — 자리배치 프로그램과 같은 목록을 씀
+async function seatSecretUI(){
+  const extra = document.getElementById("seatExtraBox");
+  const cfg = (await seatLoadConfig()) || {};
+  const pairs = (cfg.forbiddenPairs || []).slice();
+  const roster = await seatClassRoster(null);
+  const nm = {}; roster.forEach(x => { nm[x.num] = x.name; });
+  const opts = `<option value="">선택</option>` + roster.map(x => `<option value="${x.num}">${x.num} ${yajaEsc(x.name)}</option>`).join("");
+  extra.style.display = "block";
+  extra.innerHTML = `<h3>🔒 짝 금지 (숨김)</h3>
+    <p class="hint">여기 등록한 두 학생은 자리 신청·무작위 배정 모두에서 짝(같은 책상)이 되지 않아요. 학생에게는 보이지 않아요.</p>
+    <div style="display:flex; gap:6px; align-items:center;">
+      <select id="fpA" style="flex:1; padding:7px;">${opts}</select><span>↔</span>
+      <select id="fpB" style="flex:1; padding:7px;">${opts}</select>
+      <button class="primary-btn" id="fpAdd" style="margin-top:0; width:auto; padding:8px 12px;">추가</button>
+    </div>
+    <div id="fpList" style="margin-top:10px;">${pairs.length ? pairs.map(([a,b], i) =>
+      `<div style="display:flex; justify-content:space-between; padding:5px 0; border-top:1px solid var(--line); font-size:13.5px;">
+        <span>${a} ${yajaEsc(nm[a] || "")} ↔ ${b} ${yajaEsc(nm[b] || "")}</span>
+        <button class="link-btn" data-i="${i}" style="color:var(--danger);">삭제</button></div>`).join("") : `<p class="hint">등록된 조합이 없어요.</p>`}</div>
+    <button class="link-btn" id="fpClose" style="margin-top:8px;">닫기</button>`;
+  const save = async (list) => {
+    await db.collection("seatConfig").doc("main").set({ forbiddenPairs: list }, { merge: true });
+    seatSecretUI();
+  };
+  document.getElementById("fpAdd").onclick = async () => {
+    const a = Number(document.getElementById("fpA").value), b = Number(document.getElementById("fpB").value);
+    if(!a || !b || a === b){ alert("서로 다른 두 학생을 골라주세요."); return; }
+    if(pairs.some(([x,y]) => (x === a && y === b) || (x === b && y === a))){ alert("이미 등록된 조합이에요."); return; }
+    await save([...pairs, [a, b]]);
+  };
+  document.querySelectorAll("#fpList button[data-i]").forEach(btn => btn.onclick = async () => {
+    const i = Number(btn.dataset.i); await save(pairs.filter((_, j) => j !== i));
+  });
+  document.getElementById("fpClose").onclick = () => { extra.style.display = "none"; };
+}
+
 // 최근 4주(지난주까지) 학습계획서 포인트
 async function seatLoadPoints(roster){
   const mon = new Date(); mon.setHours(0,0,0,0); mon.setDate(mon.getDate() - ((mon.getDay() + 6) % 7));
@@ -3937,7 +3976,7 @@ async function seatRunAndPreview(r, apps){
     });
     if(!res.ok){ alert(res.error); if(btn){ btn.disabled = false; btn.textContent = "🎲 배정 실행"; } return; }
     const names = {}; roster.forEach(x => { names[x.num] = x.name; });
-    seatTeacher.preview = { roundId:r.id, result:res.assignment, how:res.how, order:res.order, points, weeks, names };
+    seatTeacher.preview = { roundId:r.id, result:res.assignment, how:res.how, order:res.order, points, weeks, names, forbidden: (cfg && cfg.forbiddenPairs) || [] };
     seatTeacher.swapSel = null;
     seatRender();
   }catch(e){
@@ -3961,6 +4000,12 @@ function seatShowPreview(r){
     const a = seatTeacher.swapSel; seatTeacher.swapSel = null;
     if(a !== k){
       const na = pv.result[a], nb = pv.result[k];
+      // 손으로 바꿀 때도 숨김 짝 금지에 걸리는지 확인
+      const after = Object.assign({}, pv.result);
+      if(nb !== undefined) after[a] = nb; else delete after[a];
+      if(na !== undefined) after[k] = na; else delete after[k];
+      const bad = (x, key) => { const p = after[seatPartnerKey(key)]; return x !== undefined && p !== undefined && (pv.forbidden || []).some(([u, v]) => (u === x && v === p) || (u === p && v === x)); };
+      if((bad(nb, a) || bad(na, k)) && !confirm("⚠️ 이렇게 바꾸면 숨김 설정(짝 금지)에 걸리는 두 학생이 짝이 돼요.\n그래도 바꿀까요?")){ seatShowPreview(r); return; }
       if(nb !== undefined) pv.result[a] = nb; else delete pv.result[a];
       if(na !== undefined) pv.result[k] = na; else delete pv.result[k];
       [na, nb].forEach(n => { if(n !== undefined) pv.how[n] = "담임 조정"; });
