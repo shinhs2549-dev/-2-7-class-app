@@ -214,7 +214,7 @@
 <div class="wrap">
 
   <div class="brand">
-    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1019-2</span></h1>
+    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1019-3</span></h1>
     <div id="brandRight"></div>
   </div>
 
@@ -3912,7 +3912,7 @@ function seatProxyUI(r, apps){
 async function seatSecretUI(){
   const extra = document.getElementById("seatExtraBox");
   const cfg = (await seatLoadConfig()) || {};
-  const pairs = (cfg.forbiddenPairs || []).slice();
+  const pairs = seatPairsFromDb(cfg.forbiddenPairs);
   const roster = await seatClassRoster(null);
   const nm = {}; roster.forEach(x => { nm[x.num] = x.name; });
   const opts = `<option value="">선택</option>` + roster.map(x => `<option value="${x.num}">${x.num} ${yajaEsc(x.name)}</option>`).join("");
@@ -3932,7 +3932,7 @@ async function seatSecretUI(){
     <button class="link-btn" id="fpClose" style="margin-top:8px;">닫기</button>`;
   const save = async (list) => {
     try{
-      await db.collection("seatConfig").doc("main").set({ forbiddenPairs: list }, { merge: true });
+      await db.collection("seatConfig").doc("main").set({ forbiddenPairs: seatPairsToDb(list) }, { merge: true });
       seatSecretUI();
     }catch(e){
       console.error("짝 금지 저장 실패", e);
@@ -3978,12 +3978,12 @@ async function seatRunAndPreview(r, apps){
     const res = seatRunAssignment({
       students: roster.map(x => ({ num:x.num, name:x.name, gender:x.gender })),
       apps, points, pinned, prevSeat: prev.prevSeat, prevPartner: prev.prevPartner,
-      seatGender: (cfg && cfg.seatGender) || {}, forbiddenPairs: (cfg && cfg.forbiddenPairs) || [],
+      seatGender: (cfg && cfg.seatGender) || {}, forbiddenPairs: seatPairsFromDb(cfg && cfg.forbiddenPairs),
       avoidRepeat: !cfg || cfg.avoidRepeat !== false,
     });
     if(!res.ok){ alert(res.error); if(btn){ btn.disabled = false; btn.textContent = "🎲 배정 실행"; } return; }
     const names = {}; roster.forEach(x => { names[x.num] = x.name; });
-    seatTeacher.preview = { roundId:r.id, result:res.assignment, how:res.how, order:res.order, points, weeks, names, forbidden: (cfg && cfg.forbiddenPairs) || [] };
+    seatTeacher.preview = { roundId:r.id, result:res.assignment, how:res.how, order:res.order, points, weeks, names, forbidden: seatPairsFromDb(cfg && cfg.forbiddenPairs) };
     seatTeacher.swapSel = null;
     seatRender();
   }catch(e){

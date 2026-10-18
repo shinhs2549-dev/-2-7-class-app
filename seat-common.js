@@ -126,4 +126,8 @@ function seatRunAssignment(ctx) {
   };
 }
 
-if (typeof module !== "undefined") module.exports = { SEAT_SECTIONS, SEAT_ROWS, SEAT_COLS, seatKeyOf, seatAllKeys, seatLabelOf, seatPartnerKey, seatWeekScore, seatRunAssignment };
+// 짝 금지 목록 저장 형식 변환 (Firestore는 배열 안의 배열을 못 담아서 [{a,b}]로 저장)
+function seatPairsFromDb(list) { return (list || []).map(x => Array.isArray(x) ? [Number(x[0]), Number(x[1])] : [Number(x.a), Number(x.b)]).filter(([a, b]) => a && b); }
+function seatPairsToDb(pairs) { return (pairs || []).map(([a, b]) => ({ a: Number(a), b: Number(b) })); }
+
+if (typeof module !== "undefined") module.exports = { SEAT_SECTIONS, SEAT_ROWS, SEAT_COLS, seatKeyOf, seatAllKeys, seatLabelOf, seatPartnerKey, seatWeekScore, seatRunAssignment, seatPairsFromDb, seatPairsToDb };
