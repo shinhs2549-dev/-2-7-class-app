@@ -214,7 +214,7 @@
 <div class="wrap">
 
   <div class="brand">
-    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1019-3</span></h1>
+    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1019-4</span></h1>
     <div id="brandRight"></div>
   </div>
 
@@ -754,8 +754,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
-<script src="yaja-common.js"></script>
-<script src="seat-common.js"></script>
+<script src="yaja-common.js?v=1019-4"></script>
+<script src="seat-common.js?v=1019-4"></script>
 <script>
 /* =========================================================
    0. Firebase 설정 — ⚠️ 콘솔에서 복사한 값으로 반드시 교체하세요
@@ -3755,6 +3755,10 @@ async function seatSaveMyChoices(roundId){
 
 /* ---------- 담임 ---------- */
 let seatConfigError = null;
+if(typeof seatPairsFromDb !== "function"){
+  window.seatPairsFromDb = list => (list || []).map(x => Array.isArray(x) ? [Number(x[0]), Number(x[1])] : [Number(x.a), Number(x.b)]).filter(([a, b]) => a && b);
+  window.seatPairsToDb = pairs => (pairs || []).map(([a, b]) => ({ a: Number(a), b: Number(b) }));
+}
 async function seatLoadConfig(){
   try{ seatConfigError = null; const d = await db.collection("seatConfig").doc("main").get(); return d.exists ? d.data() : null; }
   catch(e){ console.error(e); seatConfigError = e; return null; }
@@ -3837,7 +3841,7 @@ async function seatRenderTeacher(){
     <p class="hint" style="margin-top:8px; font-size:12px;">${cfgLine}</p>
     <button class="link-btn" id="seatSecretBtn" style="font-size:11px; color:#b0a58c;">⚙︎ 고급</button>`;
   document.getElementById("seatOpenBtn").onclick = () => seatOpenRound(Number(document.getElementById("seatDur").value));
-  document.getElementById("seatSecretBtn").onclick = () => seatSecretUI();
+  document.getElementById("seatSecretBtn").onclick = () => seatSecretUI().catch(e => { console.error(e); alert("고급 설정을 열지 못했어요. 앱을 새로고침한 뒤 다시 눌러주세요.\n(" + (e.message || e) + ")"); });
   const pub = seatLatestPublished();
   if(pub){
     mapBox.style.display = "block";
