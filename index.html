@@ -214,7 +214,7 @@
 <div class="wrap">
 
   <div class="brand">
-    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1019-4</span></h1>
+    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1102-1</span></h1>
     <div id="brandRight"></div>
   </div>
 
@@ -353,10 +353,16 @@
           </div>
           <div id="attTList"></div>
         </div>
+        <div class="group-block" style="margin-top:16px;">
+          <h3>📄 결석계 제출 확인 <span class="hint" style="font-weight:400;">(최근 30일 결석)</span></h3>
+          <div id="attRepSummary" style="font-size:13px; margin-bottom:8px;"></div>
+          <div id="attRepList"><p class="hint">불러오는 중...</p></div>
+        </div>
       </div>
 
       <div id="absStudentArea">
       <div id="attArriveCard" style="display:none;"></div>
+      <div id="attReportCard" style="display:none;"></div>
       <div class="group-block">
         <h3>🙋 출결 특이사항 알리기</h3>
         <p class="hint">늦거나 빠지게 되면 바로 알려주세요. 선생님께 알림이 가요.</p>
@@ -1476,6 +1482,7 @@ function subscribeMyAbsences(){
     .onSnapshot(snap => {
       const items = snap.docs.map(d => ({id: d.id, ...d.data()}))
         .sort((a, b) => (b.createdAt?.toMillis() || 0) - (a.createdAt?.toMillis() || 0));
+      myAbsencesAll = items; renderMyReportCard();
       const listEl = document.getElementById("absenceList");
       listEl.innerHTML = "";
       items.forEach(a => {
@@ -3286,7 +3293,9 @@ async function renderMyAttNotes(){
   const box = document.getElementById("attMyList");
   try{
     const snap = await db.collection("attendanceNotes").where("studentUid", "==", currentUser.uid).get();
-    const list = snap.docs.map(d => ({id:d.id, ...d.data()}))
+    myAttNotesAll = snap.docs.map(d => ({id:d.id, ...d.data()}));
+    renderMyReportCard();
+    const list = myAttNotesAll.slice()
       .sort((a,b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0)).slice(0, 5);
     renderArriveCard(list);
     if(list.length === 0){ box.innerHTML = ""; return; }
@@ -3332,6 +3341,7 @@ function setupAttendanceTeacher(){
     document.getElementById("attTSaveBtn").addEventListener("click", saveAttTForm);
   }
   renderAttTeacher();
+  renderAttReports();
 }
 
 async function renderAttTeacher(){
@@ -3365,6 +3375,93 @@ async function renderAttTeacher(){
     console.error("출결 특이사항 로딩 실패", e);
     box.innerHTML = `<p class="hint" style="color:var(--danger);">불러오지 못했어요 — 보안규칙을 확인해주세요.</p>`;
   }
+}
+
+/* ---------- 결석계 제출 확인 ----------
+   결석 기록(출결 특이사항의 '결석')마다 그 날짜를 포함하는 결석계가 있는지 확인
+   - done: 학부모 서명까지 끝난 결석계 있음 / waiting: 작성했지만 서명 전 / none: 결석계 없음 / waived: 담임이 확인 처리 */
+let myAttNotesAll = null, myAbsencesAll = null;
+function absReportStatus(note, absences){
+  if(note.reportWaived) return "waived";
+  const cover = (absences || []).filter(a => a.studentUid === note.studentUid && a.startDate <= note.date && note.date <= a.endDate);
+  if(cover.some(a => a.status === "submitted")) return "done";
+  if(cover.length) return "waiting";
+  return "none";
+}
+const ABS_REP_LABEL = { done:"✅ 제출 완료", waiting:"⏳ 학부모 서명 대기", none:"❌ 미제출", waived:"➖ 확인 처리" };
+
+function renderMyReportCard(){
+  const card = document.getElementById("attReportCard");
+  if(!card || !myAttNotesAll || !myAbsencesAll) return;
+  const today = yajaDateKey(new Date());
+  const miss = myAttNotesAll.filter(n => n.kind === "결석" && n.date <= today)
+    .map(n => ({ n, st: absReportStatus(n, myAbsencesAll) }))
+    .filter(x => x.st === "none" || x.st === "waiting")
+    .sort((a,b) => a.n.date < b.n.date ? -1 : 1);
+  if(!miss.length){ card.style.display = "none"; return; }
+  card.style.display = "block";
+  card.innerHTML = `<div class="group-block" style="border:2px solid var(--danger);">
+    <div style="font-size:15px; font-weight:700; color:var(--danger);">📄 결석계를 아직 다 내지 않았어요</div>
+    ${miss.map(({n, st}) => `<div style="display:flex; justify-content:space-between; align-items:center; padding:6px 0; border-top:1px solid var(--line); font-size:13.5px;">
+      <span><b>${fmtMD(n.date)}</b> 결석 · ${st === "none" ? "결석계 미작성" : "학부모님 서명 대기"}</span>
+      ${st === "none" ? `<button class="link-btn" onclick="startAbsenceFor('${n.date}')">✏️ 지금 쓰기</button>` : `<span class="hint" style="margin:0;">아래 목록에서 링크 다시 보내기</span>`}
+    </div>`).join("")}
+  </div>`;
+}
+function startAbsenceFor(date){
+  const s = document.getElementById("absStart"), e = document.getElementById("absEnd");
+  if(s){ s.value = date; } if(e){ e.value = date; }
+  (s || document.getElementById("absenceList")).scrollIntoView({ behavior:"smooth", block:"center" });
+}
+
+async function renderAttReports(){
+  const box = document.getElementById("attRepList"), sum = document.getElementById("attRepSummary");
+  if(!box) return;
+  const from = new Date(); from.setDate(from.getDate() - 30);
+  const fromKey = yajaDateKey(from), today = yajaDateKey(new Date());
+  try{
+    const [nSnap, aSnap] = await Promise.all([
+      db.collection("attendanceNotes").where("kind", "==", "결석").get(),
+      db.collection("absences").get(),
+    ]);
+    const absences = aSnap.docs.map(d => d.data());
+    const rows = nSnap.docs.map(d => ({ id:d.id, ...d.data() }))
+      .filter(n => n.date >= fromKey && n.date <= today)
+      .map(n => ({ n, st: absReportStatus(n, absences) }))
+      .sort((a,b) => ({none:0, waiting:1, waived:2, done:3}[a.st] - {none:0, waiting:1, waived:2, done:3}[b.st]) || (a.n.date < b.n.date ? 1 : -1));
+    const cnt = k => rows.filter(r => r.st === k).length;
+    const pending = rows.filter(r => r.st === "none" || r.st === "waiting");
+    sum.innerHTML = `결석 ${rows.length}건 · <b style="color:var(--danger);">미제출 ${cnt("none")}</b> · 서명 대기 ${cnt("waiting")} · 제출 ${cnt("done")}`
+      + (pending.length ? ` <button class="link-btn" id="attRepAllBtn" style="margin-left:6px;">🔔 미제출 전원에게 알림</button>` : "");
+    if(!rows.length){ box.innerHTML = `<p class="hint">최근 30일 동안 결석 기록이 없어요.</p>`; return; }
+    box.innerHTML = rows.map(({n, st}) => `<div style="padding:8px 0; border-top:1px solid var(--line); ${st === "done" || st === "waived" ? "opacity:.55;" : ""}">
+      <div style="display:flex; justify-content:space-between; gap:8px; font-size:13.5px;">
+        <span style="flex:1; min-width:0;"><b>${n.num}번 ${yajaEsc(n.name)}</b> · ${fmtMD(n.date)} (${yajaEsc(n.reasonType || "")})</span>
+        <span style="font-size:12.5px; white-space:nowrap;">${ABS_REP_LABEL[st]}</span></div>
+      <div style="display:flex; gap:12px; margin-top:3px; font-size:12px;">
+        ${st === "none" || st === "waiting" ? `<button class="link-btn" style="font-size:12px;" onclick="nudgeAbsence(['${n.id}'])">🔔 알림 보내기</button>` : ""}
+        ${n.lastNudgeAt ? `<span class="hint" style="margin:0;">알림 ${sgWhen(n.lastNudgeAt)}</span>` : ""}
+        ${st === "done" ? "" : `<button class="link-btn" style="font-size:12px; color:#8a8270;" onclick="toggleReportWaived('${n.id}', ${!n.reportWaived})">${n.reportWaived ? "확인 처리 취소" : "종이로 받음·불필요"}</button>`}
+      </div></div>`).join("");
+    const all = document.getElementById("attRepAllBtn");
+    if(all) all.onclick = () => nudgeAbsence(pending.map(r => r.n.id));
+  }catch(e){
+    console.error("결석계 확인 불러오기 실패", e);
+    box.innerHTML = `<p class="hint" style="color:var(--danger);">불러오지 못했어요 — 보안규칙 최신본(rules13)을 게시했는지 확인해주세요.</p>`;
+  }
+}
+async function nudgeAbsence(noteIds){
+  if(!noteIds.length) return;
+  if(!confirm(noteIds.length > 1 ? `미제출 ${noteIds.length}건의 학생들에게 결석계 알림을 보낼까요?` : "이 학생에게 결석계 알림을 보낼까요?")) return;
+  try{
+    await db.collection("absenceNudges").add({ noteIds, createdAt: firebase.firestore.FieldValue.serverTimestamp() });
+    alert("알림을 보냈어요.");
+    setTimeout(renderAttReports, 1500);
+  }catch(e){ console.error(e); alert("보내지 못했어요 — 보안규칙 최신본(rules13)을 게시했는지 확인해주세요."); }
+}
+async function toggleReportWaived(id, val){
+  try{ await db.collection("attendanceNotes").doc(id).update({ reportWaived: val }); renderAttReports(); }
+  catch(e){ console.error(e); alert("저장에 실패했어요."); }
 }
 
 /* ---------- 담임: 출결 직접 입력·수정·삭제 ---------- */
