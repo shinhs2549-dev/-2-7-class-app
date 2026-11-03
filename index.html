@@ -214,7 +214,7 @@
 <div class="wrap">
 
   <div class="brand">
-    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1102-1</span></h1>
+    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1103-1</span></h1>
     <div id="brandRight"></div>
   </div>
 
@@ -3864,7 +3864,11 @@ async function seatClassRoster(cfg){
   const snap = await db.collection("students").where("role", "==", "student").get();
   const byNum = {}; snap.forEach(d => { const x = d.data(); if(x.name !== "테스트") byNum[x.num] = { uid:d.id, num:x.num, name:x.name }; });
   if(cfg && Array.isArray(cfg.roster) && cfg.roster.length){
-    return cfg.roster.filter(x => byNum[x.num]).map(x => ({ ...byNum[x.num], gender: x.gender || "", pinnedSeat: x.pinnedSeat || "" })).sort((a,b) => a.num - b.num);
+    // 자리배치 프로그램 명단에 아직 없는 학생(전학생 등)도 빠지지 않도록 함께 넣음 (성별 미지정)
+    const inCfg = new Set(cfg.roster.map(x => x.num));
+    return cfg.roster.filter(x => byNum[x.num]).map(x => ({ ...byNum[x.num], gender: x.gender || "", pinnedSeat: x.pinnedSeat || "" }))
+      .concat(Object.values(byNum).filter(x => !inCfg.has(x.num)).map(x => ({ ...x, gender:"", pinnedSeat:"" })))
+      .sort((a,b) => a.num - b.num);
   }
   return Object.values(byNum).map(x => ({ ...x, gender:"", pinnedSeat:"" })).sort((a,b) => a.num - b.num);
 }
