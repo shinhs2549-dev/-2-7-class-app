@@ -201,6 +201,30 @@
   .ls-type .bg > div{ height:100%; }
   .ls-type .v{ width:74px; text-align:right; flex:none; color:#8a8270; font-size:11.5px; }
   .ls-stu{ cursor:pointer; }
+  #lsPlayer:not(:empty){ position:sticky; top:0; z-index:5; background:var(--card); padding:2px 0 4px; border-bottom:1px solid var(--line); }
+  #lsPlayer .ls-cues{ flex-wrap:nowrap; overflow-x:auto; margin-bottom:4px; }
+  #lsPlayer .ls-cues button{ flex:none; }
+  #lsPlayer .hint{ display:none; }
+  .ls-q{ border-top:1px solid var(--line); padding:12px 0 10px; }
+  .ls-q .qs{ font-size:14px; line-height:1.6; margin-bottom:8px; }
+  .ls-q .qs b{ color:var(--forest-deep); }
+  .ls-q img{ width:100%; border-radius:6px; margin:2px 0 6px; background:#fff; }
+  .ls-set{ font-weight:700; font-size:13.5px; margin-top:14px; padding:6px 0; }
+  .ls-who{ font-size:13px; margin:2px 0 6px; color:#5b5547; }
+  .ls-ch{ display:block; width:100%; text-align:left; padding:8px 10px; margin:4px 0; border:1px solid var(--line); border-radius:8px; background:#fff; font-family:inherit; font-size:13.5px; line-height:1.45; cursor:pointer; color:inherit; }
+  .ls-chs.grid{ display:grid; grid-template-columns:repeat(auto-fill, minmax(140px, 1fr)); gap:5px; }
+  .ls-chs.grid .ls-ch, .ls-chs.row .ls-ch{ margin:0; }
+  .ls-chs.row{ display:flex; gap:6px; }
+  .ls-chs.row .ls-ch{ text-align:center; font-size:17px; padding:6px 0; }
+  .ls-ch.on{ border:2px solid var(--forest); background:#EEF3EC; font-weight:700; }
+  .ls-ch.ans{ border:2px solid var(--forest); }
+  .ls-ch.wrong{ border:2px solid #c0573e; background:#fbeeea; }
+  .ls-ch:disabled{ cursor:default; color:inherit; }
+  .ls-tbl{ width:100%; border-collapse:collapse; font-size:12.5px; margin:2px 0 8px; }
+  .ls-tbl th, .ls-tbl td{ border:1px solid var(--line); padding:4px 3px; text-align:center; }
+  .ls-tbl th{ background:#F4F1E8; }
+  .ls-tbl caption{ font-weight:700; padding:2px 0 4px; }
+  .ls-qplay{ border:1px solid var(--line); background:#fff; border-radius:12px; font-size:11.5px; padding:1px 8px; margin-left:4px; cursor:pointer; font-family:inherit; }
   .ls-omr{ display:grid; grid-template-columns:1fr; gap:4px; }
   .ls-row{ display:flex; align-items:center; gap:6px; padding:4px 0; border-bottom:1px dashed var(--line); }
   .ls-row .no{ width:26px; font-weight:700; font-size:13px; text-align:right; }
@@ -248,7 +272,7 @@
 <div class="wrap">
 
   <div class="brand">
-    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1105-3</span></h1>
+    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1105-4</span></h1>
     <div id="brandRight"></div>
   </div>
 
@@ -4315,6 +4339,109 @@ function setupListenTab(){
 function lsOnTabOpen(){ lsStopAudio(); lsOpenId = null; currentProfile.role === "teacher" ? lsTeacherList() : lsStudentList(); }
 function lsStopAudio(){ if(lsAudio){ const a = lsAudio; lsAudio = null; a.pause(); } }
 
+/* ---------- 문항형 시험지 (PDF 글자를 읽어 문항·선택지로 표시) ---------- */
+// 학평·수능 듣기 PDF(pdf.js 글자 위치) → 문항 데이터
+// pages: [{w, h, items:[{s, x, y(글자 밑선, 위에서부터), w, h}]}]
+function lsParseListening(pages){
+  const lines = [], colB = {};
+  for(let p = 0; p < pages.length && p < 3; p++){
+    const pg = pages[p], mid = pg.w / 2;
+    const hs = {}; pg.items.forEach(t => { if(t.s.trim()) { const k = Math.round(t.h); hs[k] = (hs[k] || 0) + 1; } });
+    const body = Number(Object.keys(hs).sort((a, b) => hs[b] - hs[a])[0]) || 12;
+    for(const side of [0, 1]){
+      const its = pg.items.filter(t => t.s && ((t.x < mid) === (side === 0)) && (!t.s.trim() || t.h <= body * 1.35 || /^\d{1,2}\.$/.test(t.s.trim())))
+        .sort((a, b) => a.y - b.y || a.x - b.x);
+      const rows = [];
+      its.forEach(t => { const r = rows.find(r => Math.abs(r.y - t.y) < 3.5); r ? r.its.push(t) : rows.push({ y: t.y, its: [t] }); });
+      rows.sort((a, b) => a.y - b.y).forEach(r => {
+        r.its.sort((a, b) => a.x - b.x);
+        let txt = "", prev = null, sp = false;
+        r.its.forEach(t => { if(!t.s.trim()){ sp = true; return; } if(prev && (sp || t.x - (prev.x + prev.w) > 1.5)) txt += " "; txt += t.s; prev = t; sp = false; });
+        const words = r.its.filter(t => t.s.trim());
+        if(words.length){ const cb = colB[p + "_" + side] = colB[p + "_" + side] || { x0: 1e9, x1: 0 }; words.forEach(t => { cb.x0 = Math.min(cb.x0, t.x); cb.x1 = Math.max(cb.x1, t.x + t.w); }); }
+        if(words.length) lines.push({ page: p, side, y: r.y, x0: words[0].x, its: words, t: txt.replace(/\s+/g, " ").trim() });
+      });
+    }
+  }
+  const JUNK = /전국연합학력평가|대학수학능력|문제지|^영어 영역|교시|^고 ?\d$|^\d+( \d+)?$|^[━─―\-_=·\s]+$/;
+  const join = (a, b) => a + (/^(르시오|시오)/.test(b) ? "" : " ") + b;
+  const near = (a, b, d) => a.page === b.page && a.side === b.side && b.y - a.y > 0 && b.y - a.y < d;
+  const qs = []; let cur = null, set = "", stemOpen = false, prevL = null;
+  for(const L of lines){
+    if(/듣기 ?문제가 ?끝났습니다/.test(L.t) || /^이제 듣기/.test(L.t)) break;
+    if(JUNK.test(L.t)) continue;
+    if(/^\[\s*\d+\s*[~∼-]\s*\d+\s*\]/.test(L.t)){ set = L.t; cur = null; continue; }
+    const mQ = L.t.match(/^(\d{1,2})\.\s*(.*)$/);
+    if(mQ && Number(mQ[1]) === qs.length + 1 && Number(mQ[1]) <= 17){
+      cur = { no: Number(mQ[1]), stem: mQ[2], pre: [], cl: [], first: L, stemEnd: L };
+      if(set && cur.no >= 16) cur.set = set;
+      qs.push(cur); stemOpen = true; prevL = L; continue;
+    }
+    if(!cur) continue;
+    if(/[①②③④⑤]/.test(L.t)){ cur.cl.push(L); stemOpen = false; }
+    else if(stemOpen && !/(시오\.|것은\?|\[3점\])$/.test(cur.stem) && near(prevL, L, 22) && L.x0 > cur.first.x0 + 3 && !/:$/.test(L.t)){ cur.stem = join(cur.stem, L.t); cur.stemEnd = L; }
+    else if(cur.cl.length && near(cur.cl[cur.cl.length - 1], L, 22)){ const c = cur.cl[cur.cl.length - 1]; c.t += " " + L.t; c.its = c.its.concat(L.its); c.y = L.y; }
+    else { cur.pre.push(L); stemOpen = false; }
+    prevL = L;
+  }
+  const C = "①②③④⑤";
+  const out = qs.map((q, qi) => {
+    const parts = q.cl.map(l => l.t).join(" ").split(/(?=[①②③④⑤])/).map(s => s.trim()).filter(s => C.includes(s[0]));
+    const choices = [0,1,2,3,4].map(i => { const p = parts.find(s => s[0] === C[i]); return p ? p.slice(1).trim() : ""; });
+    const item = { no: q.no, stem: q.stem.trim(), choices };
+    if(q.set) item.set = q.set;
+    const pre = q.pre.slice();
+    if(pre.length && /:$/.test(pre[pre.length - 1].t)) item.who = pre.pop().t;
+    if(/표를/.test(q.stem) && pre.length){ // 표 문항: 머리줄 글자 위치로 칸 나누기
+      const titleL = pre.length > 1 ? pre[0] : null, headIts = [].concat(...pre.slice(titleL ? 1 : 0).map(l => l.its)).sort((a, b) => a.x - b.x);
+      const cols = []; // 머리줄 글자들을 x 범위가 겹치거나 가까우면 한 칸으로 (두 줄 머리 대비)
+      headIts.forEach(t => { const last = cols[cols.length - 1]; if(last && t.x - last.end < 6) { last.its.push(t); last.end = Math.max(last.end, t.x + t.w); } else cols.push({ x: t.x, end: t.x + t.w, its: [t] }); });
+      cols.forEach(c => { c.s = c.its.sort((a, b) => a.y - b.y || a.x - b.x).map(t => t.s.trim()).join(" "); });
+      const cellsOf = l => { // 줄 안 글자를 덩어리로 묶고, 가운데가 가장 가까운 칸에 넣기
+        const cells = cols.map(() => []), groups = [];
+        l.its.filter(t => !C.includes(t.s.trim())).sort((a, b) => a.x - b.x).forEach(t => { const g = groups[groups.length - 1]; if(g && t.x - g.end < 7) { g.s += " " + t.s; g.end = t.x + t.w; } else groups.push({ x: t.x, end: t.x + t.w, s: t.s }); });
+        groups.forEach(g => { const cx = (g.x + g.end) / 2; let k = 0, best = 1e9; cols.forEach((c, i) => { const d = Math.abs((c.x + c.end) / 2 - cx); if(d < best){ best = d; k = i; } }); cells[k].push(g.s); });
+        return cells.map(c => c.join(" ").replace(/\s+/g, " ").trim());
+      };
+      item.table = { title: titleL ? titleL.t : "", head: cols.map(c => c.s), rows: q.cl.map(l => cellsOf(l).join("\t")) };
+    } else if(pre.length && q.no !== 4) item.note = pre.map(l => l.t).join(" ");
+    if(q.no === 4 || !choices.some(Boolean)){ // 그림 문항: 발문 아래 ~ 다음 문항 위 영역
+      const nx = qs[qi + 1] && qs[qi + 1].first;
+      const y1 = nx && nx.page === q.first.page && nx.side === q.first.side ? nx.y - 16 : Math.max(...[q.stemEnd, ...q.pre, ...q.cl].map(l => l.y)) + 8;
+      item.choices = ["", "", "", "", ""];
+      const cb = colB[q.first.page + "_" + q.first.side];
+      item.fig = { page: q.first.page, x0: cb.x0 - 4, x1: cb.x1 + 4, y0: q.stemEnd.y + 5, y1 };
+    }
+    return item;
+  });
+  const ok = out.length === 17 && out.every(q => q.fig || q.table || q.choices.every(Boolean));
+  return { ok, items: out };
+}
+// mode: "answer"(풀기) | "review"(채점 결과) | "view"(담임 미리보기)
+function lsSheetHtml(r, mode, my, key){
+  const C = "①②③④⑤", E = yajaEsc;
+  return `<div class="ls-qs">${r.items.map((q, i) => {
+    const head = q.set && (i === 0 || r.items[i - 1].set !== q.set) ? `<div class="ls-set">${E(q.set)}</div>` : "";
+    const compact = q.img || q.table;
+    const short = !compact && q.choices.every(c => c.length <= 16);
+    const cls = n => { if(mode === "answer") return lsAnswers[i] === n ? "on" : "";
+      if(mode === "review" && key){ if(n === key[i]) return (my[i] === n ? "on " : "") + "ans"; if(n === my[i]) return "wrong"; } return ""; };
+    const tbl = q.table ? `<table class="ls-tbl">${q.table.title ? `<caption>${E(q.table.title)}</caption>` : ""}
+      <tr><th></th>${q.table.head.map(h => `<th>${E(h)}</th>`).join("")}</tr>
+      ${q.table.rows.map((row, k) => `<tr><td>${C[k]}</td>${row.split("\t").map(c => `<td>${E(c)}</td>`).join("")}</tr>`).join("")}</table>` : "";
+    const play = mode === "review" && lsHasCues(r) ? `<button class="ls-qplay" data-i="${i}">▶ 다시 듣기</button>` : "";
+    return `${head}<div class="ls-q" id="lsQ${i}"><div class="qs"><b>${q.no}.</b> ${E(q.stem)}${play}</div>
+      ${q.img ? `<img src="${q.img}" alt="${q.no}번 그림" loading="lazy">` : ""}${tbl}
+      ${q.note ? `<div class="ls-who">${E(q.note)}</div>` : ""}${q.who ? `<div class="ls-who">${E(q.who)} ____________</div>` : ""}
+      <div class="ls-chs ${compact ? "row" : short ? "grid" : ""}">${[1,2,3,4,5].map(n =>
+        `<button class="ls-ch ${cls(n)}" data-q="${i}" data-n="${n}" ${mode === "answer" ? "" : "disabled"}>${C[n - 1]}${compact ? "" : " " + E(q.choices[n - 1])}</button>`).join("")}</div></div>`;
+  }).join("")}</div>`;
+}
+const lsHasItems = r => Array.isArray(r.items) && r.items.length === LS_Q;
+function lsSyncSheet(){
+  document.querySelectorAll(".ls-qs .ls-ch:not([disabled])").forEach(b => b.classList.toggle("on", lsAnswers[Number(b.dataset.q)] === Number(b.dataset.n)));
+}
+
 /* ---------- 학생 ---------- */
 async function lsStudentList(){
   const body = document.getElementById("lsBody");
@@ -4366,9 +4493,13 @@ async function lsStudentRound(id){
         return `<div class="ls-row"><span class="no">${i+1}</span>${[1,2,3,4,5].map(n =>
           `<button disabled class="${n === mine ? (key && mine !== ans ? "wrong" : "on") : ""} ${key && n === ans ? "ans" : ""}">${n}</button>`).join("")}
           <span class="mk">${key ? (mine === ans ? "⭕" : "❌") : ""}</span></div>`; }).join("")}</div>
-      ${st === "closed" ? `<p class="hint" style="margin-top:6px;">초록 테두리 = 정답 · 빨강 = 내가 고른 오답</p>${sheet}` : ""}
+      ${st === "closed" ? `<p class="hint" style="margin-top:6px;">초록 테두리 = 정답 · 빨강 = 내가 고른 오답</p>
+        ${lsHasItems(r) ? `${lsSheetHtml(r, "review", my, key)}<details style="margin-top:8px;"><summary style="cursor:pointer; font-size:13px;">원본 시험지 보기</summary>${sheet}</details>` : sheet}` : ""}
     </div>`;
-    if(st === "closed") lsAudio = lsWirePlayer(r);
+    if(st === "closed"){
+      lsAudio = lsWirePlayer(r);
+      body.querySelectorAll(".ls-qplay").forEach(b => b.onclick = () => { const a = lsAudio; if(!a) return; a.currentTime = r.cues[Math.min(Number(b.dataset.i), r.cues.length - 1)]; a.play().catch(() => {}); a.scrollIntoView({ behavior: "smooth", block: "center" }); });
+    }
     if(sub && !sub.graded){ // 채점 결과 기다리기
       const un = subRef.onSnapshot(d => { const x = d.data(); if(x && x.graded){ un(); if(lsOpenId === id) lsStudentRound(id); } });
     }
@@ -4386,7 +4517,8 @@ async function lsStudentRound(id){
       <button data-m="practice" class="${lsMode === "practice" ? "on" : ""}">🔁 연습 모드<br><span style="font-size:11.5px; font-weight:400;">자유롭게 재생</span></button>
     </div>
     <div id="lsPlayer"></div>
-    ${lsMode ? sheet : ""}
+    ${lsMode ? (lsHasItems(r) ? `<p class="hint" style="margin-top:8px;">선택지를 누르면 답이 체크돼요. 아래 OMR과 같이 바뀌어요.</p>${lsSheetHtml(r, "answer")}
+      <details style="margin-top:8px;"><summary style="cursor:pointer; font-size:13px;">원본 시험지 보기</summary>${sheet}</details>` : sheet) : ""}
     <div id="lsOmr"></div>
   </div>`;
   body.querySelectorAll(".ls-mode button").forEach(b => b.onclick = () => {
@@ -4394,6 +4526,10 @@ async function lsStudentRound(id){
     lsMode = b.dataset.m; lsStopAudio(); lsStudentRound(id);
   });
   if(!lsMode) return;
+  body.querySelectorAll(".ls-qs .ls-ch").forEach(b => b.onclick = () => {
+    const q = Number(b.dataset.q), n = Number(b.dataset.n);
+    lsAnswers[q] = lsAnswers[q] === n ? 0 : n; lsDrawOmr(r);
+  });
 
   const player = document.getElementById("lsPlayer");
   if(lsMode === "practice"){
@@ -4431,6 +4567,7 @@ function lsDrawOmr(r){
   box.innerHTML = `<div style="font-weight:700; margin:12px 0 4px;">답안 (OMR)</div><div class="ls-omr">${Array.from({length: LS_Q}, (_, i) =>
     `<div class="ls-row"><span class="no">${i+1}</span>${[1,2,3,4,5].map(n => `<button data-q="${i}" data-n="${n}" class="${lsAnswers[i] === n ? "on" : ""}">${n}</button>`).join("")}</div>`).join("")}</div>
     <button class="primary-btn" id="lsSubmit" style="margin-top:12px;">제출하기 (${lsAnswers.filter(Boolean).length}/${LS_Q})</button>`;
+  lsSyncSheet();
   box.querySelectorAll(".ls-row button").forEach(b => b.onclick = () => {
     const q = Number(b.dataset.q), n = Number(b.dataset.n);
     lsAnswers[q] = lsAnswers[q] === n ? 0 : n; lsDrawOmr(r);
@@ -4530,21 +4667,44 @@ async function lsLoadPdfJs(){
   return window.pdfjsLib;
 }
 // PDF는 페이지별 사진으로 바꿔서 올림 (폰에서 PDF가 잘 안 보이는 문제 방지)
-async function lsSheetToImages(files){
+async function lsSheetToImages(files, parsed){
   const out = [];
   for(const f of files){
     if(f.type === "application/pdf" || /\.pdf$/i.test(f.name)){
       const pdfjs = await lsLoadPdfJs();
       const pdf = await pdfjs.getDocument({ data: await f.arrayBuffer() }).promise;
+      const pages = [], canvases = [];
       for(let p = 1; p <= pdf.numPages; p++){
         const page = await pdf.getPage(p);
         // 모의고사 전체 PDF면 듣기 부분까지만 ('듣기 문제가 끝났습니다'가 나온 쪽까지)
-        const txt = (await page.getTextContent()).items.map(t => t.str).join("").replace(/\s/g, "");
-        const vp = page.getViewport({ scale: 1600 / page.getViewport({ scale: 1 }).width });
+        const tc = await page.getTextContent(), vp1 = page.getViewport({ scale: 1 });
+        const txt = tc.items.map(t => t.str).join("").replace(/\s/g, "");
+        pages.push({ w: vp1.width, h: vp1.height, items: tc.items.map(t => ({ s: t.str, x: t.transform[4], y: vp1.height - t.transform[5], w: t.width, h: t.height })) });
+        const vp = page.getViewport({ scale: 1600 / vp1.width });
         const cv = document.createElement("canvas"); cv.width = vp.width; cv.height = vp.height;
         await page.render({ canvasContext: cv.getContext("2d"), viewport: vp }).promise;
+        canvases.push({ cv, k: 1600 / vp1.width });
         out.push(await new Promise(res => cv.toBlob(res, "image/jpeg", 0.85)));
         if(txt.includes("듣기문제가끝났습니다")) break;
+      }
+      // 문항형 시험지 만들기 (PDF 한 개일 때만)
+      if(parsed && files.length === 1){
+        try{
+          const res = lsParseListening(pages);
+          if(res.ok){
+            for(const q of res.items){
+              if(!q.fig) continue;
+              const { cv, k } = canvases[q.fig.page] || {}; if(!cv) continue;
+              const w = Math.round((q.fig.x1 - q.fig.x0) * k), h = Math.round((q.fig.y1 - q.fig.y0) * k);
+              if(w < 50 || h < 50) { delete q.fig; continue; }
+              const c2 = document.createElement("canvas"); c2.width = w; c2.height = h;
+              c2.getContext("2d").drawImage(cv, Math.round(q.fig.x0 * k), Math.round(q.fig.y0 * k), w, h, 0, 0, w, h);
+              q.figBlob = await new Promise(r2 => c2.toBlob(r2, "image/jpeg", 0.88));
+              delete q.fig;
+            }
+            parsed.items = res.items;
+          }
+        }catch(e){ console.warn("문항 읽기 실패 (사진으로만 올림)", e); }
       }
     } else out.push(f);
   }
@@ -4586,7 +4746,8 @@ async function lsRegister({ title, audio, sheets, key, openAt }, progress){
   const dueAt = lsDueOf(openAt);
   const ref = db.collection("listenRounds").doc();
   progress && progress(`${title} · 시험지 준비 중...`);
-  const imgs = await lsSheetToImages(sheets);
+  const parsed = {};
+  const imgs = await lsSheetToImages(sheets, parsed);
   progress && progress(`${title} · 음성 구간 분석 중...`);
   const cueInfo = await lsAnalyzeAudio(audio);
   progress && progress(`${title} · 음성 올리는 중...`);
@@ -4600,11 +4761,20 @@ async function lsRegister({ title, audio, sheets, key, openAt }, progress){
     await sRef.put(imgs[i], { contentType: imgs[i].type || "image/jpeg" });
     sheetUrls.push(await sRef.getDownloadURL());
   }
+  if(parsed.items){
+    for(const q of parsed.items){
+      if(!q.figBlob) continue;
+      const fRef = storage.ref().child(`listening/${ref.id}/q${q.no}.jpg`);
+      await fRef.put(q.figBlob, { contentType: "image/jpeg" });
+      q.img = await fRef.getDownloadURL(); delete q.figBlob;
+    }
+  }
   const TS = firebase.firestore.Timestamp;
   await db.collection("listenKeys").doc(ref.id).set({ answers: key });
   const data = { title, audioUrl, sheetUrls, qCount: LS_Q, openAt: TS.fromMillis(openAt.getTime()), dueAt: TS.fromMillis(dueAt.getTime()),
     createdAt: firebase.firestore.FieldValue.serverTimestamp() };
   if(cueInfo){ data.cues = cueInfo.cues; data.gaps = cueInfo.gaps; }
+  if(parsed.items) data.items = parsed.items;
   await ref.set(data);
   if(!lsRounds.some(x => x.id === ref.id)) lsRounds.unshift({ id: ref.id, ...data });
   lsRounds.sort((a,b) => lsTs(b.openAt) - lsTs(a.openAt));
@@ -4694,6 +4864,10 @@ async function lsTeacherRound(id){
       <p class="hint">정답을 고치면 이미 제출한 학생도 자동으로 다시 채점돼요.</p>
       <input type="text" id="lsKeyEdit" value="${key.join("")}" style="width:100%; padding:8px; font-size:16px; letter-spacing:3px;">
       <button class="primary-btn" id="lsKeySave" style="margin-top:6px;">정답 저장</button>
+    </details>
+    <details style="margin-top:12px;"><summary style="cursor:pointer; font-size:13px;">📝 학생에게 보이는 시험지 ${lsHasItems(r) ? "(문항형)" : "<b style='color:var(--danger);'>(사진만)</b>"}</summary>
+      ${lsHasItems(r) ? lsSheetHtml(r, "view") : `<p class="hint">PDF에서 문항을 읽지 못해 사진으로 보여줘요.</p>`}
+      <div class="ls-sheet">${(r.sheetUrls || []).map(u => `<img src="${u}" alt="시험지" loading="lazy">`).join("")}</div>
     </details>
     <details style="margin-top:12px;"><summary style="cursor:pointer; font-size:13px;">🎚 문항 시작 위치 확인·수정 ${lsHasCues(r) ? "" : "<b style='color:var(--danger);'>(없음)</b>"}</summary>
       <p class="hint">MP3를 분석해 찾은 위치예요. 번호를 눌러 맞게 시작하는지 들어보세요. 틀리면 아래 시각(분:초, 1번~16·17번 16개)을 고쳐 저장하세요.</p>
