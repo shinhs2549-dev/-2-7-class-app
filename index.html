@@ -272,7 +272,7 @@
 <div class="wrap">
 
   <div class="brand">
-    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1105-6</span></h1>
+    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1105-7</span></h1>
     <div id="brandRight"></div>
   </div>
 
@@ -4362,7 +4362,8 @@ function setupListenTab(){
     if(document.getElementById("panel-listen").classList.contains("active") && !lsOpenId) lsOnTabOpen();
   }, e => console.error("듣기평가 불러오기 실패", e));
 }
-function lsOnTabOpen(){ lsStopAudio(); lsOpenId = null; currentProfile.role === "teacher" ? lsTeacherList() : lsStudentList(); }
+let lsPreview = null; // 담임 미리보기 {id, sub} — 서버에 저장 안 함
+function lsOnTabOpen(){ lsStopAudio(); lsOpenId = null; lsPreview = null; currentProfile.role === "teacher" ? lsTeacherList() : lsStudentList(); }
 function lsStopAudio(){ if(lsAudio){ const a = lsAudio; lsAudio = null; a.pause(); } }
 
 /* ---------- 문항형 시험지 (PDF 글자를 읽어 문항·선택지로 표시) ---------- */
@@ -4498,10 +4499,13 @@ async function lsStudentRound(id){
   const r = lsRounds.find(x => x.id === id); if(!r) return;
   lsOpenId = id; lsStopAudio();
   const body = document.getElementById("lsBody");
+  const prev = lsPreview && lsPreview.id === id ? lsPreview : null;
   const subRef = db.collection("listenSubs").doc(`${id}_${currentUser.uid}`);
-  const sub = await subRef.get().then(d => d.exists ? d.data() : null).catch(() => null);
-  const st = lsStatus(r);
-  const back = `<button class="link-btn" onclick="lsOnTabOpen()">← 목록</button>`;
+  const sub = prev ? (prev.sub || null) : await subRef.get().then(d => d.exists ? d.data() : null).catch(() => null);
+  const st = prev ? (prev.sub ? "closed" : "open") : lsStatus(r);
+  const back = prev ? `<button class="link-btn" onclick="lsPreview=null; lsStopAudio(); lsMode=null; lsTeacherRound('${id}')">← 담임 화면으로</button>
+    <div style="background:#FFF4D6; border-radius:8px; padding:6px 10px; font-size:12.5px; margin-top:6px;">🧪 담임 미리보기 — 학생 화면과 똑같지만 점수·기록은 저장되지 않아요.</div>`
+    : `<button class="link-btn" onclick="lsOnTabOpen()">← 목록</button>`;
   const sheet = `<div class="ls-sheet">${(r.sheetUrls || []).map(u => `<img src="${u}" alt="시험지" loading="lazy">`).join("")}</div>`;
 
   if(sub || st === "closed"){
@@ -4526,7 +4530,9 @@ async function lsStudentRound(id){
       lsAudio = lsWirePlayer(r);
       body.querySelectorAll(".ls-qplay").forEach(b => b.onclick = () => { const a = lsAudio; if(!a) return; a.currentTime = r.cues[Math.min(Number(b.dataset.i), r.cues.length - 1)]; a.play().catch(() => {}); a.scrollIntoView({ behavior: "smooth", block: "center" }); });
     }
-    if(sub && !sub.graded){ // 채점 결과 기다리기
+    if(prev) body.querySelector(".group-block").insertAdjacentHTML("beforeend", `<button class="link-btn" id="lsPrevAgain" style="margin-top:12px;">🔄 처음부터 다시 풀기</button>`);
+    if(prev) document.getElementById("lsPrevAgain").onclick = () => { lsPreview = { id }; lsMode = null; lsAnswers = []; lsStudentRound(id); };
+    if(sub && !sub.graded && !prev){ // 채점 결과 기다리기
       const un = subRef.onSnapshot(d => { const x = d.data(); if(x && x.graded){ un(); if(lsOpenId === id) lsStudentRound(id); } });
     }
     return;
@@ -4534,7 +4540,7 @@ async function lsStudentRound(id){
 
   // 응시
   if(!lsMode || lsAnswers._id !== id){ lsAnswers = Array(LS_Q).fill(0); lsAnswers._id = id; lsMode = null; }
-  const realUsed = (() => { try{ return localStorage.getItem(`ls_real_${id}`) === "1"; }catch(e){ return false; } })();
+  const realUsed = prev ? false : (() => { try{ return localStorage.getItem(`ls_real_${id}`) === "1"; }catch(e){ return false; } })();
   body.innerHTML = `<div class="group-block">${back}
     <h3 style="margin-top:6px;">${yajaEsc(r.title)}</h3>
     <p class="hint">마감 ${lsFmt(lsTs(r.dueAt))} · 이어폰을 꽂고 풀어주세요. 제출은 한 번만 할 수 있어요.</p>
@@ -4569,7 +4575,7 @@ async function lsStudentRound(id){
       ${lsHasCues(r) && !realUsed ? `<label style="display:flex; gap:6px; align-items:center; font-size:13px;"><input type="checkbox" id="lsSkipChk"> ⏩ 앞 안내 방송·문제 사이 쉬는 시간 건너뛰기 (시작 전에만 고를 수 있어요)</label>` : ""}`;
     document.getElementById("lsRealPlay").onclick = () => {
       if(!confirm("실전 모드는 한 번만 들을 수 있어요. 지금 시작할까요?")) return;
-      try{ localStorage.setItem(`ls_real_${id}`, "1"); }catch(e){}
+      if(!prev) try{ localStorage.setItem(`ls_real_${id}`, "1"); }catch(e){}
       const a = lsAudio = new Audio(r.audioUrl);
       const btn = document.getElementById("lsRealPlay"); btn.disabled = true; btn.textContent = "재생 중";
       const chk = document.getElementById("lsSkipChk"), skip = !!(chk && chk.checked); if(chk) chk.disabled = true;
@@ -4602,6 +4608,12 @@ function lsDrawOmr(r){
     const blank = lsAnswers.filter(x => !x).length;
     if(!confirm(blank ? `${blank}문항이 비어 있어요. 그래도 제출할까요? (제출은 한 번만 가능)` : "제출할까요? 제출은 한 번만 할 수 있어요.")) return;
     const btn = document.getElementById("lsSubmit"); btn.disabled = true; btn.textContent = "제출 중...";
+    if(lsPreview && lsPreview.id === r.id){ // 담임 미리보기: 서버 저장 없이 바로 채점
+      const key = await db.collection("listenKeys").doc(r.id).get().then(d => d.exists ? d.data().answers : []).catch(() => []);
+      const answers = lsAnswers.slice(0, LS_Q);
+      lsPreview.sub = { answers, mode: lsMode, graded: true, score: answers.filter((a, i) => a && a === key[i]).length };
+      lsStopAudio(); lsMode = null; lsStudentRound(r.id); return;
+    }
     try{
       await db.collection("listenSubs").doc(`${r.id}_${currentUser.uid}`).set({
         roundId: r.id, uid: currentUser.uid, num: currentProfile.num, name: currentProfile.name,
@@ -4911,6 +4923,8 @@ async function lsTeacherRound(id){
     </details>
     <button class="link-btn" id="lsDelete" style="margin-top:12px; color:var(--danger);">이 회차 삭제</button>
   </div>`;
+  body.querySelector(".group-block h3").insertAdjacentHTML("afterend", `<button class="primary-btn" id="lsPreviewBtn" style="margin:8px 0 4px;">🧪 학생처럼 풀어보기 (공개 전에도 가능 · 기록 안 남음)</button>`);
+  document.getElementById("lsPreviewBtn").onclick = () => { lsStopAudio(); lsPreview = { id }; lsMode = null; lsAnswers = []; lsStudentRound(id); };
   lsAudio = lsWirePlayer(r);
   document.getElementById("lsCueSave").onclick = async () => {
     const c = (document.getElementById("lsCueEdit").value.match(/\d+:\d{1,2}/g) || []).map(x => { const [m, s2] = x.split(":").map(Number); return m * 60 + s2; });
