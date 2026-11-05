@@ -11,7 +11,7 @@
 <meta name="theme-color" content="#3E5C42">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://www.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+KR:wght@500;700&family=Noto+Sans+KR:wght@400;500;700&display=swap" rel="stylesheet" media="print" onload="this.media='all'">
 
 <style>
   :root{
@@ -272,7 +272,7 @@
 <div class="wrap">
 
   <div class="brand">
-    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1105-4</span></h1>
+    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1105-6</span></h1>
     <div id="brandRight"></div>
   </div>
 
@@ -823,7 +823,7 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
-<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js" defer></script>
 <script src="yaja-common.js?v=1105-1"></script>
 <script src="seat-common.js?v=1105-1"></script>
 <script>
@@ -939,8 +939,17 @@ function handleLogin(){
 }
 
 function handleLogout(){
+  if(currentUser) profileCacheClear(currentUser.uid);
   auth.signOut();
 }
+
+// 빠른 시작: 지난번 프로필을 기기에 저장해 두고, 켜자마자 그걸로 화면을 띄운 뒤 서버 값으로 확인
+const profileKey = uid => `prof_${uid}`;
+function profileCacheSave(){
+  try{ if(currentUser && currentProfile){ const { fcmTokens, ...rest } = currentProfile; localStorage.setItem(profileKey(currentUser.uid), JSON.stringify(rest)); } }catch(e){}
+}
+function profileCacheClear(uid){ try{ localStorage.removeItem(profileKey(uid)); }catch(e){} }
+function profileCacheLoad(uid){ try{ return JSON.parse(localStorage.getItem(profileKey(uid)) || "null"); }catch(e){ return null; } }
 
 // 로그인 상태가 바뀔 때마다 자동 실행 (새로고침해도 로그인 유지됨)
 auth.onAuthStateChanged(user => handleAuthUser(user));
@@ -955,6 +964,21 @@ async function handleAuthUser(user){
   // 학부모 서명(익명)·자리배치·스캐너 전용 계정으로 남아 있던 로그인은 정리하고 로그인 화면으로
   let doc = null;
   if(!user.isAnonymous){
+    const cached = profileCacheLoad(user.uid);
+    if(cached && ["student","teacher"].includes(cached.role) && cached.selection && (cached.role !== "student" || cached.pwChanged)){
+      currentProfile = cached; renderBrandRight(); enterApp();
+      // 서버 값 확인 (역할이 바뀌었거나 계정이 없어졌으면 로그아웃, 선택과목이 바뀌었으면 시간표 다시 그림)
+      db.collection("students").doc(user.uid).get().then(d => {
+        if(auth.currentUser !== user) return;
+        const fresh = d.exists ? d.data() : null;
+        if(!fresh || !["student","teacher"].includes(fresh.role) || fresh.role !== cached.role){ profileCacheClear(user.uid); location.reload(); return; }
+        const selChanged = JSON.stringify(fresh.selection) !== JSON.stringify(cached.selection);
+        Object.keys(currentProfile).forEach(k => { if(!(k in fresh)) delete currentProfile[k]; });
+        Object.assign(currentProfile, fresh); profileCacheSave(); renderBrandRight();
+        if(selChanged && fresh.selection) renderTimetable(fresh.selection);
+      }).catch(e => console.warn("프로필 확인 실패 (저장된 정보로 계속)", e));
+      return;
+    }
     try{ doc = await db.collection("students").doc(user.uid).get(); }
     catch(e){
       // 인터넷이 잠깐 끊긴 경우 — 로그아웃하지 않고 잠시 뒤 다시 시도
@@ -970,6 +994,7 @@ async function handleAuthUser(user){
     return;
   }
   renderBrandRight();
+  profileCacheSave();
 
   if(currentProfile && currentProfile.role === "student" && !currentProfile.pwChanged){
     openPasswordScreen(true);
@@ -1083,6 +1108,7 @@ async function handleSaveSelection(){
 
   await db.collection("students").doc(currentUser.uid).set({ selection }, {merge:true});
   currentProfile = {...currentProfile, selection};
+  profileCacheSave();
 
   renderTimetable(selection);
   showScreen("screen-main");
@@ -4731,10 +4757,17 @@ async function lsCreateRound(){
     lsTeacherList();
   }catch(e){
     console.error("듣기평가 등록 실패", e);
-    fail(`등록하지 못했어요 (${e.code || e.message}). 저장소·보안규칙 설정을 확인해주세요.`);
+    fail(`등록하지 못했어요. ${lsErrHelp(e)}`);
   }finally{ btn.disabled = false; btn.textContent = "등록하기"; }
 }
 
+function lsErrHelp(e){
+  const c = (e && (e.code || e.message)) || "";
+  if(/storage\/unauthorized/.test(c)) return "원인: Firebase Storage(파일 저장소) 규칙이 막고 있어요. [storage/unauthorized]";
+  if(/permission-denied|insufficient permissions/i.test(c)) return "원인: Firestore 보안 규칙이 아직 배포되지 않았어요. (firebase deploy --only firestore:rules) [permission-denied]";
+  if(/storage\/(quota|retry|canceled)|network/i.test(c)) return `원인: 인터넷 연결이나 저장 용량 문제예요. 잠시 후 다시 해주세요. [${c}]`;
+  return `오류 코드: ${c}`;
+}
 function lsDueOf(openAt){
   const dueAt = new Date(openAt); dueAt.setDate(dueAt.getDate() + ((7 - dueAt.getDay()) % 7)); dueAt.setHours(23, 59, 59, 0);
   if(dueAt - openAt < 3600000) dueAt.setDate(dueAt.getDate() + 7); // 일요일에 열면 다음 일요일까지
@@ -4821,13 +4854,14 @@ async function lsBulkRegister(){
   if(!list.length || !list.every(g => g.ok)) return;
   if(!confirm(`${list.length}개 회차를 등록할까요?\n매주 월요일 08:00에 하나씩 열려요.`)) return;
   const btn = document.getElementById("lsBulkBtn"); btn.disabled = true;
+  let done = 0, cur = null;
   try{
-    for(const g of list) await lsRegister({ title: g.title, audio: g.audio, sheets: g.sheets, key: g.answers, openAt: g.openAt }, m => { btn.textContent = m; });
+    for(const g of list){ cur = g; await lsRegister({ title: g.title, audio: g.audio, sheets: g.sheets, key: g.answers, openAt: g.openAt }, m => { btn.textContent = m; }); done++; }
     alert(`${list.length}개 회차를 등록했어요.`);
     lsTeacherList();
   }catch(e){
     console.error("일괄 등록 실패", e);
-    alert(`등록 중 오류가 났어요 (${e.code || e.message}). 이미 올라간 회차는 목록에서 확인해주세요.`);
+    alert(`${cur ? cur.key : ""} 회차를 올리다 멈췄어요.\n${lsErrHelp(e)}\n\n(${done}개 회차는 등록 완료)`);
     lsTeacherList();
   }finally{ btn.disabled = false; btn.textContent = "모두 등록하기"; }
 }
@@ -4937,7 +4971,7 @@ async function savePassword(){
     await currentUser.reauthenticateWithCredential(cred);
     await currentUser.updatePassword(nw);
     await db.collection("students").doc(currentUser.uid).set({ pwChanged: true }, {merge:true});
-    currentProfile.pwChanged = true;
+    currentProfile.pwChanged = true; profileCacheSave();
     alert("비밀번호를 바꿨어요. 다음부터는 새 비밀번호로 로그인하세요.");
     if(pwForced) enterApp(); else showScreen("screen-main");
   }catch(e){
