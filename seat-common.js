@@ -22,7 +22,7 @@ function seatPartnerKey(key) {
 function seatWeekScore(plan) {
   if (!plan || !plan.reflectSubmitted) return 0;
   const checks = (plan.days || []).filter(d => d && d.checked).length;
-  return (plan.planSubmitted ? 2 : 0) + checks + 2;
+  return (plan.planSubmitted ? 2 : 0) + checks + 2 + (Number(plan.listenPts) || 0); // 영어듣기 포인트 포함
 }
 
 /*

@@ -178,6 +178,40 @@
   .ov-fb{ margin-top:8px; display:none; }
   .ov-fb textarea{ width:100%; min-height:54px; border:1px solid var(--line); border-radius:6px; padding:7px; font-family:inherit; font-size:13px; }
   .ov-q{ font-size:11.5px; padding:2px 8px; border:1px solid var(--line); border-radius:12px; background:#fff; margin:4px 4px 0 0; cursor:pointer; font-family:inherit; }
+  .ls-card{ background:var(--card); border:1px solid var(--line); border-radius:10px; padding:12px 14px; margin-bottom:10px; cursor:pointer; }
+  .ls-card .t{ font-weight:700; font-size:15px; }
+  .ls-card .m{ font-size:12.5px; color:#8a8270; margin-top:3px; }
+  .ls-badge{ display:inline-block; font-size:11px; padding:1px 8px; border-radius:10px; margin-left:6px; background:#EEE9DD; color:#8a8270; font-weight:500; }
+  .ls-badge.on{ background:var(--forest); color:#fff; }
+  .ls-badge.done{ background:#DCE8DC; color:var(--forest-deep); }
+  .ls-mode{ display:flex; gap:8px; }
+  .ls-mode button{ flex:1; padding:12px 6px; border:1px solid var(--line); border-radius:10px; background:#fff; font-family:inherit; font-size:13.5px; cursor:pointer; line-height:1.4; }
+  .ls-mode button.on{ border:2px solid var(--forest); background:#EEF3EC; font-weight:700; }
+  .ls-player{ background:#1f2b23; color:#fff; border-radius:10px; padding:12px 14px; margin:12px 0; }
+  .ls-player .bar{ height:6px; background:rgba(255,255,255,.2); border-radius:3px; margin-top:8px; overflow:hidden; }
+  .ls-player .bar > div{ height:100%; background:#8fd19e; width:0%; }
+  .ls-sheet img{ width:100%; display:block; border:1px solid var(--line); border-radius:6px; margin-bottom:8px; background:#fff; }
+  .ls-cues{ display:flex; flex-wrap:wrap; gap:4px; margin:6px 0 10px; }
+  .ls-cues button{ min-width:34px; padding:4px 6px; border:1px solid var(--line); border-radius:8px; background:#fff; font-size:12px; font-family:inherit; cursor:pointer; }
+  .ls-cues button.wrong{ border-color:#c0573e; color:#c0573e; font-weight:700; }
+  .ls-cues button.cur{ background:var(--forest); color:#fff; border-color:var(--forest); }
+  .ls-type{ display:flex; align-items:center; gap:6px; font-size:12.5px; margin:3px 0; }
+  .ls-type .nm{ width:128px; flex:none; }
+  .ls-type .bg{ flex:1; height:10px; background:#EEE9DD; border-radius:5px; overflow:hidden; }
+  .ls-type .bg > div{ height:100%; }
+  .ls-type .v{ width:74px; text-align:right; flex:none; color:#8a8270; font-size:11.5px; }
+  .ls-stu{ cursor:pointer; }
+  .ls-omr{ display:grid; grid-template-columns:1fr; gap:4px; }
+  .ls-row{ display:flex; align-items:center; gap:6px; padding:4px 0; border-bottom:1px dashed var(--line); }
+  .ls-row .no{ width:26px; font-weight:700; font-size:13px; text-align:right; }
+  .ls-row button{ width:36px; height:32px; border:1px solid var(--line); border-radius:16px; background:#fff; font-size:14px; cursor:pointer; font-family:inherit; }
+  .ls-row button.on{ background:var(--forest); color:#fff; border-color:var(--forest); }
+  .ls-row button.ans{ outline:2px solid #2e7d32; }
+  .ls-row button.wrong{ background:#F3DDD6; border-color:var(--danger); color:var(--danger); }
+  .ls-row .mk{ margin-left:auto; font-size:15px; }
+  .ls-stat{ display:grid; grid-template-columns:repeat(17,1fr); gap:2px; align-items:end; height:70px; margin:8px 0 2px; }
+  .ls-stat div{ background:var(--forest); border-radius:2px 2px 0 0; min-height:2px; }
+  .ls-stat div.low{ background:var(--danger); }
   .seat-podium{ text-align:center; font-size:12px; background:#E6DFCC; border-radius:6px; padding:4px; margin:0 auto 10px; width:40%; color:#6b6455; }
   .seat-grid{ display:grid; grid-template-columns:repeat(3, minmax(0,1fr)); gap:10px; }
   .seat-sec{ display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1fr); gap:4px 2px; }
@@ -214,7 +248,7 @@
 <div class="wrap">
 
   <div class="brand">
-    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1103-1</span></h1>
+    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1105-3</span></h1>
     <div id="brandRight"></div>
   </div>
 
@@ -298,6 +332,7 @@
       <button id="tabBtnYajaAdmin" onclick="switchMainTab('yajaadmin')" style="display:none;"><span class="ti">🦉</span><span class="tl">야자관리</span></button>
       <button id="tabBtnSuggest" onclick="switchMainTab('suggest')" style="display:none;"><span class="ti">📮</span><span class="tl">건의함</span></button>
       <button id="tabBtnSeat" onclick="switchMainTab('seat')" style="display:none;"><span class="ti">🪑</span><span class="tl">자리</span></button>
+      <button id="tabBtnListen" onclick="switchMainTab('listen')" style="display:none;"><span class="ti">🎧</span><span class="tl">영어듣기</span></button>
     </div>
 
     <div class="tab-panel active" id="panel-timetable">
@@ -530,6 +565,7 @@
             <div class="sp-score-cell"><div class="lbl">계획 제출</div><div class="val" id="scoreGoals">0</div></div>
             <div class="sp-score-cell"><div class="lbl">실행 체크</div><div class="val" id="scoreChecks">0</div></div>
             <div class="sp-score-cell"><div class="lbl">회고 제출</div><div class="val" id="scoreReflect">0</div></div>
+            <div class="sp-score-cell"><div class="lbl">🎧 영어듣기</div><div class="val" id="scoreListen">0</div></div>
             <div class="sp-score-cell total"><div class="lbl">이번 주 합계</div><div class="val" id="scoreTotal">0</div></div>
           </div>
 
@@ -632,6 +668,10 @@
           <div id="ctRecordList"></div>
         </div>
       </div>
+    </div>
+
+    <div class="tab-panel" id="panel-listen">
+      <div id="lsBody"><p class="hint">불러오는 중...</p></div>
     </div>
 
     <div class="tab-panel" id="panel-seat">
@@ -760,8 +800,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-messaging-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js"></script>
-<script src="yaja-common.js?v=1019-4"></script>
-<script src="seat-common.js?v=1019-4"></script>
+<script src="yaja-common.js?v=1105-1"></script>
+<script src="seat-common.js?v=1105-1"></script>
 <script>
 /* =========================================================
    0. Firebase 설정 — ⚠️ 콘솔에서 복사한 값으로 반드시 교체하세요
@@ -929,6 +969,7 @@ function enterApp(){
     setupCounselTab();
     setupSuggestTab();
     setupSeatTab();
+    setupListenTab();
   } else {
     goToSelectScreen();
   }
@@ -960,6 +1001,9 @@ function switchMainTab(tab){
   document.getElementById("tabBtnSeat").classList.toggle("active", tab === "seat");
   document.getElementById("panel-seat").classList.toggle("active", tab === "seat");
   if(tab === "seat") seatOnTabOpen();
+  document.getElementById("tabBtnListen").classList.toggle("active", tab === "listen");
+  document.getElementById("panel-listen").classList.toggle("active", tab === "listen");
+  if(tab === "listen") lsOnTabOpen();
   document.getElementById("panel-suggest").classList.toggle("active", tab === "suggest");
 }
 function renderBrandRight(){
@@ -1030,6 +1074,7 @@ async function handleSaveSelection(){
   setupCounselTab();
   setupSuggestTab();
   setupSeatTab();
+  setupListenTab();
 }
 
 /* =========================================================
@@ -1750,7 +1795,7 @@ function subscribeMyAbsences(){
     const docId = spDocId(spTargetUid, monday);
     try{
       // 담임 피드백은 따로 저장되므로 여기서는 건드리지 않음 (덮어쓰기 방지)
-      const { teacherFeedback, feedbackAt, ...rest } = spState;
+      const { teacherFeedback, feedbackAt, listenPts, listenScore, ...rest } = spState; // 서버가 넣는 값은 건드리지 않음
       await db.collection("studyplans").doc(docId).set({
         studentUid: spTargetUid,
         weekKey: isoKey(monday),
@@ -2051,12 +2096,14 @@ function subscribeMyAbsences(){
     const goalScore = spState.planSubmitted ? 2 : 0;
     const checkScore = spState.days.filter(d=>d.checked).length;
     const reflectScore = spState.reflectSubmitted ? 2 : 0;
+    const listenScore = Number(spState.listenPts) || 0;
+    document.getElementById("scoreListen").textContent = listenScore;
     document.getElementById("scoreGoals").textContent = goalScore;
     document.getElementById("scoreChecks").textContent = checkScore;
     const reflectCell = document.getElementById("scoreReflect");
     reflectCell.textContent = spState.reflectSubmitted ? reflectScore : "미확정";
     const totalCell = document.getElementById("scoreTotal");
-    totalCell.textContent = spState.reflectSubmitted ? (goalScore + checkScore + reflectScore) : "미확정";
+    totalCell.textContent = spState.reflectSubmitted ? (goalScore + checkScore + reflectScore + listenScore) : "미확정";
   }
 
   function spEscapeHtml(s){
@@ -4145,6 +4192,534 @@ function seatShowPreview(r){
     <table class="seat-tbl"><tr><th>#</th><th>학생</th><th>점</th><th>회고</th><th>지망</th><th>결과</th></tr>
     ${pv.order.map((o, i) => `<tr><td>${i + 1}</td><td>${o.num} ${yajaEsc(pv.names[o.num] || "")}</td><td>${o.pts}</td><td>${o.refl}</td>
       <td style="font-size:11px;">${(o.choices || []).map(lbl).join(" / ")}</td><td>${yajaEsc(pv.how[o.num] || "")}</td></tr>`).join("")}</table>`;
+}
+
+/* =========================================================
+   18. 영어 듣기평가 (주 1회, 수능형 17문항)
+   ========================================================= */
+const LS_Q = 17;
+let lsRounds = [], lsUnsub = null, lsOpenId = null, lsAnswers = [], lsMode = null, lsAudio = null;
+const lsTs = v => v ? (v.toMillis ? v.toMillis() : v._ms || (v.seconds ? v.seconds * 1000 : 0)) : 0;
+const lsFmt = ms => { const d = new Date(ms); return `${d.getMonth()+1}/${d.getDate()}(${"일월화수목금토"[d.getDay()]}) ${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`; };
+const lsMMSS = sec => `${Math.floor(sec/60)}:${String(Math.floor(sec%60)).padStart(2,"0")}`;
+const lsCircle = n => "①②③④⑤"[n-1] || "";
+function lsStatus(r){ const now = Date.now(); return now < lsTs(r.openAt) ? "wait" : now <= lsTs(r.dueAt) ? "open" : "closed"; }
+
+/* ---------- 문항 유형 (수능·학평 듣기 1~17번 고정) ---------- */
+const LS_TYPES = ["목적","의견","요지","그림 불일치","할 일","금액","이유","언급 안 된 것","내용 불일치","도표",
+  "짧은 대화 응답","짧은 대화 응답","긴 대화 응답","긴 대화 응답","상황에 맞는 말","주제","언급 안 된 것"];
+const LS_TYPE_NUMS = {}; LS_TYPES.forEach((t, i) => (LS_TYPE_NUMS[t] = LS_TYPE_NUMS[t] || []).push(i + 1));
+// list: [{answers, key}] → {유형: {ok, n}}
+function lsTypeStats(list){
+  const st = {}; LS_TYPES.forEach(t => { st[t] = { ok:0, n:0 }; });
+  list.forEach(({ answers, key }) => { for(let i = 0; i < LS_Q; i++){ if(!key || !key[i]) continue; const t = LS_TYPES[i]; st[t].n++; if((answers || [])[i] === key[i]) st[t].ok++; } });
+  return st;
+}
+function lsStrongWeak(st){
+  const names = Object.keys(LS_TYPE_NUMS).filter(t => st[t].n), rate = t => st[t].ok / st[t].n;
+  const ranked = names.slice().sort((a, b) => rate(b) - rate(a) || st[b].n - st[a].n);
+  const strong = ranked.filter(t => rate(t) >= 0.75).slice(0, 2);
+  const weak = ranked.slice().reverse().filter(t => rate(t) < 0.75 && !strong.includes(t)).slice(0, 2);
+  return { names, rate, strong, weak };
+}
+function lsTypeHtml(st, rounds){
+  const { names, rate, strong, weak } = lsStrongWeak(st);
+  if(!names.length) return `<p class="hint">마감된 회차가 쌓이면 유형별 정답률이 보여요.</p>`;
+  const col = v => v >= 0.8 ? "var(--forest)" : v >= 0.6 ? "#d9a441" : "#c0573e";
+  return `<div class="hint" style="margin-bottom:6px;">${rounds}회 누적${rounds < 3 ? " · 3회 이상 쌓이면 더 정확해요" : ""}</div>
+    ${strong.length ? `<div style="font-size:13.5px;">💪 강한 유형: <b>${strong.join(", ")}</b></div>` : ""}
+    ${weak.length ? `<div style="font-size:13.5px;">🔧 약한 유형: <b>${weak.join(", ")}</b></div>` : ""}
+    <div style="margin-top:8px;">${names.map(t => `<div class="ls-type"><span class="nm">${t} <span style="color:#a49c88; font-size:11px;">${LS_TYPE_NUMS[t].join("·")}번</span></span>
+      <div class="bg"><div style="width:${Math.max(Math.round(rate(t) * 100), 2)}%; background:${col(rate(t))};"></div></div>
+      <span class="v">${st[t].ok}/${st[t].n} (${Math.round(rate(t) * 100)}%)</span></div>`).join("")}</div>`;
+}
+
+/* ---------- 구간 건너뛰기 (등록할 때 MP3를 분석해서 문항 시작·쉬는 시간 위치를 저장) ---------- */
+// 듣기 MP3에서 문항 시작 지점·문항 사이 쉬는 구간 찾기
+function lsFindCues(x, sr){
+  const fl = Math.round(sr * 0.05), THR = 0.0178; // 50ms 단위, -35dB 이하 = 무음
+  const sil = []; let runStart = -1;
+  const nF = Math.floor(x.length / fl);
+  for(let f = 0; f <= nF; f++){
+    let pk = 0;
+    if(f < nF){ for(let i = f * fl, e = i + fl; i < e; i++){ const v = x[i] < 0 ? -x[i] : x[i]; if(v > pk) pk = v; } }
+    const quiet = f < nF && pk < THR;
+    if(quiet && runStart < 0) runStart = f;
+    if(!quiet && runStart >= 0){ const s = runStart * 0.05, e = f * 0.05; if(e - s >= 0.8) sil.push([s, e]); runStart = -1; }
+  }
+  // 1번 시작: 안내 방송 뒤 40초 넘게 소리가 이어진 구간(음악)이 끝나고 처음 나오는 1.5초 이상 무음의 끝
+  let q1 = 0, prevEnd = 0;
+  for(const [s, e] of sil){
+    if(e > 420) break;
+    if(s - prevEnd >= 40 && e - s >= 1.5){ q1 = e; break; }
+    prevEnd = e;
+  }
+  const gaps = sil.filter(([s, e]) => s >= q1 && e - s >= 4); // 문항 사이 답 쓰는 시간
+  const cues = [q1, ...gaps.slice(0, 15).map(g => g[1])];
+  const r1 = v => Math.round(v * 10) / 10;
+  return { cues: cues.map(r1), gaps: gaps.flatMap(g => [r1(g[0]), r1(g[1])]) };
+}
+async function lsAnalyzeAudio(file){
+  try{
+    const Ctx = window.OfflineAudioContext || window.webkitOfflineAudioContext; if(!Ctx) return null;
+    const buf = await new Ctx(1, 8000, 8000).decodeAudioData(await file.arrayBuffer());
+    const r = lsFindCues(buf.getChannelData(0), buf.sampleRate);
+    return r.cues.length >= 2 ? r : null;
+  }catch(e){ console.warn("음성 구간 분석 실패", e); return null; }
+}
+const lsHasCues = r => Array.isArray(r.cues) && r.cues.length >= 2;
+const lsCueLabel = i => i === 15 ? "16·17" : String(i + 1);
+// 재생 중 안내 방송·문항 사이 쉬는 시간 넘기기. skip(): 지금 건너뛸지
+function lsAttachSkipper(a, r, skip, onTime){
+  const gaps = r.gaps || []; let first = true;
+  a.addEventListener("timeupdate", () => {
+    const t = a.currentTime;
+    if(lsHasCues(r) && skip()){
+      if(first && t < r.cues[0] - 1){ first = false; a.currentTime = Math.max(0, r.cues[0] - 0.3); return; }
+      for(let i = 0; i < gaps.length; i += 2){ if(t >= gaps[i] + 0.3 && t < gaps[i + 1] - 0.8){ a.currentTime = gaps[i + 1] - 0.5; return; } }
+    }
+    first = false;
+    onTime && onTime(t);
+  });
+}
+// 연습·복습용 플레이어: 기본 컨트롤 + 건너뛰기 체크 + 문항 번호 바로가기
+function lsPlayerHtml(r, { skipOn = true, wrong = [] } = {}){
+  return `<audio id="lsPAudio" controls preload="metadata" src="${r.audioUrl}" style="width:100%; margin:12px 0 4px;"></audio>
+    ${lsHasCues(r) ? `<label style="display:flex; gap:6px; align-items:center; font-size:13px;"><input type="checkbox" id="lsSkipChk" ${skipOn ? "checked" : ""}> ⏩ 앞 안내 방송·문제 사이 쉬는 시간 건너뛰기</label>
+      <div class="hint" style="margin-top:6px;">문항 번호를 누르면 그 문제부터 들려요${wrong.length ? " (빨간 번호 = 틀린 문제)" : ""}</div>
+      <div class="ls-cues" id="lsCues">${r.cues.map((c, i) => `<button data-i="${i}" class="${wrong.some(q => Math.min(q, 15) === i) ? "wrong" : ""}">${lsCueLabel(i)}</button>`).join("")}</div>` : ""}`;
+}
+function lsWirePlayer(r){
+  const a = document.getElementById("lsPAudio"); if(!a) return null;
+  if(!lsHasCues(r)) return a;
+  const chk = document.getElementById("lsSkipChk"), chips = Array.from(document.querySelectorAll("#lsCues button"));
+  lsAttachSkipper(a, r, () => chk.checked, t => {
+    let cur = -1; r.cues.forEach((c, i) => { if(t + 0.5 >= c) cur = i; });
+    chips.forEach((b, i) => b.classList.toggle("cur", i === cur));
+  });
+  chips.forEach(b => b.onclick = () => { a.currentTime = r.cues[Number(b.dataset.i)]; a.play().catch(() => {}); });
+  return a;
+}
+
+function setupListenTab(){
+  const role = currentProfile && currentProfile.role;
+  const btn = document.getElementById("tabBtnListen");
+  if(role !== "student" && role !== "teacher"){ btn.style.display = "none"; return; }
+  btn.style.display = "";
+  if(lsUnsub) return;
+  lsUnsub = db.collection("listenRounds").onSnapshot(snap => {
+    lsRounds = snap.docs.map(d => ({ id:d.id, ...d.data() })).sort((a,b) => lsTs(b.openAt) - lsTs(a.openAt));
+    if(document.getElementById("panel-listen").classList.contains("active") && !lsOpenId) lsOnTabOpen();
+  }, e => console.error("듣기평가 불러오기 실패", e));
+}
+function lsOnTabOpen(){ lsStopAudio(); lsOpenId = null; currentProfile.role === "teacher" ? lsTeacherList() : lsStudentList(); }
+function lsStopAudio(){ if(lsAudio){ const a = lsAudio; lsAudio = null; a.pause(); } }
+
+/* ---------- 학생 ---------- */
+async function lsStudentList(){
+  const body = document.getElementById("lsBody");
+  const visible = lsRounds.filter(r => lsStatus(r) !== "wait");
+  if(!visible.length){ body.innerHTML = `<div class="group-block"><h3>🎧 영어 듣기평가</h3><p class="hint">아직 열린 듣기평가가 없어요. 열리면 알림이 와요.</p></div>`; return; }
+  const subs = {}, keys = {};
+  await Promise.all(visible.map(async r => {
+    const d = await db.collection("listenSubs").doc(`${r.id}_${currentUser.uid}`).get().catch(() => null);
+    if(d && d.exists) subs[r.id] = d.data();
+    if(d && d.exists && lsStatus(r) === "closed"){ // 마감된 회차만 정답을 볼 수 있음
+      const k = await db.collection("listenKeys").doc(r.id).get().catch(() => null);
+      if(k && k.exists) keys[r.id] = k.data().answers;
+    }
+  }));
+  const mine = Object.keys(keys).map(id => ({ answers: subs[id].answers, key: keys[id] }));
+  body.innerHTML = `${mine.length ? `<div class="group-block"><h3>📊 나의 유형 분석</h3>${lsTypeHtml(lsTypeStats(mine), mine.length)}</div>` : ""}
+    <div class="group-block"><h3>🎧 영어 듣기평가</h3>
+    <p class="hint">매주 1회 · 수능형 17문항 · 응시하면 학습계획서 <b>+1점</b>, 15개 이상 맞히면 <b>+1점</b> 더!</p>
+    ${visible.map(r => { const st = lsStatus(r), sb = subs[r.id];
+      const badge = sb ? `<span class="ls-badge done">${sb.graded ? `${sb.score}/${LS_Q}` : "채점 중"}</span>` : st === "open" ? `<span class="ls-badge on">응시 가능</span>` : `<span class="ls-badge">미응시 · 마감</span>`;
+      return `<div class="ls-card" data-id="${r.id}"><div class="t">${yajaEsc(r.title)}${badge}</div>
+        <div class="m">${st === "open" ? `마감 ${lsFmt(lsTs(r.dueAt))}` : `마감됨 · 정답 확인 가능`}</div></div>`; }).join("")}
+  </div>`;
+  body.querySelectorAll(".ls-card").forEach(el => el.onclick = () => lsStudentRound(el.dataset.id));
+}
+
+async function lsStudentRound(id){
+  const r = lsRounds.find(x => x.id === id); if(!r) return;
+  lsOpenId = id; lsStopAudio();
+  const body = document.getElementById("lsBody");
+  const subRef = db.collection("listenSubs").doc(`${id}_${currentUser.uid}`);
+  const sub = await subRef.get().then(d => d.exists ? d.data() : null).catch(() => null);
+  const st = lsStatus(r);
+  const back = `<button class="link-btn" onclick="lsOnTabOpen()">← 목록</button>`;
+  const sheet = `<div class="ls-sheet">${(r.sheetUrls || []).map(u => `<img src="${u}" alt="시험지" loading="lazy">`).join("")}</div>`;
+
+  if(sub || st === "closed"){
+    // 결과 / 복습
+    let key = null;
+    if(st === "closed") key = await db.collection("listenKeys").doc(id).get().then(d => d.exists ? d.data().answers : null).catch(() => null);
+    const my = (sub && sub.answers) || [];
+    body.innerHTML = `<div class="group-block">${back}
+      <h3 style="margin-top:6px;">${yajaEsc(r.title)}</h3>
+      <div id="lsScoreBox" style="font-size:22px; font-weight:700; color:var(--forest-deep);">${sub ? (sub.graded ? `${sub.score} / ${LS_Q}` : "채점 중...") : "미응시"}</div>
+      <div class="hint">${sub ? `${sub.mode === "real" ? "🎯 실전 모드" : "🔁 연습 모드"}로 응시 · ` : ""}${st === "closed" ? "정답이 공개됐어요. 틀린 문항을 다시 들어보세요." : `정답은 마감(${lsFmt(lsTs(r.dueAt))}) 후에 공개돼요.`}</div>
+      ${st === "closed" ? lsPlayerHtml(r, { wrong: key ? Array.from({length: LS_Q}, (_, i) => i).filter(i => (my[i] || 0) !== key[i]) : [] }) : ""}
+      <div class="ls-omr" style="margin-top:8px;">${Array.from({length: LS_Q}, (_, i) => {
+        const mine = my[i] || 0, ans = key ? key[i] : 0;
+        return `<div class="ls-row"><span class="no">${i+1}</span>${[1,2,3,4,5].map(n =>
+          `<button disabled class="${n === mine ? (key && mine !== ans ? "wrong" : "on") : ""} ${key && n === ans ? "ans" : ""}">${n}</button>`).join("")}
+          <span class="mk">${key ? (mine === ans ? "⭕" : "❌") : ""}</span></div>`; }).join("")}</div>
+      ${st === "closed" ? `<p class="hint" style="margin-top:6px;">초록 테두리 = 정답 · 빨강 = 내가 고른 오답</p>${sheet}` : ""}
+    </div>`;
+    if(st === "closed") lsAudio = lsWirePlayer(r);
+    if(sub && !sub.graded){ // 채점 결과 기다리기
+      const un = subRef.onSnapshot(d => { const x = d.data(); if(x && x.graded){ un(); if(lsOpenId === id) lsStudentRound(id); } });
+    }
+    return;
+  }
+
+  // 응시
+  if(!lsMode || lsAnswers._id !== id){ lsAnswers = Array(LS_Q).fill(0); lsAnswers._id = id; lsMode = null; }
+  const realUsed = (() => { try{ return localStorage.getItem(`ls_real_${id}`) === "1"; }catch(e){ return false; } })();
+  body.innerHTML = `<div class="group-block">${back}
+    <h3 style="margin-top:6px;">${yajaEsc(r.title)}</h3>
+    <p class="hint">마감 ${lsFmt(lsTs(r.dueAt))} · 이어폰을 꽂고 풀어주세요. 제출은 한 번만 할 수 있어요.</p>
+    <div class="ls-mode">
+      <button data-m="real" class="${lsMode === "real" ? "on" : ""}">🎯 실전 모드<br><span style="font-size:11.5px; font-weight:400;">한 번만 재생 · 멈춤·되감기 불가</span></button>
+      <button data-m="practice" class="${lsMode === "practice" ? "on" : ""}">🔁 연습 모드<br><span style="font-size:11.5px; font-weight:400;">자유롭게 재생</span></button>
+    </div>
+    <div id="lsPlayer"></div>
+    ${lsMode ? sheet : ""}
+    <div id="lsOmr"></div>
+  </div>`;
+  body.querySelectorAll(".ls-mode button").forEach(b => b.onclick = () => {
+    if(lsAudio && !lsAudio.paused && lsMode === "real"){ alert("실전 모드 재생 중에는 바꿀 수 없어요."); return; }
+    lsMode = b.dataset.m; lsStopAudio(); lsStudentRound(id);
+  });
+  if(!lsMode) return;
+
+  const player = document.getElementById("lsPlayer");
+  if(lsMode === "practice"){
+    player.innerHTML = lsPlayerHtml(r);
+    lsAudio = lsWirePlayer(r);
+  } else {
+    player.innerHTML = `<div class="ls-player"><div style="display:flex; align-items:center; gap:10px;">
+        <button class="primary-btn" id="lsRealPlay" style="margin:0; width:auto; padding:8px 14px;" ${realUsed ? "disabled" : ""}>▶ 시작</button>
+        <span id="lsRealTime" style="font-size:13px;">${realUsed ? "이미 한 번 재생했어요" : "누르면 끝까지 한 번만 재생돼요"}</span></div>
+      <div class="bar"><div id="lsRealBar"></div></div></div>
+      ${lsHasCues(r) && !realUsed ? `<label style="display:flex; gap:6px; align-items:center; font-size:13px;"><input type="checkbox" id="lsSkipChk"> ⏩ 앞 안내 방송·문제 사이 쉬는 시간 건너뛰기 (시작 전에만 고를 수 있어요)</label>` : ""}`;
+    document.getElementById("lsRealPlay").onclick = () => {
+      if(!confirm("실전 모드는 한 번만 들을 수 있어요. 지금 시작할까요?")) return;
+      try{ localStorage.setItem(`ls_real_${id}`, "1"); }catch(e){}
+      const a = lsAudio = new Audio(r.audioUrl);
+      const btn = document.getElementById("lsRealPlay"); btn.disabled = true; btn.textContent = "재생 중";
+      const chk = document.getElementById("lsSkipChk"), skip = !!(chk && chk.checked); if(chk) chk.disabled = true;
+      lsAttachSkipper(a, r, () => skip);
+      a.ontimeupdate = () => {
+        const t = a.currentTime, d = a.duration || 0;
+        const bar = document.getElementById("lsRealBar"), tm = document.getElementById("lsRealTime");
+        if(bar && d) bar.style.width = `${t / d * 100}%`;
+        if(tm) tm.textContent = `${lsMMSS(t)} / ${d ? lsMMSS(d) : "--:--"}`;
+      };
+      a.onpause = () => { if(lsAudio === a && !a.ended) a.play().catch(() => {}); }; // 멈춤 방지 (제출·화면 이동 때는 멈춤)
+      a.onended = () => { const tm = document.getElementById("lsRealTime"); if(tm) tm.textContent = "재생이 끝났어요. 답을 확인하고 제출하세요."; const b = document.getElementById("lsRealPlay"); if(b) b.textContent = "끝"; };
+      a.play().catch(e => { alert("재생하지 못했어요. 다시 눌러주세요."); try{ localStorage.removeItem(`ls_real_${id}`); }catch(_){} btn.disabled = false; btn.textContent = "▶ 시작"; });
+    };
+  }
+  lsDrawOmr(r);
+}
+
+function lsDrawOmr(r){
+  const box = document.getElementById("lsOmr"); if(!box) return;
+  box.innerHTML = `<div style="font-weight:700; margin:12px 0 4px;">답안 (OMR)</div><div class="ls-omr">${Array.from({length: LS_Q}, (_, i) =>
+    `<div class="ls-row"><span class="no">${i+1}</span>${[1,2,3,4,5].map(n => `<button data-q="${i}" data-n="${n}" class="${lsAnswers[i] === n ? "on" : ""}">${n}</button>`).join("")}</div>`).join("")}</div>
+    <button class="primary-btn" id="lsSubmit" style="margin-top:12px;">제출하기 (${lsAnswers.filter(Boolean).length}/${LS_Q})</button>`;
+  box.querySelectorAll(".ls-row button").forEach(b => b.onclick = () => {
+    const q = Number(b.dataset.q), n = Number(b.dataset.n);
+    lsAnswers[q] = lsAnswers[q] === n ? 0 : n; lsDrawOmr(r);
+  });
+  document.getElementById("lsSubmit").onclick = async () => {
+    const blank = lsAnswers.filter(x => !x).length;
+    if(!confirm(blank ? `${blank}문항이 비어 있어요. 그래도 제출할까요? (제출은 한 번만 가능)` : "제출할까요? 제출은 한 번만 할 수 있어요.")) return;
+    const btn = document.getElementById("lsSubmit"); btn.disabled = true; btn.textContent = "제출 중...";
+    try{
+      await db.collection("listenSubs").doc(`${r.id}_${currentUser.uid}`).set({
+        roundId: r.id, uid: currentUser.uid, num: currentProfile.num, name: currentProfile.name,
+        answers: lsAnswers.slice(0, LS_Q), mode: lsMode,
+        submittedAt: firebase.firestore.FieldValue.serverTimestamp(),
+      });
+      lsStopAudio(); lsMode = null;
+      lsStudentRound(r.id);
+    }catch(e){
+      console.error("듣기평가 제출 실패", e);
+      alert("제출하지 못했어요. 마감됐거나 이미 제출했을 수 있어요.");
+      btn.disabled = false; btn.textContent = "제출하기";
+    }
+  };
+}
+
+/* ---------- 담임 ---------- */
+function lsNextMonday(){
+  // 이미 잡힌 회차 다음 주 월요일 08:00 (없으면 이번 주 월요일이 지났으면 다음 주)
+  const last = lsRounds.reduce((m, r) => Math.max(m, lsTs(r.openAt)), 0);
+  const base = new Date(Math.max(Date.now(), last + 86400000));
+  const d = new Date(base); d.setHours(8, 0, 0, 0);
+  while(d.getDay() !== 1 || d.getTime() < base.getTime() - 86400000 * 0) d.setDate(d.getDate() + 1);
+  return d;
+}
+function lsDateInput(d){ return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,"0")}-${String(d.getDate()).padStart(2,"0")}T${String(d.getHours()).padStart(2,"0")}:${String(d.getMinutes()).padStart(2,"0")}`; }
+
+async function lsTeacherList(){
+  const body = document.getElementById("lsBody");
+  const subsSnap = await db.collection("listenSubs").get().catch(() => null);
+  const subs = {}; if(subsSnap) subsSnap.forEach(d => { const x = d.data(); (subs[x.roundId] = subs[x.roundId] || []).push(x); });
+  const nStu = (await db.collection("students").where("role", "==", "student").get()).docs.filter(d => d.data().name !== "테스트").length;
+  const next = lsNextMonday();
+  const ST = { wait:"공개 예정", open:"진행 중", closed:"마감" };
+  // 유형 분석 (채점된 답안 + 정답)
+  const keyOf = {};
+  await Promise.all(Object.keys(subs).map(async id => { const k = await db.collection("listenKeys").doc(id).get().catch(() => null); if(k && k.exists) keyOf[id] = k.data().answers; }));
+  const allG = [].concat(...Object.values(subs)).filter(x => x.graded && keyOf[x.roundId]);
+  const byStu = {}; allG.forEach(x => (byStu[x.uid] = byStu[x.uid] || []).push(x));
+  const stuRows = Object.values(byStu).sort((a, b) => a[0].num - b[0].num).map(list => {
+    const st = lsTypeStats(list.map(x => ({ answers: x.answers, key: keyOf[x.roundId] })));
+    const avg = (list.reduce((a, x) => a + x.score, 0) / list.length).toFixed(1);
+    return { num: list[0].num, name: list[0].name, n: list.length, avg, weak: lsStrongWeak(st).weak, html: lsTypeHtml(st, list.length) };
+  });
+  const typeCard = allG.length ? `<div class="group-block"><h3>📊 유형 분석</h3>
+      <div style="font-weight:700; margin:2px 0 4px;">반 전체</div>
+      ${lsTypeHtml(lsTypeStats(allG.map(x => ({ answers: x.answers, key: keyOf[x.roundId] }))), Object.keys(keyOf).filter(id => (subs[id] || []).some(x => x.graded)).length)}
+      <div style="font-weight:700; margin:14px 0 4px;">학생별 <span class="hint">(누르면 자세히)</span></div>
+      <table class="seat-tbl"><tr><th>학생</th><th>응시</th><th>평균</th><th>약한 유형</th></tr>
+        ${stuRows.map((x, i) => `<tr class="ls-stu" data-i="${i}"><td>${x.num} ${yajaEsc(x.name)}</td><td>${x.n}회</td><td>${x.avg}</td><td style="font-size:11.5px;">${x.weak.join(", ") || "-"}</td></tr>
+          <tr id="lsStuD${i}" style="display:none;"><td colspan="4" style="text-align:left;">${x.html}</td></tr>`).join("")}
+      </table></div>` : "";
+  body.innerHTML = `${typeCard}<div class="group-block"><h3>🎧 영어 듣기평가 등록</h3>
+      <p class="hint">MP3·시험지·정답을 올리면 정한 날짜에 자동으로 열리고, 그 주 일요일 23:59에 마감돼요. 여러 회차를 미리 올려두면 매주 하나씩 열려요.</p>
+      <div class="field"><label>제목</label><input type="text" id="lsTitle" value="제${lsRounds.length + 1}회 영어 듣기평가"></div>
+      <div class="field"><label>듣기 음성 (MP3)</label><input type="file" id="lsAudioFile" accept="audio/*"></div>
+      <div class="field"><label>시험지 (PDF 또는 사진 여러 장)</label><input type="file" id="lsSheetFile" accept="application/pdf,image/*" multiple></div>
+      <div class="field"><label>정답 17개 (숫자만, 띄어쓰기 상관없음 · 예: 34215 41523 34125 12)</label><input type="text" id="lsKey" inputmode="numeric" placeholder="1~5 숫자 17개"></div>
+      <div class="field"><label>공개 시각</label><input type="datetime-local" id="lsOpen" value="${lsDateInput(next)}"></div>
+      <button class="primary-btn" id="lsCreateBtn">등록하기</button>
+      <p class="error-msg" id="lsErr"></p>
+    </div>
+    <div class="group-block"><h3>📦 여러 회차 한 번에 등록</h3>
+      <p class="hint">파일 이름에 <b>2025.03</b>처럼 회차 표시가 있으면 MP3·시험지·정답이 자동으로 짝지어져요. 다음 빈 월요일부터 한 주에 하나씩 열려요.</p>
+      <div class="field"><label>파일 전부 (MP3 + 시험지 PDF/사진)</label><input type="file" id="lsBulkFiles" accept="audio/*,application/pdf,image/*" multiple></div>
+      <div class="field"><label>정답 (한 줄에 한 회차)</label><textarea id="lsBulkKeys" style="min-height:90px; font-family:monospace;" placeholder="2025.03 51132 23452 12543 22&#10;2025.06 12545 31432 41321 15"></textarea></div>
+      <button class="link-btn" id="lsBulkPrev">미리보기</button>
+      <div id="lsBulkPreview" style="margin:8px 0;"></div>
+      <button class="primary-btn" id="lsBulkBtn">모두 등록하기</button>
+    </div>
+    <div class="group-block"><h3>회차 목록</h3>
+      ${lsRounds.length ? lsRounds.map(r => { const ss = subs[r.id] || [], g = ss.filter(x => x.graded);
+        const avg = g.length ? (g.reduce((a, x) => a + x.score, 0) / g.length).toFixed(1) : "-";
+        return `<div class="ls-card" data-id="${r.id}"><div class="t">${yajaEsc(r.title)}<span class="ls-badge ${lsStatus(r) === "open" ? "on" : ""}">${ST[lsStatus(r)]}</span></div>
+          <div class="m">${lsFmt(lsTs(r.openAt))} ~ ${lsFmt(lsTs(r.dueAt))} · 응시 ${ss.length}/${nStu} · 평균 ${avg}점</div></div>`; }).join("") : `<p class="hint">아직 등록한 회차가 없어요.</p>`}
+    </div>`;
+  document.getElementById("lsCreateBtn").onclick = lsCreateRound;
+  document.getElementById("lsBulkPrev").onclick = lsBulkPreview;
+  document.getElementById("lsBulkFiles").onchange = lsBulkPreview;
+  document.getElementById("lsBulkBtn").onclick = lsBulkRegister;
+  body.querySelectorAll(".ls-card").forEach(el => el.onclick = () => lsTeacherRound(el.dataset.id));
+  body.querySelectorAll(".ls-stu").forEach(el => el.onclick = () => { const d = document.getElementById(`lsStuD${el.dataset.i}`); d.style.display = d.style.display === "none" ? "" : "none"; });
+}
+
+async function lsLoadPdfJs(){
+  if(window.pdfjsLib) return window.pdfjsLib;
+  await new Promise((res, rej) => { const sc = document.createElement("script"); sc.src = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.min.js"; sc.onload = res; sc.onerror = rej; document.head.appendChild(sc); });
+  window.pdfjsLib.GlobalWorkerOptions.workerSrc = "https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js";
+  return window.pdfjsLib;
+}
+// PDF는 페이지별 사진으로 바꿔서 올림 (폰에서 PDF가 잘 안 보이는 문제 방지)
+async function lsSheetToImages(files){
+  const out = [];
+  for(const f of files){
+    if(f.type === "application/pdf" || /\.pdf$/i.test(f.name)){
+      const pdfjs = await lsLoadPdfJs();
+      const pdf = await pdfjs.getDocument({ data: await f.arrayBuffer() }).promise;
+      for(let p = 1; p <= pdf.numPages; p++){
+        const page = await pdf.getPage(p);
+        // 모의고사 전체 PDF면 듣기 부분까지만 ('듣기 문제가 끝났습니다'가 나온 쪽까지)
+        const txt = (await page.getTextContent()).items.map(t => t.str).join("").replace(/\s/g, "");
+        const vp = page.getViewport({ scale: 1600 / page.getViewport({ scale: 1 }).width });
+        const cv = document.createElement("canvas"); cv.width = vp.width; cv.height = vp.height;
+        await page.render({ canvasContext: cv.getContext("2d"), viewport: vp }).promise;
+        out.push(await new Promise(res => cv.toBlob(res, "image/jpeg", 0.85)));
+        if(txt.includes("듣기문제가끝났습니다")) break;
+      }
+    } else out.push(f);
+  }
+  return out;
+}
+
+async function lsCreateRound(){
+  const err = document.getElementById("lsErr"); err.style.display = "none";
+  const fail = m => { err.textContent = m; err.style.display = "block"; };
+  const title = document.getElementById("lsTitle").value.trim();
+  const audio = document.getElementById("lsAudioFile").files[0];
+  const sheets = Array.from(document.getElementById("lsSheetFile").files);
+  const key = (document.getElementById("lsKey").value.match(/[1-5]/g) || []).map(Number);
+  const openStr = document.getElementById("lsOpen").value;
+  if(!title) return fail("제목을 적어주세요.");
+  if(!audio) return fail("MP3 파일을 골라주세요.");
+  if(!sheets.length) return fail("시험지(PDF 또는 사진)를 골라주세요.");
+  if(key.length !== LS_Q) return fail(`정답은 1~5 숫자 ${LS_Q}개여야 해요. (지금 ${key.length}개)`);
+  if(!openStr) return fail("공개 시각을 정해주세요.");
+  const btn = document.getElementById("lsCreateBtn"); btn.disabled = true;
+  try{
+    const due = await lsRegister({ title, audio, sheets, key, openAt: new Date(openStr) }, m => { btn.textContent = m; });
+    alert(`등록했어요.\n${lsFmt(new Date(openStr).getTime())} 공개 → ${lsFmt(due.getTime())} 마감`);
+    lsTeacherList();
+  }catch(e){
+    console.error("듣기평가 등록 실패", e);
+    fail(`등록하지 못했어요 (${e.code || e.message}). 저장소·보안규칙 설정을 확인해주세요.`);
+  }finally{ btn.disabled = false; btn.textContent = "등록하기"; }
+}
+
+function lsDueOf(openAt){
+  const dueAt = new Date(openAt); dueAt.setDate(dueAt.getDate() + ((7 - dueAt.getDay()) % 7)); dueAt.setHours(23, 59, 59, 0);
+  if(dueAt - openAt < 3600000) dueAt.setDate(dueAt.getDate() + 7); // 일요일에 열면 다음 일요일까지
+  return dueAt;
+}
+
+// 회차 하나 올리기 (시험지 변환 → 음성·시험지 업로드 → 정답·회차 저장)
+async function lsRegister({ title, audio, sheets, key, openAt }, progress){
+  const dueAt = lsDueOf(openAt);
+  const ref = db.collection("listenRounds").doc();
+  progress && progress(`${title} · 시험지 준비 중...`);
+  const imgs = await lsSheetToImages(sheets);
+  progress && progress(`${title} · 음성 구간 분석 중...`);
+  const cueInfo = await lsAnalyzeAudio(audio);
+  progress && progress(`${title} · 음성 올리는 중...`);
+  const aRef = storage.ref().child(`listening/${ref.id}/audio_${Date.now()}.mp3`);
+  await aRef.put(audio, { contentType: audio.type || "audio/mpeg" });
+  const audioUrl = await aRef.getDownloadURL();
+  const sheetUrls = [];
+  for(let i = 0; i < imgs.length; i++){
+    progress && progress(`${title} · 시험지 올리는 중 (${i + 1}/${imgs.length})`);
+    const sRef = storage.ref().child(`listening/${ref.id}/sheet_${i + 1}.jpg`);
+    await sRef.put(imgs[i], { contentType: imgs[i].type || "image/jpeg" });
+    sheetUrls.push(await sRef.getDownloadURL());
+  }
+  const TS = firebase.firestore.Timestamp;
+  await db.collection("listenKeys").doc(ref.id).set({ answers: key });
+  const data = { title, audioUrl, sheetUrls, qCount: LS_Q, openAt: TS.fromMillis(openAt.getTime()), dueAt: TS.fromMillis(dueAt.getTime()),
+    createdAt: firebase.firestore.FieldValue.serverTimestamp() };
+  if(cueInfo){ data.cues = cueInfo.cues; data.gaps = cueInfo.gaps; }
+  await ref.set(data);
+  if(!lsRounds.some(x => x.id === ref.id)) lsRounds.unshift({ id: ref.id, ...data });
+  lsRounds.sort((a,b) => lsTs(b.openAt) - lsTs(a.openAt));
+  return dueAt;
+}
+
+/* 여러 회차 한 번에: 파일 이름의 '2025.03' 같은 표시로 MP3·시험지·정답을 짝지음 */
+const lsGroupKey = name => { const m = name.match(/(20\d\d)[.\-_ ]?(0[1-9]|1[0-2])/); return m ? `${m[1]}.${m[2]}` : null; };
+const lsFileNo = name => { const m = name.match(/(\d+)\.[a-z0-9]+$/i); return m ? Number(m[1]) : 0; };
+function lsBulkGroups(){
+  const files = Array.from(document.getElementById("lsBulkFiles").files);
+  const keyLines = {};
+  document.getElementById("lsBulkKeys").value.split("\n").forEach(line => {
+    const k = lsGroupKey(line); if(!k) return;
+    const nums = (line.replace(/20\d\d[.\-_ ]?\d\d/, "").match(/[1-5]/g) || []).map(Number);
+    keyLines[k] = nums;
+  });
+  const groups = {};
+  files.forEach(f => { const k = lsGroupKey(f.name); if(!k) return; (groups[k] = groups[k] || { key:k, audio:null, sheets:[] });
+    if(/^audio\//.test(f.type) || /\.(mp3|m4a|wav)$/i.test(f.name)) groups[k].audio = groups[k].audio || f; else groups[k].sheets.push(f); });
+  const list = Object.values(groups).sort((a,b) => a.key < b.key ? -1 : 1);
+  let open = lsNextMonday();
+  list.forEach(g => {
+    g.sheets.sort((a,b) => lsFileNo(a.name) - lsFileNo(b.name));
+    g.answers = keyLines[g.key] || [];
+    const [y, m] = g.key.split(".");
+    g.title = `${y}년 ${Number(m)}월 학력평가 영어듣기`;
+    g.openAt = new Date(open); open = new Date(open); open.setDate(open.getDate() + 7);
+    g.ok = !!g.audio && g.sheets.length > 0 && g.answers.length === LS_Q;
+  });
+  return list;
+}
+function lsBulkPreview(){
+  const list = lsBulkGroups(), box = document.getElementById("lsBulkPreview");
+  if(!list.length){ box.innerHTML = `<p class="hint" style="color:var(--danger);">파일 이름에서 '2025.03' 같은 회차 표시를 찾지 못했어요.</p>`; return list; }
+  box.innerHTML = `<table class="seat-tbl"><tr><th>회차</th><th>MP3</th><th>시험지</th><th>정답</th><th>공개</th></tr>
+    ${list.map(g => `<tr><td>${g.key}</td><td>${g.audio ? "✓" : "❌"}</td><td>${g.sheets.length ? g.sheets.length + "장" : "❌"}</td>
+      <td>${g.answers.length === LS_Q ? "✓" : `❌ ${g.answers.length}개`}</td><td>${lsFmt(g.openAt.getTime())}</td></tr>`).join("")}</table>
+    ${list.every(g => g.ok) ? "" : `<p class="hint" style="color:var(--danger);">❌ 표시가 있는 회차는 파일·정답을 확인해주세요.</p>`}`;
+  return list;
+}
+async function lsBulkRegister(){
+  const list = lsBulkPreview();
+  if(!list.length || !list.every(g => g.ok)) return;
+  if(!confirm(`${list.length}개 회차를 등록할까요?\n매주 월요일 08:00에 하나씩 열려요.`)) return;
+  const btn = document.getElementById("lsBulkBtn"); btn.disabled = true;
+  try{
+    for(const g of list) await lsRegister({ title: g.title, audio: g.audio, sheets: g.sheets, key: g.answers, openAt: g.openAt }, m => { btn.textContent = m; });
+    alert(`${list.length}개 회차를 등록했어요.`);
+    lsTeacherList();
+  }catch(e){
+    console.error("일괄 등록 실패", e);
+    alert(`등록 중 오류가 났어요 (${e.code || e.message}). 이미 올라간 회차는 목록에서 확인해주세요.`);
+    lsTeacherList();
+  }finally{ btn.disabled = false; btn.textContent = "모두 등록하기"; }
+}
+
+async function lsTeacherRound(id){
+  const r = lsRounds.find(x => x.id === id); if(!r) return;
+  lsOpenId = id;
+  const body = document.getElementById("lsBody");
+  const [subSnap, keyDoc, stuSnap] = await Promise.all([
+    db.collection("listenSubs").where("roundId", "==", id).get(),
+    db.collection("listenKeys").doc(id).get(),
+    db.collection("students").where("role", "==", "student").get(),
+  ]);
+  const subs = subSnap.docs.map(d => d.data()).sort((a,b) => a.num - b.num);
+  const key = keyDoc.exists ? keyDoc.data().answers : [];
+  const students = stuSnap.docs.map(d => d.data()).filter(x => x.name !== "테스트").sort((a,b) => a.num - b.num);
+  const done = new Set(subs.map(x => x.num));
+  const graded = subs.filter(x => x.graded);
+  const rate = Array.from({length: LS_Q}, (_, i) => graded.length ? Math.round(graded.filter(x => (x.answers || [])[i] === key[i]).length / graded.length * 100) : 0);
+  const avg = graded.length ? (graded.reduce((a, x) => a + x.score, 0) / graded.length).toFixed(1) : "-";
+  body.innerHTML = `<div class="group-block"><button class="link-btn" onclick="lsOnTabOpen()">← 목록</button>
+    <h3 style="margin-top:6px;">${yajaEsc(r.title)}</h3>
+    <div class="hint">${lsFmt(lsTs(r.openAt))} 공개 · ${lsFmt(lsTs(r.dueAt))} 마감 · 응시 ${subs.length}/${students.length} · 평균 ${avg}점</div>
+    <div style="font-weight:700; margin-top:10px;">문항별 정답률</div>
+    <div class="ls-stat">${rate.map(p => `<div class="${p < 50 ? "low" : ""}" style="height:${Math.max(p, 2)}%;" title="${p}%"></div>`).join("")}</div>
+    <div style="display:grid; grid-template-columns:repeat(17,1fr); font-size:10px; text-align:center; color:#8a8270;">${rate.map((p, i) => `<span>${i+1}<br>${graded.length ? p : ""}</span>`).join("")}</div>
+    <div style="font-weight:700; margin-top:12px;">학생별 결과</div>
+    <table class="seat-tbl"><tr><th>학생</th><th>점수</th><th>모드</th><th>틀린 문항</th></tr>
+      ${subs.map(x => `<tr><td>${x.num} ${yajaEsc(x.name)}</td><td>${x.graded ? x.score : "…"}</td><td>${x.mode === "real" ? "실전" : "연습"}</td>
+        <td style="font-size:11px;">${x.graded ? (x.answers || []).map((a, i) => a === key[i] ? null : i + 1).filter(Boolean).join(", ") || "없음 👏" : ""}</td></tr>`).join("")}
+    </table>
+    <div style="margin-top:10px; font-size:13px;"><b>미응시</b> ${students.filter(s => !done.has(s.num)).map(s => `<span class="seat-chip">${s.num} ${yajaEsc(s.name)}</span>`).join("") || "없음 👏"}</div>
+    <details style="margin-top:12px;"><summary style="cursor:pointer; font-size:13px;">정답 확인·수정</summary>
+      <p class="hint">정답을 고치면 이미 제출한 학생도 자동으로 다시 채점돼요.</p>
+      <input type="text" id="lsKeyEdit" value="${key.join("")}" style="width:100%; padding:8px; font-size:16px; letter-spacing:3px;">
+      <button class="primary-btn" id="lsKeySave" style="margin-top:6px;">정답 저장</button>
+    </details>
+    <details style="margin-top:12px;"><summary style="cursor:pointer; font-size:13px;">🎚 문항 시작 위치 확인·수정 ${lsHasCues(r) ? "" : "<b style='color:var(--danger);'>(없음)</b>"}</summary>
+      <p class="hint">MP3를 분석해 찾은 위치예요. 번호를 눌러 맞게 시작하는지 들어보세요. 틀리면 아래 시각(분:초, 1번~16·17번 16개)을 고쳐 저장하세요.</p>
+      ${lsPlayerHtml(r)}
+      <input type="text" id="lsCueEdit" value="${(r.cues || []).map(lsMMSS).join(" ")}" placeholder="1:57 3:36 5:06 ..." style="width:100%; padding:8px; font-size:14px;">
+      <button class="primary-btn" id="lsCueSave" style="margin-top:6px;">위치 저장</button>
+    </details>
+    <button class="link-btn" id="lsDelete" style="margin-top:12px; color:var(--danger);">이 회차 삭제</button>
+  </div>`;
+  lsAudio = lsWirePlayer(r);
+  document.getElementById("lsCueSave").onclick = async () => {
+    const c = (document.getElementById("lsCueEdit").value.match(/\d+:\d{1,2}/g) || []).map(x => { const [m, s2] = x.split(":").map(Number); return m * 60 + s2; });
+    if(c.length < 2){ alert("분:초 형식으로 적어주세요. 예: 1:57 3:36 ..."); return; }
+    await db.collection("listenRounds").doc(id).update({ cues: c });
+    r.cues = c; alert("저장했어요."); lsTeacherRound(id);
+  };
+  document.getElementById("lsKeySave").onclick = async () => {
+    const k = (document.getElementById("lsKeyEdit").value.match(/[1-5]/g) || []).map(Number);
+    if(k.length !== LS_Q){ alert(`정답은 ${LS_Q}개여야 해요. (지금 ${k.length}개)`); return; }
+    await db.collection("listenKeys").doc(id).set({ answers: k });
+    alert("저장했어요. 잠시 후 점수가 다시 계산돼요."); setTimeout(() => lsTeacherRound(id), 2500);
+  };
+  document.getElementById("lsDelete").onclick = async () => {
+    if(!confirm(`'${r.title}'을(를) 삭제할까요? 학생 기록은 남지만 목록에서 사라져요.`)) return;
+    await db.collection("listenRounds").doc(id).delete(); lsOnTabOpen();
+  };
 }
 
 /* =========================================================
