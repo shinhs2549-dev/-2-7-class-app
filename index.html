@@ -272,7 +272,7 @@
 <div class="wrap">
 
   <div class="brand">
-    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1110-2</span></h1>
+    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1110-3</span></h1>
     <div id="brandRight"></div>
   </div>
 
@@ -450,7 +450,8 @@
 
       <div class="group-block">
         <h3>📄 결석계 작성</h3>
-        <p class="hint">결석 정보를 입력하고 제출하면, 학부모님께 보낼 서명 링크가 생성돼요.</p>
+        <p class="hint">결석 정보를 입력하고 제출하면, 학부모님께 보낼 서명 링크가 생성돼요.<br><b>결석한 날에만 써요.</b> 지각·조퇴·결과는 결석계를 쓰지 않아요.</p>
+        <div id="absGate" style="display:none; background:#FFF4D6; border-radius:8px; padding:10px 12px; font-size:13.5px; margin-bottom:12px;">📌 결석 기록이 없어서 지금은 결석계를 쓸 수 없어요.<br>결석했다면 위 <b>출결 알리기</b>에서 먼저 <b>'결석'</b>으로 알려주세요.</div>
 
         <div class="field">
           <label>결석 유형</label>
@@ -500,7 +501,7 @@
           </div>
           <input type="file" id="absEvidencePhoto" accept="image/*">
         </div>
-        <button class="primary-btn" onclick="handleSubmitAbsence()">제출하고 학부모 링크 만들기</button>
+        <button class="primary-btn" id="absSubmitBtn" onclick="handleSubmitAbsence()">제출하고 학부모 링크 만들기</button>
         <p class="error-msg" id="absError">기간과 사유는 꼭 입력해주세요.</p>
       </div>
 
@@ -1514,13 +1515,16 @@ async function handleSubmitAbsence(){
   const evidenceMode = document.querySelector('input[name="absEvidenceMode"]:checked').value;
   const errEl = document.getElementById("absError");
 
-  if(!startDate || !endDate || !reason){
-    errEl.style.display = "block";
-    return;
-  }
+  const fail = msg => { errEl.textContent = msg; errEl.style.display = "block"; };
+  if(!startDate || !endDate || !reason) return fail("기간과 사유는 꼭 입력해주세요.");
+  if(startDate > endDate) return fail("기간을 다시 확인해주세요. (시작일이 끝나는 날보다 늦어요)");
+  // 결석계는 결석한 날에만 — 그 기간에 '결석' 기록이 있어야 함 (지각·조퇴·결과는 결석계 없음)
+  if(!myAttNotesAll){ try{ await renderMyAttNotes(); }catch(e){} }
+  if(!absMyAbsentDates().some(d => startDate <= d && d <= endDate))
+    return fail("이 기간에는 결석 기록이 없어요. 결석계는 결석한 날에만 써요 (지각·조퇴·결과는 쓰지 않아요). 결석했다면 위 '출결 알리기'에서 먼저 '결석'으로 알려주세요.");
   errEl.style.display = "none";
 
-  const submitBtn = document.querySelector("#panel-absence .primary-btn");
+  const submitBtn = document.getElementById("absSubmitBtn");
   submitBtn.disabled = true;
   submitBtn.textContent = "제출 중...";
 
@@ -1569,6 +1573,7 @@ async function handleSubmitAbsence(){
   } finally {
     submitBtn.disabled = false;
     submitBtn.textContent = "제출하고 학부모 링크 만들기";
+    updateAbsGate();
   }
 }
 
@@ -3504,7 +3509,17 @@ function absReportStatus(note, absences){
 }
 const ABS_REP_LABEL = { done:"✅ 제출 완료", waiting:"⏳ 학부모 서명 대기", none:"❌ 미제출", waived:"➖ 확인 처리" };
 
+function absMyAbsentDates(){ return (myAttNotesAll || []).filter(n => n.kind === "결석").map(n => n.date); }
+// 결석 기록이 하나도 없으면 결석계 작성 버튼을 막고 안내를 보여줌
+function updateAbsGate(){
+  const gate = document.getElementById("absGate"), btn = document.getElementById("absSubmitBtn");
+  if(!gate || !btn || !myAttNotesAll) return;
+  const has = absMyAbsentDates().length > 0;
+  gate.style.display = has ? "none" : "block";
+  if(btn.textContent !== "제출 중...") btn.disabled = !has;
+}
 function renderMyReportCard(){
+  updateAbsGate();
   const card = document.getElementById("attReportCard");
   if(!card || !myAttNotesAll || !myAbsencesAll) return;
   const today = yajaDateKey(new Date());
