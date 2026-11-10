@@ -272,7 +272,7 @@
 <div class="wrap">
 
   <div class="brand">
-    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1105-7</span></h1>
+    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1110-1</span></h1>
     <div id="brandRight"></div>
   </div>
 
@@ -1058,7 +1058,7 @@ function switchMainTab(tab){
 function renderBrandRight(){
   const el = document.getElementById("brandRight");
   if(!currentUser || !currentProfile){ el.innerHTML = ""; return; }
-  el.innerHTML = `<span class="who">${currentProfile.num}번 ${currentProfile.name}</span>
+  el.innerHTML = `<span class="who">${Number(currentProfile.num) || ""}번 ${currentProfile.name}</span>
     <div class="brand-actions">
       <a href="guide.html" target="_blank">❓ 사용법</a>
       <button onclick="openPasswordScreen(false)" title="비밀번호 바꾸기" aria-label="비밀번호 바꾸기">🔑</button>
@@ -1208,7 +1208,7 @@ async function renderNoticeWriteBox(){
     const checkboxes = studentList.map(s =>
       `<label style="display:flex; align-items:center; gap:8px; padding:6px 2px; font-size:14px; width:100%; box-sizing:border-box;">
         <input type="checkbox" class="noticeTargetCb" value="${s.id}" style="flex:none; width:18px; height:18px; margin:0;">
-        <span style="flex:1;">${s.num}번 ${s.name}${(s.fcmTokens||[]).length ? "" : ' <span title="알림 안 켬" style="color:#a49c88;">🔕</span>'}</span>
+        <span style="flex:1;">${Number(s.num) || ""}번 ${s.name}${(s.fcmTokens||[]).length ? "" : ' <span title="알림 안 켬" style="color:#a49c88;">🔕</span>'}</span>
       </label>`
     ).join("");
     const notifOn = studentList.filter(s => (s.fcmTokens||[]).length).length;
@@ -1585,9 +1585,9 @@ function subscribeMyAbsences(){
         const link = `${location.origin}${location.pathname.replace(/index\.html$/, "")}${PARENT_SIGN_BASE_URL}?id=${a.id}`;
         const card = document.createElement("div");
         card.className = "notice-card";
-        card.innerHTML = `<div class="notice-title">${a.startDate} ~ ${a.endDate} (${a.type})</div>
+        card.innerHTML = `<div class="notice-title">${yajaEsc(a.startDate)} ~ ${yajaEsc(a.endDate)} (${yajaEsc(a.type)})</div>
           <div class="notice-meta">${statusLabel}</div>
-          <div class="notice-body">${a.reason}</div>
+          <div class="notice-body">${yajaEsc(a.reason)}</div>
           ${a.status !== "submitted" ? `<button class="link-btn" onclick="navigator.clipboard.writeText('${link}'); alert('링크를 복사했어요.');">학부모 링크 다시 복사하기</button>` : ""}`;
         listEl.appendChild(card);
       });
@@ -2240,7 +2240,7 @@ function subscribeMyAbsences(){
         const goals = (p.goals || []).filter(g => (g || "").trim());
         const done = !!p.feedbackAt;
         return `<div class="ov-card ${done ? "done" : ""}" data-uid="${st.uid}">
-          <div class="hd"><b>${st.num}번 ${yajaEsc(st.name)}</b>
+          <div class="hd"><b>${Number(st.num) || ""}번 ${yajaEsc(st.name)}</b>
             <span style="font-size:12px;">${done ? "✅ 피드백 완료" : ""}</span></div>
           ${c.reasons.map(r => `<span class="ov-reason">⚠️ ${r}</span>`).join("")}
           <ol class="ov-goals">${goals.map(g => `<li>${yajaEsc(g)}</li>`).join("") || "<li>(목표 없음)</li>"}</ol>
@@ -2260,7 +2260,7 @@ function subscribeMyAbsences(){
       };
       body.innerHTML =
         `<div class="ov-group"><h4>🔴 미제출 (${groups.missing.length})</h4>
-          ${groups.missing.map(({st}) => `<span class="ov-chip">${st.num} ${yajaEsc(st.name)}</span>`).join("") || `<p class="hint">없어요 👏</p>`}</div>` +
+          ${groups.missing.map(({st}) => `<span class="ov-chip">${Number(st.num) || ""} ${yajaEsc(st.name)}</span>`).join("") || `<p class="hint">없어요 👏</p>`}</div>` +
         `<div class="ov-group"><h4>🟡 확인 필요 (${groups.check.length})</h4>${groups.check.map(card).join("") || `<p class="hint">없어요 👏</p>`}</div>` +
         `<div class="ov-group"><h4>🟢 양호 (${groups.good.length})</h4>${groups.good.map(card).join("") || `<p class="hint">없어요</p>`}</div>`;
 
@@ -2308,7 +2308,7 @@ function subscribeMyAbsences(){
         const snap = await db.collection("students").where("role", "==", "student").get();
         const list = snap.docs.map(d => ({id: d.id, ...d.data()})).sort((a,b)=>a.num-b.num);
         sel.innerHTML = `<option value="">학생을 선택하세요</option>` +
-          list.map(s => `<option value="${s.id}">${s.num}번 ${s.name}</option>`).join("");
+          list.map(s => `<option value="${s.id}">${Number(s.num) || ""}번 ${s.name}</option>`).join("");
         sel.addEventListener("change", async ()=>{
           if(!sel.value){ document.getElementById("spBody").style.display = "none"; return; }
           spTargetUid = sel.value;
@@ -2429,7 +2429,7 @@ function subscribeMyAbsences(){
         const rejected = x.status === "rejected";
         return `<div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px; padding:8px 0; border-bottom:1px solid var(--line); font-size:13px; ${rejected?'opacity:.55;':''}">
           <div>
-            <div><b>${x.num}번 ${yajaEsc(x.name)}</b> · ${x.date.slice(5).replace("-","/")} ${yajaEsc(x.blockLabel)}</div>
+            <div><b>${Number(x.num) || ""}번 ${yajaEsc(x.name)}</b> · ${yajaEsc(String(x.date || "").slice(5).replace("-","/"))} ${yajaEsc(x.blockLabel)}</div>
             <div style="color:#6b6455; margin-top:2px;">${yajaEsc(x.reason)}</div>
           </div>
           <button class="link-btn" style="white-space:nowrap;" onclick="yajaToggleExcuse('${x.id}', ${rejected})">${rejected ? "반려 취소" : "반려"}</button>
@@ -2483,7 +2483,7 @@ function subscribeMyAbsences(){
 
     students.forEach(s => {
       html += `<tr style="border-bottom:1px solid var(--line);">
-        <td style="padding:4px 6px; position:sticky; left:0; background:#fff;">${s.num} ${s.name}</td>`;
+        <td style="padding:4px 6px; position:sticky; left:0; background:#fff;">${Number(s.num) || ""} ${s.name}</td>`;
       [1,2,3,4,5].forEach(dow => {
         yajaDefaultBlocksForDay(dow).forEach(b => {
           const checked = yajaIsEnrolled(s.yajaEnroll, dow, b.key);
@@ -2618,7 +2618,7 @@ function subscribeMyAbsences(){
           ${blocks.map(b=>`<th style="padding:6px 2px;">${b.label.replace("블록","")}</th>`).join("")}
         </tr>`;
       students.forEach(s => {
-        html += `<tr style="border-bottom:1px solid var(--line);"><td style="padding:6px 4px;">${s.num}</td><td style="padding:6px 4px;">${s.name}</td>`;
+        html += `<tr style="border-bottom:1px solid var(--line);"><td style="padding:6px 4px;">${Number(s.num) || ""}</td><td style="padding:6px 4px;">${s.name}</td>`;
         blocks.forEach(b => {
           const enrolled = yajaIsEnrolled(s.yajaEnroll, dow, b.key);
           if(!enrolled){
@@ -2638,8 +2638,8 @@ function subscribeMyAbsences(){
             cellHtml = `<span style="color:var(--ochre);" title="${yajaEsc(sx.reason)}">학생사유</span>`;
           } else {
             cellHtml = `<div style="font-size:11px; color:var(--danger);">${sx ? "반려됨 · " : ""}미입실</div>
-              <button class="link-btn" style="font-size:11px; display:block; margin:2px auto; " onclick="yajaManualIn('${s.num}','${s.name}','${dateStr}','${b.key}','${b.label}')">✓출석</button>
-              <button class="link-btn" style="font-size:11px; display:block; margin:2px auto; " onclick="yajaExcuse('${s.num}','${s.name}','${dateStr}','${b.key}','${b.label}')">✎사유</button>`;
+              <button class="link-btn" style="font-size:11px; display:block; margin:2px auto; " onclick="yajaManualIn('${Number(s.num) || ""}','${s.name}','${dateStr}','${b.key}','${b.label}')">✓출석</button>
+              <button class="link-btn" style="font-size:11px; display:block; margin:2px auto; " onclick="yajaExcuse('${Number(s.num) || ""}','${s.name}','${dateStr}','${b.key}','${b.label}')">✎사유</button>`;
           }
           html += `<td style="padding:6px 2px; text-align:center;">${cellHtml}</td>`;
         });
@@ -2742,14 +2742,14 @@ function subscribeMyAbsences(){
         const o = stats[s.num];
         if(o.total === 0){
           html += `<tr style="border-bottom:1px solid var(--line); color:#c9c2ac;">
-            <td style="padding:6px 4px;">${s.num}</td><td style="padding:6px 4px;">${yajaEsc(s.name)}</td>
+            <td style="padding:6px 4px;">${Number(s.num) || ""}</td><td style="padding:6px 4px;">${yajaEsc(s.name)}</td>
             <td colspan="4" style="padding:6px 4px; text-align:center;">이 기간 신청 내역 없음</td>
           </tr>`;
           return;
         }
         const rate = yajaRate(o);
         html += `<tr style="border-bottom:1px solid var(--line);">
-          <td style="padding:6px 4px;">${s.num}</td><td style="padding:6px 4px;">${yajaEsc(s.name)}</td>
+          <td style="padding:6px 4px;">${Number(s.num) || ""}</td><td style="padding:6px 4px;">${yajaEsc(s.name)}</td>
           <td style="padding:6px 4px; text-align:center;">${o.attended}/${o.total}</td>
           <td style="padding:6px 4px; text-align:center;">${o.excused}</td>
           <td style="padding:6px 4px; text-align:center; color:${o.absent?'var(--danger)':'inherit'};">${o.absent}</td>
@@ -2795,7 +2795,7 @@ async function setupMyQr(){
       qr.addData(text);
       qr.make();
       document.getElementById("myQrImg").innerHTML = qr.createSvgTag({cellSize:5, margin:0, scalable:true});
-      document.getElementById("myQrName").textContent = `${currentProfile.num}번 ${currentProfile.name}`;
+      document.getElementById("myQrName").textContent = `${Number(currentProfile.num) || ""}번 ${currentProfile.name}`;
     }
   };
 }
@@ -2906,7 +2906,7 @@ async function submitMyExcuse(){
   try{
     const batch = db.batch();
     picked.forEach(cb => {
-      const ref = db.collection("yajaExcuses").doc(`${dateStr}_${currentProfile.num}_${cb.value}`);
+      const ref = db.collection("yajaExcuses").doc(`${dateStr}_${Number(currentProfile.num) || ""}_${cb.value}`);
       batch.set(ref, {
         studentUid: currentUser.uid, num: currentProfile.num, name: currentProfile.name,
         date: dateStr, block: cb.value, blockLabel: cb.dataset.label,
@@ -2942,7 +2942,7 @@ async function renderMyExcList(){
         const canCancel = !rejected && x.date >= todayStr;
         return `<div class="notice-card" style="${rejected ? 'border-left:4px solid var(--danger);' : ''}">
           <div style="display:flex; justify-content:space-between; gap:8px;">
-            <div class="notice-title" style="margin:0;">${x.date.slice(5).replace("-","/")} ${yajaEsc(x.blockLabel)}</div>
+            <div class="notice-title" style="margin:0;">${yajaEsc(String(x.date || "").slice(5).replace("-","/"))} ${yajaEsc(x.blockLabel)}</div>
             <span style="font-size:12px; color:${rejected ? 'var(--danger)' : 'var(--forest-deep)'};">${rejected ? "반려됨 (결석 처리)" : "반영됨"}</span>
           </div>
           <div class="notice-body" style="margin-top:4px;">${yajaEsc(x.reason)}</div>
@@ -3148,7 +3148,7 @@ async function setupTeacherCounsel(){
     view.dataset.bound = "1";
     const snap = await db.collection("students").where("role", "==", "student").get();
     ctStudents = snap.docs.map(d => ({uid:d.id, ...d.data()})).sort((a,b)=>a.num-b.num);
-    const opts = ctStudents.map(x => `<option value="${x.uid}">${x.num}번 ${yajaEsc(x.name)}</option>`).join("");
+    const opts = ctStudents.map(x => `<option value="${x.uid}">${Number(x.num) || ""}번 ${yajaEsc(x.name)}</option>`).join("");
     document.getElementById("ctRecStudent").innerHTML = opts;
     document.getElementById("ctRecFilterStudent").innerHTML = `<option value="">전체 학생</option>` + opts;
     document.getElementById("ctRecFilterStudent").addEventListener("change", renderRecordList);
@@ -3180,7 +3180,7 @@ async function renderTeacherCounsels(){
     const pending = all.filter(c => c.status === "pending" && c.date >= todayStr);
     pendingBox.innerHTML = pending.length === 0 ? `<p class="hint">대기 중인 신청이 없어요.</p>` : pending.map(c => `
       <div style="padding:10px 0; border-bottom:1px solid var(--line);">
-        <div style="font-size:14px;"><b>${fmtMD(c.date)}(${DOW_KO[dowOf(c.date)]}) ${yajaEsc(c.slotLabel)}</b> · ${c.num}번 ${yajaEsc(c.name)} · ${yajaEsc(c.topic)}</div>
+        <div style="font-size:14px;"><b>${fmtMD(c.date)}(${DOW_KO[dowOf(c.date)]}) ${yajaEsc(c.slotLabel)}</b> · ${Number(c.num) || ""}번 ${yajaEsc(c.name)} · ${yajaEsc(c.topic)}</div>
         ${c.message ? `<div style="font-size:13px; color:#6b6455; margin-top:3px;">${yajaEsc(c.message)}</div>` : ""}
         ${confirmedKey.has(c.date + c.slot) ? `<div style="font-size:12px; color:var(--danger); margin-top:3px;">⚠ 이 시간에 이미 확정된 상담이 있어요</div>` : ""}
         <div style="display:flex; gap:8px; margin-top:8px;">
@@ -3194,7 +3194,7 @@ async function renderTeacherCounsels(){
     const pastNoRecord = confirmed.filter(c => c.date < todayStr && !recordedIds.has(c.id));
     const row = (c, past) => `
       <div style="display:flex; justify-content:space-between; align-items:center; gap:8px; padding:9px 0; border-bottom:1px solid var(--line); font-size:13.5px;">
-        <div><b>${fmtMD(c.date)}(${DOW_KO[dowOf(c.date)]}) ${yajaEsc(c.slotLabel)}</b> · ${c.num}번 ${yajaEsc(c.name)} · ${yajaEsc(c.topic)}
+        <div><b>${fmtMD(c.date)}(${DOW_KO[dowOf(c.date)]}) ${yajaEsc(c.slotLabel)}</b> · ${Number(c.num) || ""}번 ${yajaEsc(c.name)} · ${yajaEsc(c.topic)}
           ${recordedIds.has(c.id) ? ` <span style="font-size:11px; color:var(--forest-deep);">기록됨</span>` : ""}</div>
         <div style="display:flex; gap:10px; white-space:nowrap;">
           <button class="link-btn" onclick="openRecordFor('${c.id}')">기록</button>
@@ -3217,7 +3217,7 @@ async function decideCounsel(id, status){
   const c = (window.__ctCounsels || []).find(x => x.id === id);
   let declineReason = "";
   if(status === "declined"){
-    const r = prompt(`${c ? `${c.num}번 ${c.name} · ${fmtMD(c.date)} ${c.slotLabel}\n` : ""}학생에게 '어렵다'는 알림이 가요. 짧은 사유가 있으면 적어주세요 (비워도 돼요).`);
+    const r = prompt(`${c ? `${Number(c.num) || ""}번 ${c.name} · ${fmtMD(c.date)} ${c.slotLabel}\n` : ""}학생에게 '어렵다'는 알림이 가요. 짧은 사유가 있으면 적어주세요 (비워도 돼요).`);
     if(r === null) return;
     declineReason = r.trim();
   }
@@ -3250,7 +3250,7 @@ function openRecordFor(counselId){
   document.getElementById("ctRecDate").value = c.date;
   document.getElementById("ctRecCategory").value = existing ? existing.category : c.topic;
   document.getElementById("ctRecContent").value = existing ? existing.content : (c.message ? `(학생 사전 메모) ${c.message}\n\n` : "");
-  document.getElementById("ctRecordFormTitle").textContent = `상담 기록 — ${c.num}번 ${c.name} · ${fmtMD(c.date)} ${c.slotLabel}`;
+  document.getElementById("ctRecordFormTitle").textContent = `상담 기록 — ${Number(c.num) || ""}번 ${c.name} · ${fmtMD(c.date)} ${c.slotLabel}`;
   document.getElementById("ctRecordFormBox").scrollIntoView({behavior:"smooth", block:"start"});
 }
 
@@ -3264,7 +3264,7 @@ function openRecordEdit(recId){
   document.getElementById("ctRecDate").value = r.date;
   document.getElementById("ctRecCategory").value = r.category;
   document.getElementById("ctRecContent").value = r.content;
-  document.getElementById("ctRecordFormTitle").textContent = `기록 수정 — ${r.num}번 ${r.name}`;
+  document.getElementById("ctRecordFormTitle").textContent = `기록 수정 — ${Number(r.num) || ""}번 ${r.name}`;
   document.getElementById("ctRecordFormBox").scrollIntoView({behavior:"smooth", block:"start"});
 }
 
@@ -3302,7 +3302,7 @@ function renderRecordList(){
   box.innerHTML = list.length === 0 ? `<p class="hint">기록이 없어요.</p>` : list.map(r => `
     <div class="notice-card">
       <div style="display:flex; justify-content:space-between; gap:8px;">
-        <div class="notice-title" style="margin:0;">${r.date.replace(/-/g,".")} · ${r.num}번 ${yajaEsc(r.name)}</div>
+        <div class="notice-title" style="margin:0;">${r.date.replace(/-/g,".")} · ${Number(r.num) || ""}번 ${yajaEsc(r.name)}</div>
         <span style="font-size:12px; background:#F1DDB2; color:#8a5f14; border-radius:10px; padding:2px 8px; white-space:nowrap;">${yajaEsc(r.category)}</span>
       </div>
       <div class="notice-body" style="margin-top:6px;">${yajaEsc(r.content)}</div>
@@ -3398,7 +3398,7 @@ async function renderMyAttNotes(){
     if(list.length === 0){ box.innerHTML = ""; return; }
     box.innerHTML = `<div style="font-size:12.5px; font-weight:600; color:#8a8270; margin-bottom:4px;">최근 출결 기록</div>` + list.map(n => `
       <div style="font-size:13px; padding:6px 0; border-top:1px solid var(--line);">
-        <b style="color:${ATT_KIND_COLOR[n.kind]};">${n.kind}</b> · ${fmtMD(n.date)} · ${yajaEsc(n.reasonType)}${n.reason ? " · " + yajaEsc(n.reason) : ""}${n.createdBy === "teacher" ? ` <span style="font-size:11px; color:#8a8270;">(선생님 기록)</span>` : ""}
+        <b style="color:${ATT_KIND_COLOR[n.kind] || "inherit"};">${yajaEsc(n.kind)}</b> · ${fmtMD(n.date)} · ${yajaEsc(n.reasonType)}${n.reason ? " · " + yajaEsc(n.reason) : ""}${n.createdBy === "teacher" ? ` <span style="font-size:11px; color:#8a8270;">(선생님 기록)</span>` : ""}
         ${attTimeText(n) ? ` · ${yajaEsc(attTimeText(n))}` : ""}
         ${n.status === "arrived" ? ` · <span style="color:var(--forest-deep);">${n.arrivedBy === "gps" ? "📍 " : ""}도착 ${n.arrivedTime || ""}</span>` : n.status === "checked" ? ` · <span style="color:var(--forest-deep);">선생님 확인</span>` : ""}
       </div>`).join("");
@@ -3453,8 +3453,8 @@ async function renderAttTeacher(){
     box.innerHTML = list.map(n => {
       const done = n.status === "arrived" || n.status === "checked";
       return `<div style="padding:10px 0; border-bottom:1px solid var(--line); ${done ? "opacity:.6;" : ""}">
-        <div style="font-size:14px;"><b>${n.num}번 ${yajaEsc(n.name)}</b>
-          · <b style="color:${ATT_KIND_COLOR[n.kind]};">${n.kind}</b> (${yajaEsc(n.reasonType)})${n.createdBy === "teacher" ? ` <span style="font-size:11px; color:#8a8270;">· 담임 입력</span>` : n.editedAt ? ` <span style="font-size:11px; color:#8a8270;">· 담임 수정</span>` : ""}</div>
+        <div style="font-size:14px;"><b>${Number(n.num) || ""}번 ${yajaEsc(n.name)}</b>
+          · <b style="color:${ATT_KIND_COLOR[n.kind] || "inherit"};">${yajaEsc(n.kind)}</b> (${yajaEsc(n.reasonType)})${n.createdBy === "teacher" ? ` <span style="font-size:11px; color:#8a8270;">· 담임 입력</span>` : n.editedAt ? ` <span style="font-size:11px; color:#8a8270;">· 담임 수정</span>` : ""}</div>
         <div style="font-size:13px; color:#6b6455; margin-top:2px;">${yajaEsc(n.reason)}${attTimeText(n) ? " · " + yajaEsc(attTimeText(n)) : ""}</div>
         <div style="display:flex; gap:12px; margin-top:6px; font-size:12.5px;">
           ${n.status === "arrived" ? `<span style="color:var(--forest-deep);">${n.arrivedBy === "gps" ? `📍 GPS 도착 ${n.arrivedTime || ""} (학교에서 ${n.gpsDistance}m)` : `✓ 도착 ${n.arrivedTime || ""}`}</span>`
@@ -3533,7 +3533,7 @@ async function renderAttReports(){
     if(!rows.length){ box.innerHTML = `<p class="hint">최근 30일 동안 결석 기록이 없어요.</p>`; return; }
     box.innerHTML = rows.map(({n, st}) => `<div style="padding:8px 0; border-top:1px solid var(--line); ${st === "done" || st === "waived" ? "opacity:.55;" : ""}">
       <div style="display:flex; justify-content:space-between; gap:8px; font-size:13.5px;">
-        <span style="flex:1; min-width:0;"><b>${n.num}번 ${yajaEsc(n.name)}</b> · ${fmtMD(n.date)} (${yajaEsc(n.reasonType || "")})</span>
+        <span style="flex:1; min-width:0;"><b>${Number(n.num) || ""}번 ${yajaEsc(n.name)}</b> · ${fmtMD(n.date)} (${yajaEsc(n.reasonType || "")})</span>
         <span style="font-size:12.5px; white-space:nowrap;">${ABS_REP_LABEL[st]}</span></div>
       <div style="display:flex; gap:12px; margin-top:3px; font-size:12px;">
         ${st === "none" || st === "waiting" ? `<button class="link-btn" style="font-size:12px;" onclick="nudgeAbsence(['${n.id}'])">🔔 알림 보내기</button>` : ""}
@@ -3581,11 +3581,11 @@ async function openAttTForm(id){
   if(!attTStudents){
     const snap = await db.collection("students").where("role", "==", "student").get();
     attTStudents = snap.docs.map(d => ({uid:d.id, ...d.data()})).sort((a,b) => a.num - b.num);
-    sel.innerHTML = `<option value="">학생 선택</option>` + attTStudents.map(s => `<option value="${s.uid}">${s.num}번 ${yajaEsc(s.name)}</option>`).join("");
+    sel.innerHTML = `<option value="">학생 선택</option>` + attTStudents.map(s => `<option value="${s.uid}">${Number(s.num) || ""}번 ${yajaEsc(s.name)}</option>`).join("");
   }
   attTEditId = id;
   const n = id ? attTCache[id] : null;
-  document.getElementById("attTFormTitle").textContent = n ? `✏️ ${n.num}번 ${n.name} 출결 수정` : "➕ 출결 직접 입력";
+  document.getElementById("attTFormTitle").textContent = n ? `✏️ ${Number(n.num) || ""}번 ${n.name} 출결 수정` : "➕ 출결 직접 입력";
   sel.value = n ? n.studentUid : "";
   sel.disabled = !!n;
   document.getElementById("attTFDate").value = n ? n.date : document.getElementById("attTDate").value;
@@ -3645,7 +3645,7 @@ async function saveAttTForm(){
 
 async function deleteAttNote(id){
   const n = attTCache[id];
-  if(!n || !confirm(`${n.num}번 ${n.name} · ${n.kind} 기록을 삭제할까요?\n삭제하면 되돌릴 수 없어요.`)) return;
+  if(!n || !confirm(`${Number(n.num) || ""}번 ${n.name} · ${n.kind} 기록을 삭제할까요?\n삭제하면 되돌릴 수 없어요.`)) return;
   try{ await db.collection("attendanceNotes").doc(id).delete(); renderAttTeacher(); }
   catch(e){ console.error(e); alert("삭제에 실패했어요 — 보안규칙(최신본)을 게시했는지 확인해주세요."); }
 }
@@ -3795,7 +3795,7 @@ async function renderSuggestTeacher(){
     if(!list.length){ box.innerHTML = `<p class="hint">${sgFilter === "open" ? "처리할 건의가 없어요." : "건의가 없어요."}</p>`; return; }
     box.innerHTML = list.map(x => `
       <div style="padding:12px ${x.category && x.category.includes("칭찬") ? "10px; background:#FBF3E2; border-radius:8px" : "0"}; border-top:1px solid var(--line);" data-id="${x.id}">
-        <div style="font-size:13px;"><b>${x.anonymous ? "🙈 익명" : `${x.num}번 ${yajaEsc(x.name)}`}</b>
+        <div style="font-size:13px;"><b>${x.anonymous ? "🙈 익명" : `${Number(x.num) || ""}번 ${yajaEsc(x.name)}`}</b>
           <span style="color:#8a8270;"> · ${yajaEsc(x.category)} · ${sgWhen(x.createdAt)}</span></div>
         <div style="font-size:14px; margin-top:4px; white-space:pre-wrap;">${yajaEsc(x.content)}</div>
         <div style="display:flex; gap:6px; margin-top:8px; align-items:center;">
@@ -4117,7 +4117,7 @@ async function seatSecretUI(){
   const pairs = seatPairsFromDb(cfg.forbiddenPairs);
   const roster = await seatClassRoster(null);
   const nm = {}; roster.forEach(x => { nm[x.num] = x.name; });
-  const opts = `<option value="">선택</option>` + roster.map(x => `<option value="${x.num}">${x.num} ${yajaEsc(x.name)}</option>`).join("");
+  const opts = `<option value="">선택</option>` + roster.map(x => `<option value="${Number(x.num) || ""}">${Number(x.num) || ""} ${yajaEsc(x.name)}</option>`).join("");
   extra.style.display = "block";
   extra.innerHTML = `<h3>🔒 짝 금지 (숨김)</h3>
     ${seatConfigError ? `<p class="hint" style="color:var(--danger);">⚠️ 설정을 읽을 권한이 없어요 — Firebase 콘솔에 보안규칙 최신본(rules12)을 게시해주세요.</p>` : ""}
@@ -4240,7 +4240,7 @@ function seatShowPreview(r){
   const lbl = k => k ? seatLabelOf(k).replace("분단 ", "-").replace("줄 ", "-").replace("왼쪽","좌").replace("오른쪽","우") : "";
   extra.innerHTML = `<h3>📊 신청자 우선순위</h3><p class="hint">최근 4주(${pv.weeks[3].slice(5)} ~ ${pv.weeks[0].slice(5)} 주) 포인트 · 회고 횟수 순. 학생에게는 공개되지 않아요.</p>
     <table class="seat-tbl"><tr><th>#</th><th>학생</th><th>점</th><th>회고</th><th>지망</th><th>결과</th></tr>
-    ${pv.order.map((o, i) => `<tr><td>${i + 1}</td><td>${o.num} ${yajaEsc(pv.names[o.num] || "")}</td><td>${o.pts}</td><td>${o.refl}</td>
+    ${pv.order.map((o, i) => `<tr><td>${i + 1}</td><td>${Number(o.num) || ""} ${yajaEsc(pv.names[o.num] || "")}</td><td>${o.pts}</td><td>${o.refl}</td>
       <td style="font-size:11px;">${(o.choices || []).map(lbl).join(" / ")}</td><td>${yajaEsc(pv.how[o.num] || "")}</td></tr>`).join("")}</table>`;
 }
 
@@ -4663,7 +4663,7 @@ async function lsTeacherList(){
       ${lsTypeHtml(lsTypeStats(allG.map(x => ({ answers: x.answers, key: keyOf[x.roundId] }))), Object.keys(keyOf).filter(id => (subs[id] || []).some(x => x.graded)).length)}
       <div style="font-weight:700; margin:14px 0 4px;">학생별 <span class="hint">(누르면 자세히)</span></div>
       <table class="seat-tbl"><tr><th>학생</th><th>응시</th><th>평균</th><th>약한 유형</th></tr>
-        ${stuRows.map((x, i) => `<tr class="ls-stu" data-i="${i}"><td>${x.num} ${yajaEsc(x.name)}</td><td>${x.n}회</td><td>${x.avg}</td><td style="font-size:11.5px;">${x.weak.join(", ") || "-"}</td></tr>
+        ${stuRows.map((x, i) => `<tr class="ls-stu" data-i="${i}"><td>${Number(x.num) || ""} ${yajaEsc(x.name)}</td><td>${x.n}회</td><td>${x.avg}</td><td style="font-size:11.5px;">${x.weak.join(", ") || "-"}</td></tr>
           <tr id="lsStuD${i}" style="display:none;"><td colspan="4" style="text-align:left;">${x.html}</td></tr>`).join("")}
       </table></div>` : "";
   body.innerHTML = `${typeCard}<div class="group-block"><h3>🎧 영어 듣기평가 등록</h3>
@@ -4902,10 +4902,10 @@ async function lsTeacherRound(id){
     <div style="display:grid; grid-template-columns:repeat(17,1fr); font-size:10px; text-align:center; color:#8a8270;">${rate.map((p, i) => `<span>${i+1}<br>${graded.length ? p : ""}</span>`).join("")}</div>
     <div style="font-weight:700; margin-top:12px;">학생별 결과</div>
     <table class="seat-tbl"><tr><th>학생</th><th>점수</th><th>모드</th><th>틀린 문항</th></tr>
-      ${subs.map(x => `<tr><td>${x.num} ${yajaEsc(x.name)}</td><td>${x.graded ? x.score : "…"}</td><td>${x.mode === "real" ? "실전" : "연습"}</td>
+      ${subs.map(x => `<tr><td>${Number(x.num) || ""} ${yajaEsc(x.name)}</td><td>${x.graded ? x.score : "…"}</td><td>${x.mode === "real" ? "실전" : "연습"}</td>
         <td style="font-size:11px;">${x.graded ? (x.answers || []).map((a, i) => a === key[i] ? null : i + 1).filter(Boolean).join(", ") || "없음 👏" : ""}</td></tr>`).join("")}
     </table>
-    <div style="margin-top:10px; font-size:13px;"><b>미응시</b> ${students.filter(s => !done.has(s.num)).map(s => `<span class="seat-chip">${s.num} ${yajaEsc(s.name)}</span>`).join("") || "없음 👏"}</div>
+    <div style="margin-top:10px; font-size:13px;"><b>미응시</b> ${students.filter(s => !done.has(s.num)).map(s => `<span class="seat-chip">${Number(s.num) || ""} ${yajaEsc(s.name)}</span>`).join("") || "없음 👏"}</div>
     <details style="margin-top:12px;"><summary style="cursor:pointer; font-size:13px;">정답 확인·수정</summary>
       <p class="hint">정답을 고치면 이미 제출한 학생도 자동으로 다시 채점돼요.</p>
       <input type="text" id="lsKeyEdit" value="${key.join("")}" style="width:100%; padding:8px; font-size:16px; letter-spacing:3px;">
