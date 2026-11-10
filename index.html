@@ -201,6 +201,26 @@
   .ls-type .bg > div{ height:100%; }
   .ls-type .v{ width:74px; text-align:right; flex:none; color:#8a8270; font-size:11.5px; }
   .ls-stu{ cursor:pointer; }
+  .cd-f label, .cd-box label{ display:block; font-size:12.5px; font-weight:500; color:var(--forest-deep); margin:8px 0 4px; line-height:1.45; }
+  .cd-f{ margin-bottom:12px; } .cd-f.sub{ margin:-6px 0 12px 14px; }
+  .cd-f input, .cd-f textarea, .cd-box input{ width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:6px; font-size:14px; font-family:inherit; background:#fff; }
+  .cd-box{ border:1px solid var(--line); border-radius:8px; padding:10px 12px; margin:8px 0; }
+  .cd-grid{ display:grid; grid-template-columns:1fr 1fr; gap:0 8px; }
+  .cd-pick{ display:flex; flex-wrap:wrap; gap:5px; }
+  .cd-pick button{ flex:1; min-width:44px; padding:7px 4px; border:1px solid var(--line); border-radius:8px; background:#fff; font-family:inherit; font-size:13px; cursor:pointer; color:inherit; }
+  .cd-pick button.on{ background:var(--forest); color:#fff; border-color:var(--forest); font-weight:700; }
+  .cd-savebar{ position:sticky; bottom:0; display:flex; justify-content:space-between; align-items:center; gap:10px; background:var(--card); border-top:1px solid var(--line); padding:10px 4px; z-index:5; }
+  .cd-roster{ display:grid; grid-template-columns:repeat(auto-fill, minmax(104px, 1fr)); gap:6px; }
+  .cd-stu{ text-align:left; padding:8px 9px; border:1px solid var(--line); border-radius:8px; background:#fff; font-family:inherit; font-size:13.5px; cursor:pointer; color:inherit; }
+  .cd-stu span{ display:block; font-size:11px; color:#8a8270; margin-top:2px; }
+  .cd-stu.done span{ color:var(--forest-deep); } .cd-stu.none span{ color:var(--danger); }
+  .cd-tiles{ display:grid; grid-template-columns:repeat(4, 1fr); gap:6px; margin-top:10px; }
+  .cd-tile{ border:1px solid var(--line); border-radius:8px; padding:8px 2px; text-align:center; background:#fff; }
+  .cd-tile b{ display:block; font-size:17px; } .cd-tile span{ font-size:11px; color:#8a8270; }
+  .cd-row{ display:flex; gap:10px; padding:7px 0; border-top:1px solid var(--line); font-size:13.5px; line-height:1.5; }
+  .cd-row > span{ width:84px; flex:none; color:#8a8270; font-size:12.5px; }
+  .cd-row > div{ flex:1; min-width:0; word-break:break-word; white-space:pre-wrap; }
+  .cd-sec h4{ font-size:13.5px; margin:14px 0 2px; color:var(--forest-deep); }
   #lsPlayer:not(:empty){ position:sticky; top:0; z-index:5; background:var(--card); padding:2px 0 4px; border-bottom:1px solid var(--line); }
   #lsPlayer .ls-cues{ flex-wrap:nowrap; overflow-x:auto; margin-bottom:4px; }
   #lsPlayer .ls-cues button{ flex:none; }
@@ -272,7 +292,7 @@
 <div class="wrap">
 
   <div class="brand">
-    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1110-3</span></h1>
+    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1110-4</span></h1>
     <div id="brandRight"></div>
   </div>
 
@@ -357,6 +377,7 @@
       <button id="tabBtnSuggest" onclick="switchMainTab('suggest')" style="display:none;"><span class="ti">📮</span><span class="tl">건의함</span></button>
       <button id="tabBtnSeat" onclick="switchMainTab('seat')" style="display:none;"><span class="ti">🪑</span><span class="tl">자리</span></button>
       <button id="tabBtnListen" onclick="switchMainTab('listen')" style="display:none;"><span class="ti">🎧</span><span class="tl">영어듣기</span></button>
+      <button id="tabBtnCard" onclick="switchMainTab('card')" style="display:none;"><span class="ti">🙋</span><span class="tl">내 소개</span></button>
     </div>
 
     <div class="tab-panel active" id="panel-timetable">
@@ -699,6 +720,10 @@
       <div id="lsBody"><p class="hint">불러오는 중...</p></div>
     </div>
 
+    <div class="tab-panel" id="panel-card">
+      <div id="cdBody"><p class="hint">불러오는 중...</p></div>
+    </div>
+
     <div class="tab-panel" id="panel-seat">
       <div class="group-block" id="seatStatusBox"><p class="hint">불러오는 중...</p></div>
       <div class="group-block" id="seatMapBox" style="display:none;">
@@ -1020,6 +1045,7 @@ function enterApp(){
     setupSuggestTab();
     setupSeatTab();
     setupListenTab();
+    setupCardTab();
   } else {
     goToSelectScreen();
   }
@@ -1054,6 +1080,9 @@ function switchMainTab(tab){
   document.getElementById("tabBtnListen").classList.toggle("active", tab === "listen");
   document.getElementById("panel-listen").classList.toggle("active", tab === "listen");
   if(tab === "listen") lsOnTabOpen();
+  document.getElementById("tabBtnCard").classList.toggle("active", tab === "card");
+  document.getElementById("panel-card").classList.toggle("active", tab === "card");
+  if(tab === "card") cdOnTabOpen(); else if(cdSaveTimer) cdSave(false); // 다른 탭으로 갈 때 쓰던 내용 저장
   document.getElementById("panel-suggest").classList.toggle("active", tab === "suggest");
 }
 function renderBrandRight(){
@@ -1126,6 +1155,7 @@ async function handleSaveSelection(){
   setupSuggestTab();
   setupSeatTab();
   setupListenTab();
+  setupCardTab();
 }
 
 /* =========================================================
@@ -4974,6 +5004,353 @@ async function lsTeacherRound(id){
     if(!confirm(`'${r.title}'을(를) 삭제할까요? 학생 기록은 남지만 목록에서 사라져요.`)) return;
     await db.collection("listenRounds").doc(id).delete(); lsOnTabOpen();
   };
+}
+
+/* =========================================================
+   19. 학생 카드 — 학생: '저를 소개합니다' 작성 / 담임: 학생별 종합 카드
+   (자기소개 내용은 본인과 담임만 볼 수 있음)
+   ========================================================= */
+const CD_LV = ["최상", "상", "중", "하", "최하"];
+const CD_SECTIONS = [
+  { title: "1. 저는 이런 사람이에요", fields: [
+    { k: "birth", l: "생년월일", t: "date" }, { k: "addr", l: "현주소", ph: "경기도 양평군 ..." },
+    { k: "phone", l: "휴대폰", t: "tel", ph: "010-" }, { k: "sns", s: "SNS", l: "SNS 아이디 (인스타그램, 페이스북 등)" },
+    { k: "hobby", l: "취미활동" }, { k: "game", l: "주로 하는 게임" },
+    { k: "celeb", l: "좋아하는 연예인" }, { k: "mbti", l: "자신의 MBTI" },
+    { k: "friends", s: "친한 친구", l: "우리 학교 내 친한 친구 (최대 3명, 적고 싶은 만큼)", ph: "예: 2-7 홍길동, 2-3 김철수" } ] },
+  { title: "2. 저는 이런 진로·진학 계획을 갖고 있어요", fields: [
+    { k: "job", l: "진로 희망" }, { k: "jobWhy", l: "진로 희망 이유", t: "area" },
+    { k: "univ", s: "희망 대학·학과", l: "진학 희망 대학과 학과" },
+    { k: "gradeNow", l: "나의 예상 성적", t: "pick", o: CD_LV }, { k: "gradeGoal", l: "나의 목표 성적" },
+    { k: "subLike", l: "좋아하는 과목" }, { k: "subLikeWhy", l: "└ 이유", sub: 1 },
+    { k: "subHate", l: "싫어하는 과목" }, { k: "subHateWhy", l: "└ 이유", sub: 1 },
+    { k: "subGood", l: "자신 있는 과목" }, { k: "subGoodWhy", l: "└ 이유", sub: 1 },
+    { k: "subHard", s: "자신 없는 과목", l: "자신 없는(어려운) 과목" }, { k: "subHardWhy", l: "└ 이유", sub: 1 } ] },
+  { title: "3. 저의 가족을 소개합니다", family: true },
+  { title: "4. 저의 건강 상태를 알려드립니다", fields: [
+    { k: "health", s: "건강 상태", l: "어디가 얼마만큼 좋지 않은지, 그래서 어떤 시간에 수업 받기가 곤란한지 자세히 적어주세요. (예: 어릴 적 다리를 다쳐 수술했지만 아직 불편해서 체육 수업이 어려워요)", t: "area", rows: 4 } ] },
+  { title: "5. 저는 이렇게 공부하려고 해요", fields: [
+    { k: "g1Best", s: "1학년 만족 과목", l: "1학년 내신 등급 중 가장 만족스러운 과목과 그 등급" },
+    { k: "g1Worst", s: "1학년 불만족 과목", l: "1학년 내신 등급 중 가장 만족스럽지 못한 과목과 그 등급" },
+    { k: "strength", s: "수능·내신 강점", l: "수능과 내신 중 자신의 강점", t: "pick", o: ["수능에 강하다", "비슷하다", "내신에 강하다"] },
+    { k: "mKor", s: "국어 공부법", l: "국어 영역 공부 방법", t: "area" }, { k: "mMath", s: "수학 공부법", l: "수학 영역 공부 방법", t: "area" },
+    { k: "mEng", s: "영어 공부법", l: "영어 영역 공부 방법", t: "area" }, { k: "mHist", s: "한국사 공부법", l: "한국사 영역 공부 방법", t: "area" },
+    { k: "mSoc", s: "사회 공부법", l: "사회 영역 공부 방법", t: "area" }, { k: "mSci", s: "과학 공부법", l: "과학 영역 공부 방법", t: "area" } ] },
+  { title: "6. 선생님의 상담이 필요한 부분", fields: [
+    { k: "needCounsel", s: "상담 희망", l: "학업, 교우관계, 진로, 가정환경 중 선생님과 가장 먼저 깊게 이야기 나누고 싶은 분야는?", t: "area", rows: 4 } ] },
+  { title: "7. 선생님께 바라는 점", fields: [
+    { k: "wish", s: "바라는 점", l: "자유롭게 적어주세요. (예: 칭찬은 남들 앞에서 하지 말아 주세요, 잘못했을 땐 따로 불러서 혼내주세요 등)", t: "area", rows: 4 } ] },
+];
+const CD_PARENT = [["name", "성함"], ["age", "연세"], ["job", "직업"], ["phone", "휴대폰"]];
+const CD_SIB = [["rel", "관계"], ["name", "이름"], ["age", "나이"], ["job", "직업(학교)"], ["edu", "학력(학년)"]];
+
+let cdEditUid = null, cdEditMeta = null, cdSaveTimer = null, cdOpenUid = null, cdRoster = null;
+
+function setupCardTab(){
+  const role = currentProfile && currentProfile.role;
+  const btn = document.getElementById("tabBtnCard");
+  if(role !== "student" && role !== "teacher"){ btn.style.display = "none"; return; }
+  btn.style.display = "";
+  btn.querySelector(".ti").textContent = role === "teacher" ? "👤" : "🙋";
+  btn.querySelector(".tl").textContent = role === "teacher" ? "학생카드" : "내 소개";
+}
+function cdOnTabOpen(){
+  cdOpenUid = null;
+  if(currentProfile.role === "teacher") cdTeacherList();
+  else cdOpenForm(currentUser.uid, { num: currentProfile.num, name: currentProfile.name });
+}
+
+/* ---------- 작성 폼 (학생 본인 / 담임이 대신 입력) ---------- */
+function cdPickHtml(attr, opts, val){
+  return `<div class="cd-pick" ${attr} data-v="${yajaEsc(val || "")}">${opts.map(o => `<button type="button" class="${o === val ? "on" : ""}">${yajaEsc(o)}</button>`).join("")}</div>`;
+}
+function cdFieldHtml(f, v){
+  const val = yajaEsc(v || "");
+  const inp = f.t === "area" ? `<textarea data-k="${f.k}" rows="${f.rows || 2}">${val}</textarea>`
+    : f.t === "pick" ? cdPickHtml(`data-k="${f.k}"`, f.o, v)
+    : `<input type="${f.t || "text"}" data-k="${f.k}" value="${val}" placeholder="${yajaEsc(f.ph || "")}">`;
+  return `<div class="field cd-f${f.sub ? " sub" : ""}"><label>${yajaEsc(f.l)}</label>${inp}</div>`;
+}
+function cdParentHtml(key, label, d){
+  d = d || {};
+  return `<div class="cd-box" data-parent="${key}"><b>${label}</b>
+    <div class="cd-grid">${CD_PARENT.map(([k, l]) => `<div><label>${l}</label><input type="${k === "phone" ? "tel" : "text"}" data-p="${k}" value="${yajaEsc(d[k] || "")}"></div>`).join("")}</div>
+    <label>동거 여부</label>${cdPickHtml('data-p="live"', ["O", "X"], d.live)}
+    <label>나와의 친밀도</label>${cdPickHtml('data-p="close"', CD_LV, d.close)}
+    <label>특이사항</label><input type="text" data-p="note" value="${yajaEsc(d.note || "")}"></div>`;
+}
+function cdSibHtml(d){
+  d = d || {};
+  return `<div class="cd-box cd-sib">
+    <div class="cd-grid">${CD_SIB.map(([k, l]) => `<div><label>${l}</label><input type="text" data-s="${k}" value="${yajaEsc(d[k] || "")}"></div>`).join("")}</div>
+    <label>동거 여부</label>${cdPickHtml('data-s="live"', ["O", "X"], d.live)}
+    <label>나와의 친밀도</label>${cdPickHtml('data-s="close"', CD_LV, d.close)}
+    <label>친밀도 이유 (예: 컴퓨터 가지고 많이 싸운다 등)</label><input type="text" data-s="why" value="${yajaEsc(d.why || "")}">
+    <button type="button" class="link-btn cd-sib-del" style="color:var(--danger); margin-top:6px;">이 칸 지우기</button></div>`;
+}
+function cdFamilyHtml(fam){
+  fam = fam || {};
+  const sibs = (fam.sibs || []).slice(0, 4);
+  return `<p class="hint">부모님이 안 계시는 경우 '성함' 칸에 '안 계심' 또는 '돌아가심' 등으로 쓰세요.</p>
+    ${cdParentHtml("father", "아버지", fam.father)}${cdParentHtml("mother", "어머니", fam.mother)}
+    <div class="field cd-f"><label>우리 집의 가정 분위기(부모님 간의 사이, 나와의 사이 등) 또는 부모님에 대해 특히 쓰고 싶은 것은?</label>
+      <textarea data-fam="mood" rows="3">${yajaEsc(fam.mood || "")}</textarea></div>
+    <b style="font-size:13.5px;">형제자매·함께 사는 가족 (최대 4명)</b>
+    <div id="cdSibs">${sibs.map(cdSibHtml).join("")}</div>
+    <button type="button" class="link-btn" id="cdSibAdd" style="margin-top:6px;">＋ 가족 추가</button>`;
+}
+function cdCollect(){
+  const root = document.getElementById("cdForm"), f = {};
+  root.querySelectorAll("[data-k]").forEach(el => { const v = (el.classList.contains("cd-pick") ? el.dataset.v : el.value).trim(); if(v) f[el.dataset.k] = v.slice(0, 2000); });
+  const grab = (box, attr) => { const o = {}; box.querySelectorAll(`[data-${attr}]`).forEach(el => { const v = (el.classList.contains("cd-pick") ? el.dataset.v : el.value).trim(); if(v) o[el.dataset[attr]] = v.slice(0, 300); }); return o; };
+  const family = { father: grab(root.querySelector('[data-parent="father"]'), "p"), mother: grab(root.querySelector('[data-parent="mother"]'), "p"),
+    mood: root.querySelector('[data-fam="mood"]').value.trim().slice(0, 2000),
+    sibs: Array.from(root.querySelectorAll(".cd-sib")).map(b => grab(b, "s")).filter(o => Object.keys(o).length).slice(0, 4) };
+  return { f, family };
+}
+function cdStatus(msg){ const el = document.getElementById("cdSaveStatus"); if(el) el.textContent = msg; }
+async function cdSave(submit){
+  clearTimeout(cdSaveTimer);
+  if(!cdEditUid || !document.getElementById("cdForm")) return false;
+  const data = { uid: cdEditUid, num: cdEditMeta.num, name: cdEditMeta.name, ...cdCollect(), updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+  if(submit) data.submittedAt = firebase.firestore.FieldValue.serverTimestamp();
+  try{
+    cdStatus("저장 중...");
+    await db.collection("studentProfiles").doc(cdEditUid).set(data, { merge: true });
+    const n = new Date(); cdStatus(`✓ 저장됨 ${String(n.getHours()).padStart(2, "0")}:${String(n.getMinutes()).padStart(2, "0")}`);
+    return true;
+  }catch(e){ console.error("자기소개 저장 실패", e); cdStatus("⚠ 저장 실패 — 인터넷 연결을 확인해주세요"); return false; }
+}
+function cdQueueSave(){ clearTimeout(cdSaveTimer); cdStatus("입력 중..."); cdSaveTimer = setTimeout(() => cdSave(false), 1500); }
+
+async function cdOpenForm(uid, meta){
+  const body = document.getElementById("cdBody"), byTeacher = currentProfile.role === "teacher";
+  body.innerHTML = `<p class="hint">불러오는 중...</p>`;
+  let p = null;
+  try{ const d = await db.collection("studentProfiles").doc(uid).get(); p = d.exists ? d.data() : null; }
+  catch(e){ console.error("자기소개 불러오기 실패", e); body.innerHTML = `<p class="hint">불러오지 못했어요. 잠시 후 다시 열어주세요.</p>`; return; }
+  cdEditUid = uid; cdEditMeta = meta;
+  const f = (p && p.f) || {};
+  body.innerHTML = `<div id="cdForm">
+    <div class="group-block">
+      ${byTeacher ? `<button class="link-btn" id="cdFormBack">← ${Number(meta.num) || ""}번 ${yajaEsc(meta.name)} 카드로</button>` : ""}
+      <h3>🙋 저를 소개합니다${byTeacher ? " <span class='hint'>(담임이 대신 입력)</span>" : ""}</h3>
+      <p class="hint" style="margin-top:6px;">🔒 이 내용은 <b>본인과 담임 선생님만</b> 볼 수 있어요. 부담 갖지 말고 솔직하게 적어주세요. <b>적기 불편한 내용은 적지 않아도 괜찮아요.</b><br>적는 대로 자동 저장되고, 나중에 언제든 고칠 수 있어요.</p>
+      ${p && p.submittedAt ? `<p class="hint" style="color:var(--forest-deep);">✅ 제출 완료 (${sgWhen(p.submittedAt)}) — 내용이 바뀌면 고쳐서 다시 제출하면 돼요.</p>` : ""}
+    </div>
+    ${CD_SECTIONS.map(s => `<div class="group-block"><h3>${yajaEsc(s.title)}</h3><div style="margin-top:10px;">
+      ${s.family ? cdFamilyHtml(p && p.family) : s.fields.map(x => cdFieldHtml(x, f[x.k])).join("")}</div></div>`).join("")}
+    <div class="cd-savebar"><span id="cdSaveStatus" class="hint" style="margin:0;"></span>
+      <button class="primary-btn" id="cdSubmit" style="margin:0; width:auto; padding:10px 18px;">${p && p.submittedAt ? "다시 제출" : "제출하기"}</button></div>
+  </div>`;
+  const form = document.getElementById("cdForm");
+  form.addEventListener("input", cdQueueSave);
+  form.addEventListener("click", e => {
+    const pb = e.target.closest(".cd-pick button");
+    if(pb){ const box = pb.parentElement, v = pb.textContent; box.dataset.v = box.dataset.v === v ? "" : v;
+      box.querySelectorAll("button").forEach(b => b.classList.toggle("on", b.textContent === box.dataset.v)); cdQueueSave(); return; }
+    if(e.target.closest(".cd-sib-del")){ e.target.closest(".cd-sib").remove(); cdQueueSave(); return; }
+    if(e.target.id === "cdSibAdd"){
+      if(form.querySelectorAll(".cd-sib").length >= 4){ alert("최대 4명까지 적을 수 있어요."); return; }
+      document.getElementById("cdSibs").insertAdjacentHTML("beforeend", cdSibHtml({})); }
+  });
+  document.getElementById("cdSubmit").onclick = async () => {
+    const btn = document.getElementById("cdSubmit"); btn.disabled = true;
+    const ok = await cdSave(true); btn.disabled = false;
+    if(!ok) return;
+    alert(byTeacher ? "저장했어요." : "제출했어요. 고칠 내용이 생기면 언제든 다시 열어 고치면 돼요.");
+    if(byTeacher) cdTeacherCard(uid); else cdOpenForm(uid, meta);
+  };
+  const back = document.getElementById("cdFormBack");
+  if(back) back.onclick = async () => { await cdSave(false); cdTeacherCard(uid); };
+}
+
+/* ---------- 담임: 목록 ---------- */
+async function cdLoadRoster(){
+  const snap = await db.collection("students").where("role", "==", "student").get();
+  cdRoster = snap.docs.map(d => ({ uid: d.id, ...d.data() })).sort((a, b) => a.num - b.num);
+  return cdRoster;
+}
+async function cdTeacherList(){
+  const body = document.getElementById("cdBody");
+  body.innerHTML = `<p class="hint">불러오는 중...</p>`;
+  let roster, profs = {};
+  try{
+    const [r, ps] = await Promise.all([cdLoadRoster(), db.collection("studentProfiles").get()]);
+    roster = r; ps.forEach(d => { profs[d.id] = d.data(); });
+  }catch(e){ console.error("학생 카드 목록 실패", e); body.innerHTML = `<p class="hint">불러오지 못했어요. 보안 규칙이 배포됐는지 확인해주세요.</p>`; return; }
+  const real = roster.filter(s => s.name !== "테스트");
+  const st = s => { const p = profs[s.uid]; return !p ? "none" : p.submittedAt ? "done" : "draft"; };
+  const cnt = k => real.filter(s => st(s) === k).length;
+  const todo = real.filter(s => st(s) !== "done");
+  body.innerHTML = `<div class="group-block"><h3>👤 학생 카드</h3>
+    <p class="hint" style="margin-top:4px;">학생을 누르면 자기소개, 출결, 야자, 학습계획서, 듣기평가, 상담 기록을 한 화면에서 볼 수 있어요.</p>
+    <div style="font-size:13.5px; margin:8px 0;">자기소개 제출 <b>${cnt("done")}</b> · 작성 중 ${cnt("draft")} · <b style="color:var(--danger);">미작성 ${cnt("none")}</b> / ${real.length}명</div>
+    <div class="cd-roster">${roster.map(s => `<button data-uid="${s.uid}" class="cd-stu ${st(s)}"><b>${Number(s.num) || ""}</b> ${yajaEsc(s.name)}<span>${{ done: "✓ 제출", draft: "작성 중", none: "미작성" }[st(s)]}</span></button>`).join("")}</div>
+    ${todo.length ? `<button class="link-btn" id="cdNudge" style="margin-top:12px;">📣 아직 제출 안 한 ${todo.length}명에게 작성 요청 알림 보내기</button>` : ""}
+  </div>`;
+  body.querySelectorAll(".cd-stu").forEach(b => b.onclick = () => cdTeacherCard(b.dataset.uid));
+  const nudge = document.getElementById("cdNudge");
+  if(nudge) nudge.onclick = async () => {
+    if(!confirm(`${todo.length}명에게 '자기소개 작성' 알림을 보낼까요?`)) return;
+    nudge.disabled = true;
+    try{
+      await db.collection("notices").add({ title: "🙋 '저를 소개합니다'를 작성해주세요",
+        body: "앱의 '내 소개' 탭에서 작성하고 제출해주세요. 내용은 본인과 담임 선생님만 볼 수 있어요.", imageUrl: null,
+        toUids: todo.map(s => s.uid), createdAt: firebase.firestore.FieldValue.serverTimestamp(), authorNum: "담임" });
+      alert("알림을 보냈어요.");
+    }catch(e){ console.error(e); alert("보내지 못했어요."); }
+    nudge.disabled = false;
+  };
+}
+
+/* ---------- 담임: 학생별 종합 카드 ---------- */
+function cdProfileHtml(p){
+  if(!p) return `<p class="hint">아직 작성하지 않았어요.</p>`;
+  const f = p.f || {}, fam = p.family || {};
+  const row = (l, v) => v ? `<div class="cd-row"><span>${yajaEsc(l)}</span><div>${yajaEsc(v)}</div></div>` : "";
+  const parent = (label, d) => { d = d || {}; const bits = [d.name, d.age && d.age + "세", d.job, d.live && "동거 " + d.live, d.close && "친밀도 " + d.close].filter(Boolean).map(yajaEsc);
+    if(!bits.length && !d.phone && !d.note) return "";
+    return `<div class="cd-row"><span>${label}</span><div>${bits.join(" · ")}${d.phone ? ` · <a href="tel:${yajaEsc(d.phone)}">${yajaEsc(d.phone)}</a>` : ""}${d.note ? `<br><span style="color:#6b6455;">${yajaEsc(d.note)}</span>` : ""}</div></div>`; };
+  const secs = CD_SECTIONS.map(s => {
+    let inner;
+    if(s.family){
+      inner = parent("아버지", fam.father) + parent("어머니", fam.mother) + row("가정 분위기", fam.mood) +
+        (fam.sibs || []).map(d => `<div class="cd-row"><span>${yajaEsc(d.rel || "가족")}</span><div>${[d.name, d.age && d.age + "세", d.job, d.edu, d.live && "동거 " + d.live, d.close && "친밀도 " + d.close].filter(Boolean).map(yajaEsc).join(" · ")}${d.why ? `<br><span style="color:#6b6455;">${yajaEsc(d.why)}</span>` : ""}</div></div>`).join("");
+    } else inner = s.fields.map(x => row(x.s || x.l, f[x.k])).join("");
+    return inner ? `<div class="cd-sec"><h4>${yajaEsc(s.title)}</h4>${inner}</div>` : "";
+  }).join("");
+  return secs || `<p class="hint">내용이 비어 있어요.</p>`;
+}
+async function cdTeacherCard(uid){
+  cdOpenUid = uid;
+  const body = document.getElementById("cdBody");
+  body.innerHTML = `<p class="hint">불러오는 중...</p>`;
+  try{
+    if(!cdRoster) await cdLoadRoster();
+    const s = cdRoster.find(x => x.uid === uid); if(!s){ cdTeacherList(); return; }
+    const q = (c, field) => db.collection(c).where(field || "studentUid", "==", uid).get().then(x => x.docs.map(d => ({ id: d.id, ...d.data() })));
+    const [pDoc, notes, absences, yAtt, yExc, plans, subs, recs, memoDoc] = await Promise.all([
+      db.collection("studentProfiles").doc(uid).get(), q("attendanceNotes"), q("absences"), q("yajaAttendance"), q("yajaExcuses"),
+      q("studyplans"), q("listenSubs", "uid"), q("counselRecords"), db.collection("studentMemos").doc(uid).get() ]);
+    if(cdOpenUid !== uid) return;
+    const p = pDoc.exists ? pDoc.data() : null, f = (p && p.f) || {}, fam = (p && p.family) || {};
+
+    // 출결
+    notes.sort((a, b) => a.date < b.date ? 1 : -1);
+    const kc = k => notes.filter(n => n.kind === k).length;
+    // 야자 (기록이 시작된 날부터 오늘까지)
+    let yStat = null;
+    const yDates = yAtt.concat(yExc).map(x => x.date).filter(Boolean).sort();
+    if(yDates.length){
+      const start = yDates[0], end = yajaDateKey(new Date());
+      const ov = {}; (await db.collection("yajaCalendarOverrides").where(firebase.firestore.FieldPath.documentId(), ">=", start).where(firebase.firestore.FieldPath.documentId(), "<=", end).get()).forEach(d => { ov[d.id] = d.data().operating; });
+      yStat = yajaComputeStats([{ num: s.num, yajaEnroll: s.yajaEnroll || {} }], start, end, ov, yAtt, yExc)[s.num];
+    }
+    const yRate = yStat ? yajaRate(yStat) : null;
+    // 학습계획서
+    plans.sort((a, b) => a.weekKey < b.weekKey ? 1 : -1);
+    const planDone = plans.filter(x => x.planSubmitted).length, reflDone = plans.filter(x => x.reflectSubmitted).length;
+    const ptsList = plans.filter(x => x.reflectSubmitted).map(seatWeekScore);
+    const ptsAvg = ptsList.length ? (ptsList.reduce((a, b) => a + b, 0) / ptsList.length).toFixed(1) : "-";
+    // 듣기
+    const graded = subs.filter(x => x.graded);
+    const keyOf = {};
+    await Promise.all(graded.map(async x => { const k = await db.collection("listenKeys").doc(x.roundId).get().catch(() => null); if(k && k.exists) keyOf[x.roundId] = k.data().answers; }));
+    const lsAvg = graded.length ? (graded.reduce((a, x) => a + x.score, 0) / graded.length).toFixed(1) : "-";
+    const lsList = graded.filter(x => keyOf[x.roundId]).map(x => ({ answers: x.answers, key: keyOf[x.roundId] }));
+    recs.sort((a, b) => a.date < b.date ? 1 : -1);
+    const memos = ((memoDoc.exists && memoDoc.data().items) || []).slice().sort((a, b) => a.date < b.date ? 1 : -1);
+
+    const tile = (v, l, c) => `<div class="cd-tile"><b style="${c ? "color:" + c : ""}">${v}</b><span>${l}</span></div>`;
+    const contact = [f.phone && `📱 <a href="tel:${yajaEsc(f.phone)}">${yajaEsc(f.phone)}</a>`,
+      fam.father && fam.father.phone && `부 <a href="tel:${yajaEsc(fam.father.phone)}">${yajaEsc(fam.father.phone)}</a>`,
+      fam.mother && fam.mother.phone && `모 <a href="tel:${yajaEsc(fam.mother.phone)}">${yajaEsc(fam.mother.phone)}</a>`].filter(Boolean).join(" · ");
+    body.innerHTML = `<div id="cdCard">
+      <div class="group-block">
+        <button class="link-btn cd-noprint" onclick="cdTeacherList()">← 목록</button>
+        <h3 style="font-size:18px; margin-top:6px;">${Number(s.num) || ""}번 ${yajaEsc(s.name)}</h3>
+        <div class="hint" style="margin:2px 0 0;">${[f.birth && "🎂 " + yajaEsc(f.birth), f.mbti && yajaEsc(f.mbti), f.job && "진로 " + yajaEsc(f.job)].filter(Boolean).join(" · ")}</div>
+        ${contact ? `<div style="font-size:13px; margin-top:4px;">${contact}</div>` : ""}
+        <div class="cd-tiles">
+          ${tile(kc("결석"), "결석", kc("결석") ? "var(--danger)" : "")}${tile(kc("지각"), "지각")}${tile(kc("조퇴"), "조퇴")}${tile(kc("결과"), "결과")}
+          ${tile(yRate === null ? "-" : yRate + "%", "야자 출석률")}${tile(`${planDone}주`, "계획서 제출")}${tile(ptsAvg, "주 평균점")}${tile(lsAvg, "듣기 평균")}
+        </div>
+        <div class="cd-noprint" style="display:flex; gap:12px; margin-top:10px;">
+          <button class="link-btn" id="cdPrint">🖨 인쇄·PDF 저장</button>
+        </div>
+      </div>
+
+      ${f.health || f.needCounsel || f.wish ? `<div class="group-block" style="border-left:4px solid var(--ochre);"><h3>📌 먼저 확인할 내용</h3>
+        ${f.health ? `<div class="cd-row"><span>건강</span><div>${yajaEsc(f.health)}</div></div>` : ""}
+        ${f.needCounsel ? `<div class="cd-row"><span>상담 희망</span><div>${yajaEsc(f.needCounsel)}</div></div>` : ""}
+        ${f.wish ? `<div class="cd-row"><span>바라는 점</span><div>${yajaEsc(f.wish)}</div></div>` : ""}</div>` : ""}
+
+      <div class="group-block"><h3>🗒 담임 메모 <span class="hint">(누가기록 · 담임만 볼 수 있어요)</span></h3>
+        <div class="cd-noprint" style="display:flex; gap:6px; margin-top:8px;">
+          <input type="date" id="cdMemoDate" value="${yajaDateKey(new Date())}" style="flex:none; width:140px;">
+          <input type="text" id="cdMemoText" placeholder="관찰한 행동, 칭찬할 점, 특이사항 등" style="flex:1; min-width:0;">
+        </div>
+        <button class="primary-btn cd-noprint" id="cdMemoAdd" style="margin-top:6px;">메모 추가</button>
+        <div id="cdMemoList">${memos.map(m => `<div class="cd-row"><span>${fmtMD(m.date)}</span><div>${yajaEsc(m.text)} <button class="link-btn cd-noprint cd-memo-del" data-id="${yajaEsc(m.id)}" style="font-size:11.5px; color:#8a8270;">삭제</button></div></div>`).join("") || `<p class="hint">아직 메모가 없어요.</p>`}</div>
+      </div>
+
+      <div class="group-block"><h3>📅 출결 <span class="hint">결석 ${kc("결석")} · 지각 ${kc("지각")} · 조퇴 ${kc("조퇴")} · 결과 ${kc("결과")}</span></h3>
+        ${notes.map(n => `<div class="cd-row"><span>${fmtMD(n.date)}</span><div><b style="color:${ATT_KIND_COLOR[n.kind] || "inherit"};">${yajaEsc(n.kind)}</b> · ${yajaEsc(n.reasonType || "")}${n.reason ? " · " + yajaEsc(n.reason) : ""}${n.kind === "결석" ? ` <span class="hint" style="margin:0;">(결석계 ${ABS_REP_LABEL[absReportStatus(n, absences)]})</span>` : ""}</div></div>`).join("") || `<p class="hint">출결 특이사항이 없어요.</p>`}
+      </div>
+
+      <div class="group-block"><h3>🦉 야간자율학습</h3>
+        ${yStat ? `<div style="font-size:13.5px; margin-top:6px;">출석률 <b>${yRate === null ? "-" : yRate + "%"}</b> · 신청 ${yStat.total}블록 중 출석 ${yStat.attended} · 사유 인정 ${yStat.excused} · <span style="color:${yStat.absent ? "var(--danger)" : "inherit"};">미입실 ${yStat.absent}</span></div>
+          <div class="hint">${yDates[0]}부터 오늘까지</div>` : `<p class="hint">야자 기록이 없어요.</p>`}
+      </div>
+
+      <div class="group-block"><h3>📝 주간 학습계획서 <span class="hint">계획 ${planDone}주 · 회고 ${reflDone}주 제출 · 주 평균 ${ptsAvg}점</span></h3>
+        ${plans.slice(0, 8).map(x => `<div class="cd-row"><span>${fmtMD(x.weekKey)}주</span><div>${x.reflectSubmitted ? `<b>${seatWeekScore(x)}점</b>` : `<span style="color:#8a8270;">${x.planSubmitted ? "회고 미제출" : "계획 미제출"}</span>`}${(x.goals || []).filter(g => g && g.trim()).length ? ` · 목표: ${(x.goals || []).filter(g => g && g.trim()).map(yajaEsc).join(" / ")}` : ""}
+          ${x.reflectSubmitted && x.reflectText ? `<br><span style="color:#6b6455;">🪞 ${yajaEsc(x.reflectText)}</span>` : ""}${x.teacherFeedback ? `<br><span style="color:var(--forest-deep);">💬 ${yajaEsc(x.teacherFeedback)}</span>` : ""}</div></div>`).join("") || `<p class="hint">작성한 계획서가 없어요.</p>`}
+        ${plans.length > 8 ? `<p class="hint">최근 8주만 보여요 (전체 ${plans.length}주)</p>` : ""}
+      </div>
+
+      <div class="group-block"><h3>🎧 영어 듣기평가 <span class="hint">응시 ${graded.length}회 · 평균 ${lsAvg}/${LS_Q}</span></h3>
+        ${lsList.length ? lsTypeHtml(lsTypeStats(lsList), lsList.length) : `<p class="hint">채점된 기록이 없어요.</p>`}
+      </div>
+
+      <div class="group-block"><h3>💬 상담 기록 <span class="hint">${recs.length}건</span></h3>
+        ${recs.map(r => `<div class="cd-row"><span>${fmtMD(r.date)}</span><div><b>${yajaEsc(r.category || "")}</b><br><span style="white-space:pre-wrap;">${yajaEsc(r.content)}</span></div></div>`).join("") || `<p class="hint">상담 기록이 없어요. (상담 탭에서 기록하면 여기에 모여요)</p>`}
+      </div>
+
+      <div class="group-block"><h3>🙋 저를 소개합니다 <span class="hint">${p ? (p.submittedAt ? "제출 " + sgWhen(p.submittedAt) : "작성 중") : "미작성"}</span></h3>
+        <button class="link-btn cd-noprint" id="cdEditProfile" style="margin:6px 0;">✏️ 담임이 대신 입력·수정 (종이로 받은 내용 옮기기)</button>
+        ${cdProfileHtml(p)}
+      </div>
+    </div>`;
+
+    document.getElementById("cdEditProfile").onclick = () => cdOpenForm(uid, { num: s.num, name: s.name });
+    document.getElementById("cdPrint").onclick = () => {
+      const w = window.open("", "_blank"); if(!w){ alert("팝업이 차단됐어요. 팝업을 허용해주세요."); return; }
+      w.document.write(`<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${Number(s.num) || ""}번 ${yajaEsc(s.name)} 학생 카드</title><style>
+        body{ font-family:'Malgun Gothic','Noto Sans KR',sans-serif; font-size:12px; color:#111; margin:18px; }
+        .cd-noprint, button{ display:none !important; } h3{ font-size:14px; margin:14px 0 4px; border-bottom:1.5px solid #333; padding-bottom:3px; } h4{ font-size:12.5px; margin:10px 0 2px; }
+        .hint{ color:#666; font-weight:400; font-size:11px; } .cd-row{ display:flex; gap:8px; padding:3px 0; border-bottom:1px solid #ddd; } .cd-row > span{ width:86px; flex:none; color:#555; }
+        .cd-tiles{ display:flex; flex-wrap:wrap; gap:6px; margin-top:8px; } .cd-tile{ border:1px solid #999; border-radius:6px; padding:5px 10px; text-align:center; } .cd-tile b{ display:block; font-size:15px; } .cd-tile span{ font-size:10.5px; color:#555; }
+        .ls-type{ display:flex; gap:6px; font-size:11px; } .ls-type .nm{ width:150px; } .ls-type .bg{ display:none; } a{ color:inherit; text-decoration:none; }
+        .group-block{ page-break-inside:avoid; }</style></head><body>${document.getElementById("cdCard").innerHTML}</body></html>`);
+      w.document.close(); w.focus(); setTimeout(() => w.print(), 300);
+    };
+    const saveMemos = items => db.collection("studentMemos").doc(uid).set({ uid, num: s.num, name: s.name, items, updatedAt: firebase.firestore.FieldValue.serverTimestamp() });
+    document.getElementById("cdMemoAdd").onclick = async () => {
+      const text = document.getElementById("cdMemoText").value.trim(), date = document.getElementById("cdMemoDate").value;
+      if(!text || !date){ alert("날짜와 내용을 적어주세요."); return; }
+      try{ await saveMemos(memos.concat([{ id: Date.now().toString(36), date, text }])); cdTeacherCard(uid); }
+      catch(e){ console.error(e); alert("저장하지 못했어요."); }
+    };
+    body.querySelectorAll(".cd-memo-del").forEach(b => b.onclick = async () => {
+      if(!confirm("이 메모를 지울까요?")) return;
+      try{ await saveMemos(memos.filter(m => m.id !== b.dataset.id)); cdTeacherCard(uid); }catch(e){ console.error(e); alert("지우지 못했어요."); }
+    });
+  }catch(e){
+    console.error("학생 카드 불러오기 실패", e);
+    body.innerHTML = `<button class="link-btn" onclick="cdTeacherList()">← 목록</button><p class="hint">불러오지 못했어요 (${yajaEsc(e.code || e.message)}).</p>`;
+  }
 }
 
 /* =========================================================
