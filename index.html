@@ -201,6 +201,23 @@
   .ls-type .bg > div{ height:100%; }
   .ls-type .v{ width:74px; text-align:right; flex:none; color:#8a8270; font-size:11.5px; }
   .ls-stu{ cursor:pointer; }
+  .cal-grid{ display:grid; grid-template-columns:repeat(7, minmax(0, 1fr)); gap:3px; }
+  .cal-head div{ text-align:center; font-size:12px; color:#8a8270; padding:2px 0 4px; }
+  .cal-grid .red{ color:#d04848; } .cal-grid .blue{ color:#3f6fb5; }
+  .cal-cell{ min-height:62px; border:1px solid var(--line); border-radius:7px; padding:3px 2px; background:#fff; cursor:pointer; overflow:hidden; }
+  .cal-cell.off{ border:none; background:none; cursor:default; }
+  .cal-cell.holi{ background:#FDF0EE; }
+  .cal-cell.today{ border:2px solid var(--forest); }
+  .cal-cell.sel{ box-shadow:0 0 0 2px var(--ochre); }
+  .cal-cell b{ display:block; font-size:12.5px; padding-left:2px; }
+  .cal-cell i{ display:block; font-style:normal; font-size:9.5px; line-height:1.25; color:#fff; border-radius:3px; padding:1px 2px; margin-top:2px; white-space:nowrap; overflow:hidden; }
+  .cal-cell i.h{ background:none; color:#d04848; padding:0 2px; }
+  .cal-cell i.more{ background:none; color:#8a8270; }
+  .cal-item{ display:flex; gap:8px; padding:8px 0; border-top:1px solid var(--line); font-size:14px; line-height:1.5; }
+  .cal-item > div{ flex:1; min-width:0; }
+  .cal-jump{ cursor:pointer; }
+  .cal-form{ border-top:1px dashed var(--line); margin-top:10px; padding-top:12px; }
+  .cal-form input[type=text], .cal-form input[type=date], .cal-form textarea{ width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:6px; font-size:14px; font-family:inherit; background:#fff; }
   .cd-f label, .cd-box label{ display:block; font-size:12.5px; font-weight:500; color:var(--forest-deep); margin:8px 0 4px; line-height:1.45; }
   .cd-f{ margin-bottom:12px; } .cd-f.sub{ margin:-6px 0 12px 14px; }
   .cd-f input, .cd-f textarea, .cd-box input{ width:100%; padding:9px 11px; border:1px solid var(--line); border-radius:6px; font-size:14px; font-family:inherit; background:#fff; }
@@ -292,7 +309,7 @@
 <div class="wrap">
 
   <div class="brand">
-    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1110-4</span></h1>
+    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1110-6</span></h1>
     <div id="brandRight"></div>
   </div>
 
@@ -377,10 +394,12 @@
       <button id="tabBtnSuggest" onclick="switchMainTab('suggest')" style="display:none;"><span class="ti">📮</span><span class="tl">건의함</span></button>
       <button id="tabBtnSeat" onclick="switchMainTab('seat')" style="display:none;"><span class="ti">🪑</span><span class="tl">자리</span></button>
       <button id="tabBtnListen" onclick="switchMainTab('listen')" style="display:none;"><span class="ti">🎧</span><span class="tl">영어듣기</span></button>
+      <button id="tabBtnCal" onclick="switchMainTab('cal')" style="display:none;"><span class="ti">🗓️</span><span class="tl">월간일정</span></button>
       <button id="tabBtnCard" onclick="switchMainTab('card')" style="display:none;"><span class="ti">🙋</span><span class="tl">내 소개</span></button>
     </div>
 
     <div class="tab-panel active" id="panel-timetable">
+      <div id="calToday" style="display:none; background:#FFF4D6; border-radius:10px; padding:10px 14px; font-size:13.5px; line-height:1.7; margin-bottom:12px;"></div>
       <div class="day-tabs" id="dayTabs"></div>
       <div id="periodList"></div>
       <div class="footer-actions">
@@ -720,6 +739,10 @@
       <div id="lsBody"><p class="hint">불러오는 중...</p></div>
     </div>
 
+    <div class="tab-panel" id="panel-cal">
+      <div id="calBody"><p class="hint">불러오는 중...</p></div>
+    </div>
+
     <div class="tab-panel" id="panel-card">
       <div id="cdBody"><p class="hint">불러오는 중...</p></div>
     </div>
@@ -1046,6 +1069,7 @@ function enterApp(){
     setupSeatTab();
     setupListenTab();
     setupCardTab();
+    setupCalTab();
   } else {
     goToSelectScreen();
   }
@@ -1080,6 +1104,9 @@ function switchMainTab(tab){
   document.getElementById("tabBtnListen").classList.toggle("active", tab === "listen");
   document.getElementById("panel-listen").classList.toggle("active", tab === "listen");
   if(tab === "listen") lsOnTabOpen();
+  document.getElementById("tabBtnCal").classList.toggle("active", tab === "cal");
+  document.getElementById("panel-cal").classList.toggle("active", tab === "cal");
+  if(tab === "cal") calOnTabOpen();
   document.getElementById("tabBtnCard").classList.toggle("active", tab === "card");
   document.getElementById("panel-card").classList.toggle("active", tab === "card");
   if(tab === "card") cdOnTabOpen(); else if(cdSaveTimer) cdSave(false); // 다른 탭으로 갈 때 쓰던 내용 저장
@@ -1156,6 +1183,7 @@ async function handleSaveSelection(){
   setupSeatTab();
   setupListenTab();
   setupCardTab();
+  setupCalTab();
 }
 
 /* =========================================================
@@ -5351,6 +5379,195 @@ async function cdTeacherCard(uid){
     console.error("학생 카드 불러오기 실패", e);
     body.innerHTML = `<button class="link-btn" onclick="cdTeacherList()">← 목록</button><p class="hint">불러오지 못했어요 (${yajaEsc(e.code || e.message)}).</p>`;
   }
+}
+
+/* =========================================================
+   20. 월간 일정 — 학급 달력 (담임 + 편집 권한을 받은 학생이 입력·수정)
+   ========================================================= */
+const CAL_TYPES = ["일정", "시험", "수행", "행사", "휴일"];
+const CAL_COLOR = { "일정": "#5b7088", "시험": "#c0573e", "수행": "#c98a1d", "행사": "#3d7a52", "휴일": "#d04848" };
+const CAL_HOLI_PRESET = ["재량휴업일", "개교기념일", "대체공휴일", "공휴일", "방학"];
+// 법정 공휴일 — 담임이 '한 번에 넣기'를 누르면 휴일 일정으로 등록됨 (넣은 뒤 수정·삭제 가능)
+const CAL_PUBLIC = {
+  "2026-12-25": "성탄절",
+  "2027-01-01": "신정", "2027-02-06": "설 연휴", "2027-02-07": "설날", "2027-02-08": "설 연휴", "2027-02-09": "대체공휴일",
+  "2027-03-01": "삼일절", "2027-05-05": "어린이날", "2027-05-13": "부처님오신날", "2027-06-06": "현충일",
+  "2027-08-15": "광복절", "2027-08-16": "대체공휴일", "2027-09-14": "추석 연휴", "2027-09-15": "추석", "2027-09-16": "추석 연휴",
+  "2027-10-03": "개천절", "2027-10-04": "대체공휴일", "2027-10-09": "한글날", "2027-10-11": "대체공휴일", "2027-12-25": "성탄절", "2027-12-27": "대체공휴일",
+};
+let calEvents = [], calUnsub = null, calY = null, calM = null, calSel = null, calEditId = null;
+
+const calKey = d => yajaDateKey(d);
+const calCanEdit = () => currentProfile && (currentProfile.role === "teacher" || currentProfile.calEditor === true);
+const calEnd = e => e.endDate && e.endDate > e.date ? e.endDate : e.date;
+const calOn = key => calEvents.filter(e => e.date <= key && key <= calEnd(e)).sort((a, b) => CAL_TYPES.indexOf(b.type) - CAL_TYPES.indexOf(a.type) || (a.date < b.date ? -1 : 1));
+// 그날이 쉬는 날인지: 일정에 '휴일'이 있으면 그 이름
+function calHolidayName(key){
+  const h = calEvents.find(e => e.type === "휴일" && e.date <= key && key <= calEnd(e));
+  return h ? h.title : "";
+}
+// 아직 달력에 안 들어간 법정 공휴일 (오늘 이후)
+function calMissingPublic(){
+  const today = calKey(new Date());
+  return Object.keys(CAL_PUBLIC).filter(k => k >= today && !calHolidayName(k)).sort();
+}
+
+function setupCalTab(){
+  const role = currentProfile && currentProfile.role;
+  const btn = document.getElementById("tabBtnCal");
+  if(role !== "student" && role !== "teacher"){ btn.style.display = "none"; return; }
+  btn.style.display = "";
+  if(calUnsub) return;
+  calUnsub = db.collection("classEvents").onSnapshot(snap => {
+    calEvents = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(e => typeof e.date === "string");
+    calTodayBanner();
+    if(document.getElementById("panel-cal").classList.contains("active")) calRender();
+  }, e => console.warn("월간 일정 불러오기 실패", e));
+}
+function calOnTabOpen(){
+  const n = new Date();
+  if(calY === null){ calY = n.getFullYear(); calM = n.getMonth(); }
+  if(!calSel) calSel = calKey(n);
+  calEditId = null; calRender();
+}
+// 시간표 탭 위: 오늘 일정·쉬는 날, 다가오는 시험 D-day
+function calTodayBanner(){
+  const el = document.getElementById("calToday"); if(!el) return;
+  const today = calKey(new Date()), items = calOn(today), holi = calHolidayName(today);
+  const t0 = new Date(today + "T00:00:00");
+  const exam = calEvents.filter(e => e.type === "시험" && e.date > today).sort((a, b) => a.date < b.date ? -1 : 1)[0];
+  const parts = [];
+  if(holi) parts.push(`🎉 오늘은 <b>${yajaEsc(holi)}</b> (쉬는 날)`);
+  items.filter(e => e.type !== "휴일").forEach(e => parts.push(`<span style="color:${CAL_COLOR[e.type] || "inherit"};">●</span> 오늘 <b>${yajaEsc(e.title)}</b>`));
+  if(exam) parts.push(`📌 ${yajaEsc(exam.title)} <b>D-${Math.round((new Date(exam.date + "T00:00:00") - t0) / 86400000)}</b>`);
+  el.style.display = parts.length ? "block" : "none";
+  el.innerHTML = parts.join("<br>");
+}
+
+function calRender(){
+  const body = document.getElementById("calBody"); if(!body) return;
+  const first = new Date(calY, calM, 1), last = new Date(calY, calM + 1, 0), today = calKey(new Date());
+  const mStart = calKey(first), mEnd = calKey(last);
+  let cells = "";
+  for(let i = 0; i < first.getDay(); i++) cells += `<div class="cal-cell off"></div>`;
+  for(let d = 1; d <= last.getDate(); d++){
+    const dt = new Date(calY, calM, d), key = calKey(dt), dow = dt.getDay();
+    const evs = calOn(key), holi = calHolidayName(key);
+    const chips = evs.filter(e => e.type !== "휴일").slice(0, 3).map(e => `<i style="background:${CAL_COLOR[e.type] || "#888"};">${yajaEsc(e.title)}</i>`).join("");
+    cells += `<div class="cal-cell${holi ? " holi" : ""}${key === today ? " today" : ""}${key === calSel ? " sel" : ""}" data-key="${key}">
+      <b class="${holi || dow === 0 ? "red" : dow === 6 ? "blue" : ""}">${d}</b>${holi ? `<i class="h">${yajaEsc(holi)}</i>` : ""}${chips}${evs.filter(e => e.type !== "휴일").length > 3 ? `<i class="more">+${evs.filter(e => e.type !== "휴일").length - 3}</i>` : ""}</div>`;
+  }
+  const monthEvs = calEvents.filter(e => e.date <= mEnd && calEnd(e) >= mStart).sort((a, b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+  const range = e => fmtMD(e.date) + (calEnd(e) !== e.date ? `~${fmtMD(calEnd(e))}` : "");
+  const canEdit = calCanEdit();
+  const selEvs = calOn(calSel), selPub = "";
+  const missPub = currentProfile.role === "teacher" ? calMissingPublic() : [];
+  const ed = calEditId ? calEvents.find(e => e.id === calEditId) : null;
+  const dowName = "일월화수목금토"[new Date(calSel + "T00:00:00").getDay()];
+
+  body.innerHTML = `<div class="group-block">
+    <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:8px;">
+      <button class="link-btn" id="calPrev">◀</button>
+      <h3 style="margin:0; font-size:17px;">${calY}년 ${calM + 1}월</h3>
+      <button class="link-btn" id="calNext">▶</button>
+    </div>
+    <div class="cal-grid cal-head"><div class="red">일</div><div>월</div><div>화</div><div>수</div><div>목</div><div>금</div><div class="blue">토</div></div>
+    <div class="cal-grid">${cells}</div>
+    <div class="hint" style="margin-top:8px;">${CAL_TYPES.map(t => `<span style="color:${CAL_COLOR[t]};">●</span> ${t}`).join(" &nbsp;")} · 날짜를 누르면 자세히 보여요${canEdit ? " (추가·수정 가능)" : ""}</div>
+  </div>
+
+  <div class="group-block"><h3>${fmtMD(calSel)} (${dowName})</h3>
+    ${selPub && !selEvs.some(e => e.type === "휴일") ? `<div class="cal-item"><span style="color:${CAL_COLOR["휴일"]};">●</span><div><b>${yajaEsc(selPub)}</b> <span class="hint" style="margin:0;">공휴일</span></div></div>` : ""}
+    ${selEvs.map(e => `<div class="cal-item"><span style="color:${CAL_COLOR[e.type] || "#888"};">●</span><div><b>${yajaEsc(e.title)}</b> <span class="hint" style="margin:0;">${yajaEsc(e.type)}${calEnd(e) !== e.date ? " · " + range(e) : ""}</span>${e.memo ? `<br><span style="font-size:13px; white-space:pre-wrap;">${yajaEsc(e.memo)}</span>` : ""}
+      ${canEdit ? `<br><button class="link-btn cal-edit" data-id="${yajaEsc(e.id)}" style="font-size:12px;">수정</button> <button class="link-btn cal-del" data-id="${yajaEsc(e.id)}" style="font-size:12px; color:var(--danger);">삭제</button>` : ""}</div></div>`).join("") || (selPub ? "" : `<p class="hint">이 날은 등록된 일정이 없어요.</p>`)}
+    ${canEdit ? `<div class="cal-form">
+      <b style="font-size:13.5px;">${ed ? "✏️ 일정 수정" : "＋ 일정 추가"}</b>
+      <div class="cd-pick" id="calType" data-v="${yajaEsc(ed ? ed.type : "일정")}" style="margin:8px 0;">${CAL_TYPES.map(t => `<button type="button" class="${t === (ed ? ed.type : "일정") ? "on" : ""}">${t}</button>`).join("")}</div>
+      <div id="calHoliPreset" style="display:${ed && ed.type === "휴일" ? "flex" : "none"}; flex-wrap:wrap; gap:5px; margin-bottom:8px;">${CAL_HOLI_PRESET.map(t => `<button type="button" class="link-btn cal-preset" style="font-size:12.5px;">${t}</button>`).join("")}</div>
+      <input type="text" id="calTitle" maxlength="40" placeholder="예: 2학기 기말고사, 재량휴업일, 수학 수행평가" value="${yajaEsc(ed ? ed.title : "")}">
+      <div style="display:flex; gap:6px; align-items:center; margin-top:6px; font-size:13px;">
+        <input type="date" id="calStart" value="${ed ? ed.date : calSel}" style="flex:1; min-width:0;"> ~ <input type="date" id="calEndDate" value="${ed && calEnd(ed) !== ed.date ? calEnd(ed) : ""}" style="flex:1; min-width:0;">
+      </div>
+      <div class="hint" style="margin:4px 0 0;">하루짜리면 끝나는 날은 비워두세요. <b>'휴일'</b>로 넣으면 평일도 쉬는 날로 바뀌고, 그날은 야자와 독촉 알림도 자동으로 쉬어요.</div>
+      <textarea id="calMemo" rows="2" maxlength="300" placeholder="메모 (선택) — 시험 범위, 준비물 등" style="margin-top:6px;">${yajaEsc(ed ? ed.memo || "" : "")}</textarea>
+      <button class="primary-btn" id="calSave" style="margin-top:8px;">${ed ? "수정 저장" : "추가"}</button>
+      ${ed ? `<button class="link-btn" id="calCancel" style="margin-top:6px;">수정 취소</button>` : ""}
+    </div>` : ""}
+  </div>
+
+  <div class="group-block"><h3>${calM + 1}월 일정 <span class="hint">${monthEvs.length}건</span></h3>
+    ${monthEvs.map(e => `<div class="cal-item cal-jump" data-key="${e.date < mStart ? mStart : e.date}"><span style="color:${CAL_COLOR[e.type] || "#888"};">●</span><div><span style="color:#8a8270; font-size:12.5px;">${range(e)}</span> <b>${yajaEsc(e.title)}</b> <span class="hint" style="margin:0;">${yajaEsc(e.type)}</span></div></div>`).join("") || `<p class="hint">이번 달 일정이 아직 없어요.</p>`}
+  </div>
+  ${missPub.length ? `<div class="group-block" style="border-left:4px solid var(--ochre);"><h3>📅 법정 공휴일 ${missPub.length}일이 아직 달력에 없어요</h3>
+    <p class="hint" style="margin-top:4px;">${missPub.slice(0, 6).map(k => `${fmtMD(k)} ${yajaEsc(CAL_PUBLIC[k])}`).join(", ")}${missPub.length > 6 ? ` 외 ${missPub.length - 6}일` : ""}<br>넣은 뒤에도 하나씩 수정·삭제할 수 있어요. 학사일정과 다른 날이 있으면 고쳐주세요.</p>
+    <button class="primary-btn" id="calAddPublic" style="margin-top:6px;">공휴일 한 번에 넣기</button></div>` : ""}
+  ${currentProfile.role === "teacher" ? `<div class="group-block"><h3>✏️ 일정 편집 권한</h3>
+    <p class="hint" style="margin-top:4px;">누른 학생은 일정을 추가·수정·삭제할 수 있어요. (다시 누르면 해제)</p>
+    <div id="calEditors"><p class="hint">불러오는 중...</p></div></div>` : ""}`;
+
+  document.getElementById("calPrev").onclick = () => { calM--; if(calM < 0){ calM = 11; calY--; } calSel = calKey(new Date(calY, calM, 1)); calEditId = null; calRender(); };
+  document.getElementById("calNext").onclick = () => { calM++; if(calM > 11){ calM = 0; calY++; } calSel = calKey(new Date(calY, calM, 1)); calEditId = null; calRender(); };
+  body.querySelectorAll(".cal-cell[data-key], .cal-jump").forEach(c => c.onclick = () => { calSel = c.dataset.key; calEditId = null; calRender(); });
+  if(canEdit){
+    const typeBox = document.getElementById("calType");
+    typeBox.querySelectorAll("button").forEach(b => b.onclick = () => {
+      typeBox.dataset.v = b.textContent; typeBox.querySelectorAll("button").forEach(x => x.classList.toggle("on", x === b));
+      document.getElementById("calHoliPreset").style.display = b.textContent === "휴일" ? "flex" : "none";
+    });
+    body.querySelectorAll(".cal-preset").forEach(b => b.onclick = () => { document.getElementById("calTitle").value = b.textContent; });
+    body.querySelectorAll(".cal-edit").forEach(b => b.onclick = e => { e.stopPropagation(); calEditId = b.dataset.id; calRender(); document.getElementById("calTitle").scrollIntoView({ block: "center" }); });
+    body.querySelectorAll(".cal-del").forEach(b => b.onclick = async e => {
+      e.stopPropagation();
+      const ev = calEvents.find(x => x.id === b.dataset.id);
+      if(!ev || !confirm(`'${ev.title}' 일정을 지울까요?`)) return;
+      try{ await db.collection("classEvents").doc(ev.id).delete(); }catch(err){ console.error(err); alert("지우지 못했어요. 편집 권한을 확인해주세요."); }
+    });
+    const cancel = document.getElementById("calCancel"); if(cancel) cancel.onclick = () => { calEditId = null; calRender(); };
+    document.getElementById("calSave").onclick = async () => {
+      const title = document.getElementById("calTitle").value.trim(), date = document.getElementById("calStart").value, end = document.getElementById("calEndDate").value;
+      const type = typeBox.dataset.v, memo = document.getElementById("calMemo").value.trim();
+      if(!title || !date){ alert("제목과 날짜를 적어주세요."); return; }
+      if(end && end < date){ alert("끝나는 날이 시작하는 날보다 빨라요."); return; }
+      const data = { title, date, endDate: end && end > date ? end : date, type, memo,
+        updatedBy: currentUser.uid, updatedByName: currentProfile.name, updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
+      const btn = document.getElementById("calSave"); btn.disabled = true;
+      try{
+        if(ed) await db.collection("classEvents").doc(ed.id).update(data);
+        else await db.collection("classEvents").add(data);
+        calSel = date; calEditId = null; const dd = new Date(date + "T00:00:00"); calY = dd.getFullYear(); calM = dd.getMonth();
+        calRender();
+      }catch(err){ console.error("일정 저장 실패", err); alert("저장하지 못했어요. 편집 권한이 있는지 확인해주세요."); btn.disabled = false; }
+    };
+  }
+  const addPub = document.getElementById("calAddPublic");
+  if(addPub) addPub.onclick = async () => {
+    addPub.disabled = true; addPub.textContent = "넣는 중...";
+    try{
+      const batch = db.batch();
+      missPub.forEach(k => batch.set(db.collection("classEvents").doc(), { title: CAL_PUBLIC[k], date: k, endDate: k, type: "휴일", memo: "", public: true,
+        updatedBy: currentUser.uid, updatedByName: currentProfile.name, updatedAt: firebase.firestore.FieldValue.serverTimestamp() }));
+      await batch.commit();
+    }catch(e){ console.error(e); alert("넣지 못했어요."); addPub.disabled = false; addPub.textContent = "공휴일 한 번에 넣기"; }
+  };
+  if(currentProfile.role === "teacher") calRenderEditors();
+}
+let calRosterCache = null;
+async function calRenderEditors(){
+  const box = document.getElementById("calEditors"); if(!box) return;
+  try{
+    if(!calRosterCache){
+      const snap = await db.collection("students").where("role", "==", "student").get();
+      calRosterCache = snap.docs.map(d => ({ uid: d.id, ...d.data() })).sort((a, b) => a.num - b.num);
+    }
+    const box2 = document.getElementById("calEditors"); if(!box2) return;
+    box2.innerHTML = `<div class="cd-roster">${calRosterCache.map(s => `<button class="cd-stu ${s.calEditor ? "done" : ""}" data-uid="${s.uid}" style="${s.calEditor ? "border-color:var(--forest); background:#EEF3EC;" : ""}"><b>${Number(s.num) || ""}</b> ${yajaEsc(s.name)}<span>${s.calEditor ? "✏️ 편집 가능" : "보기만"}</span></button>`).join("")}</div>`;
+    box2.querySelectorAll(".cd-stu").forEach(b => b.onclick = async () => {
+      const s = calRosterCache.find(x => x.uid === b.dataset.uid); b.disabled = true;
+      try{ await db.collection("students").doc(s.uid).update({ calEditor: !s.calEditor }); s.calEditor = !s.calEditor; }
+      catch(e){ console.error(e); alert("바꾸지 못했어요."); }
+      calRenderEditors();
+    });
+  }catch(e){ console.error(e); box.innerHTML = `<p class="hint">명단을 불러오지 못했어요.</p>`; }
 }
 
 /* =========================================================
