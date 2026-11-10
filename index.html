@@ -201,6 +201,16 @@
   .ls-type .bg > div{ height:100%; }
   .ls-type .v{ width:74px; text-align:right; flex:none; color:#8a8270; font-size:11.5px; }
   .ls-stu{ cursor:pointer; }
+  .td-card{ cursor:pointer; }
+  .td-card.alert{ border-left:4px solid var(--ochre); }
+  .td-card h3{ display:flex; align-items:center; gap:6px; }
+  .td-go{ margin-left:auto; color:#b5ad98; font-size:20px; font-weight:400; }
+  .td-badge{ font-size:11.5px; font-weight:700; padding:2px 8px; border-radius:10px; background:#EEE9DD; color:#6b6455; font-family:'Noto Sans KR',sans-serif; }
+  .td-badge.on{ background:var(--ochre); color:#fff; }
+  .td-line{ font-size:13.5px; line-height:1.7; padding:5px 0; border-top:1px solid var(--line); }
+  .td-card h3 + .td-line{ border-top:none; margin-top:4px; }
+  .td-chip{ display:inline-block; font-size:12px; padding:1px 7px; margin:2px 3px 0 0; border:1px solid var(--line); border-radius:10px; background:#fff; }
+  .td-chip.warn{ border-color:var(--ochre); background:#FFF4D6; }
   .cal-grid{ display:grid; grid-template-columns:repeat(7, minmax(0, 1fr)); gap:3px; }
   .cal-head div{ text-align:center; font-size:12px; color:#8a8270; padding:2px 0 4px; }
   .cal-grid .red{ color:#d04848; } .cal-grid .blue{ color:#3f6fb5; }
@@ -309,7 +319,7 @@
 <div class="wrap">
 
   <div class="brand">
-    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1110-6</span></h1>
+    <h1><span id="classLabel">2학년 7반</span> <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1110-8</span></h1>
     <div id="brandRight"></div>
   </div>
 
@@ -384,6 +394,7 @@
   <!-- 화면 3: 메인 (시간표 / 공지사항) -->
   <div class="screen" id="screen-main">
     <div class="main-tabs">
+      <button id="tabBtnToday" onclick="switchMainTab('today')" style="display:none;"><span class="ti">🏠</span><span class="tl">오늘</span></button>
       <button id="tabBtnTimetable" class="active" onclick="switchMainTab('timetable')"><span class="ti">📅</span><span class="tl">시간표</span></button>
       <button id="tabBtnNotice" onclick="switchMainTab('notice')"><span class="ti">📢</span><span class="tl">공지사항</span></button>
       <button id="tabBtnAbsence" onclick="switchMainTab('absence')" style="display:none;"><span class="ti">🏫</span><span class="tl">출결관리</span></button>
@@ -739,6 +750,10 @@
       <div id="lsBody"><p class="hint">불러오는 중...</p></div>
     </div>
 
+    <div class="tab-panel" id="panel-today">
+      <div id="tdBody"><p class="hint">불러오는 중...</p></div>
+    </div>
+
     <div class="tab-panel" id="panel-cal">
       <div id="calBody"><p class="hint">불러오는 중...</p></div>
     </div>
@@ -1070,6 +1085,7 @@ function enterApp(){
     setupListenTab();
     setupCardTab();
     setupCalTab();
+    setupTodayTab();
   } else {
     goToSelectScreen();
   }
@@ -1104,6 +1120,9 @@ function switchMainTab(tab){
   document.getElementById("tabBtnListen").classList.toggle("active", tab === "listen");
   document.getElementById("panel-listen").classList.toggle("active", tab === "listen");
   if(tab === "listen") lsOnTabOpen();
+  document.getElementById("tabBtnToday").classList.toggle("active", tab === "today");
+  document.getElementById("panel-today").classList.toggle("active", tab === "today");
+  if(tab === "today") tdRender();
   document.getElementById("tabBtnCal").classList.toggle("active", tab === "cal");
   document.getElementById("panel-cal").classList.toggle("active", tab === "cal");
   if(tab === "cal") calOnTabOpen();
@@ -1184,6 +1203,7 @@ async function handleSaveSelection(){
   setupListenTab();
   setupCardTab();
   setupCalTab();
+  setupTodayTab();
 }
 
 /* =========================================================
@@ -2868,7 +2888,7 @@ async function setupMyQr(){
     display.style.display = willShow ? "block" : "none";
     if(willShow && !rendered){
       rendered = true;
-      const code = "207" + String(currentProfile.num).padStart(2, "0");
+      const code = `${CLASS_CFG.grade}${String(CLASS_CFG.classNo).padStart(2, "0")}` + String(currentProfile.num).padStart(2, "0");
       const sig = await yajaSign(code, YAJA_SECRET_KEY);
       const text = `YJ|${code}|${sig}`;
       const qr = qrcode(0, "Q");
@@ -5422,6 +5442,7 @@ function setupCalTab(){
     calEvents = snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(e => typeof e.date === "string");
     calTodayBanner();
     if(document.getElementById("panel-cal").classList.contains("active")) calRender();
+    if(document.getElementById("panel-today").classList.contains("active")) tdRender();
   }, e => console.warn("월간 일정 불러오기 실패", e));
 }
 function calOnTabOpen(){
@@ -5568,6 +5589,149 @@ async function calRenderEditors(){
       calRenderEditors();
     });
   }catch(e){ console.error(e); box.innerHTML = `<p class="hint">명단을 불러오지 못했어요.</p>`; }
+}
+
+/* =========================================================
+   21. 담임 '오늘 한눈에' — 로그인하면 처음 보이는 화면
+   ========================================================= */
+// 학년·반 표시 (새 학년 전환 도구가 config/class 에 적어 둠 — 없으면 2학년 7반)
+let CLASS_CFG = { grade: 2, classNo: 7 };
+try{ const c = JSON.parse(localStorage.getItem("classCfg") || "null"); if(c && c.grade && c.classNo) CLASS_CFG = c; }catch(e){}
+function applyClassLabel(){
+  const label = `${CLASS_CFG.grade}학년 ${CLASS_CFG.classNo}반`;
+  document.title = label;
+  const el = document.getElementById("classLabel"); if(el) el.textContent = label;
+}
+applyClassLabel();
+async function loadClassCfg(){
+  try{
+    const d = await db.collection("config").doc("class").get();
+    if(!d.exists || !d.data().grade || !d.data().classNo) return;
+    CLASS_CFG = { grade: Number(d.data().grade), classNo: Number(d.data().classNo) };
+    try{ localStorage.setItem("classCfg", JSON.stringify(CLASS_CFG)); }catch(e){}
+    applyClassLabel();
+  }catch(e){ console.warn("학년·반 설정을 읽지 못했어요 (기본값 사용)", e); }
+}
+
+let tdLoading = false;
+function setupTodayTab(){
+  loadClassCfg();
+  const btn = document.getElementById("tabBtnToday");
+  const isT = currentProfile && currentProfile.role === "teacher";
+  btn.style.display = isT ? "" : "none";
+  if(isT && !setupTodayTab.opened){ setupTodayTab.opened = true; switchMainTab("today"); }
+}
+function tdMondayKey(offsetWeeks){
+  const d = new Date(); d.setDate(d.getDate() - ((d.getDay() + 6) % 7) + 7 * (offsetWeeks || 0));
+  return yajaDateKey(d);
+}
+async function tdRender(){
+  const body = document.getElementById("tdBody");
+  if(tdLoading) return; tdLoading = true;
+  if(!body.dataset.loaded) body.innerHTML = `<p class="hint">불러오는 중...</p>`;
+  try{
+    const now = new Date(), today = yajaDateKey(now), dow = now.getDay();
+    const from14 = yajaDateKey(new Date(now.getTime() - 14 * 86400000));
+    const wkNow = tdMondayKey(0), wkPrev = tdMondayKey(-1);
+    const col = (c, f, op, v) => db.collection(c).where(f, op, v).get().then(s => s.docs.map(d => ({ id: d.id, ...d.data() })));
+    const openRounds = (await db.collection("listenRounds").get()).docs.map(d => ({ id: d.id, ...d.data() })).filter(r => lsStatus(r) === "open");
+    const [roster, notesToday, absNotes, absences, yAtt, yExcToday, yExcPending, ovDoc, plansNow, plansPrev, counselToday, counselPending, sugNew, profs, ...subsByRound] = await Promise.all([
+      col("students", "role", "==", "student"), col("attendanceNotes", "date", "==", today), col("attendanceNotes", "kind", "==", "결석"),
+      db.collection("absences").get().then(s => s.docs.map(d => d.data())),
+      col("yajaAttendance", "date", "==", today), col("yajaExcuses", "date", "==", today), col("yajaExcuses", "status", "==", "pending"),
+      db.collection("yajaCalendarOverrides").doc(today).get(),
+      col("studyplans", "weekKey", "==", wkNow), col("studyplans", "weekKey", "==", wkPrev),
+      col("counsels", "date", "==", today), col("counsels", "status", "==", "pending"), col("suggestions", "status", "==", "new"),
+      db.collection("studentProfiles").get().then(s => s.docs.map(d => ({ id: d.id, ...d.data() }))).catch(() => null),
+      ...openRounds.map(r => col("listenSubs", "roundId", "==", r.id)) ]);
+    const stu = roster.filter(s => s.name !== "테스트").map(s => ({ ...s, uid: s.id })).sort((a, b) => a.num - b.num);
+    const names = list => list.map(s => `<span class="td-chip">${Number(s.num) || ""} ${yajaEsc(s.name)}</span>`).join("");
+    const card = (tab, icon, title, badge, inner, alert) => `<div class="group-block td-card${alert ? " alert" : ""}" data-tab="${tab}">
+      <h3>${icon} ${title} ${badge ? `<span class="td-badge${alert ? " on" : ""}">${badge}</span>` : ""}<span class="td-go">›</span></h3>${inner}</div>`;
+    const cards = [];
+
+    // 오늘 일정
+    const holi = calHolidayName(today), evs = calOn(today).filter(e => e.type !== "휴일");
+    const exam = calEvents.filter(e => e.type === "시험" && e.date > today).sort((a, b) => a.date < b.date ? -1 : 1)[0];
+    const nextEvs = calEvents.filter(e => e.date > today && e.date <= yajaDateKey(new Date(now.getTime() + 7 * 86400000))).sort((a, b) => a.date < b.date ? -1 : 1).slice(0, 4);
+    cards.push(card("cal", "🗓️", `${now.getMonth() + 1}월 ${now.getDate()}일 (${"일월화수목금토"[dow]})`, "",
+      `${holi ? `<div class="td-line">🎉 <b>${yajaEsc(holi)}</b> — 쉬는 날</div>` : ""}
+       ${evs.map(e => `<div class="td-line"><span style="color:${CAL_COLOR[e.type] || "#888"};">●</span> <b>${yajaEsc(e.title)}</b> <span class="hint" style="margin:0;">${yajaEsc(e.type)}</span></div>`).join("")}
+       ${!holi && !evs.length ? `<div class="td-line hint" style="margin:0;">오늘 등록된 일정이 없어요.</div>` : ""}
+       ${exam ? `<div class="td-line">📌 ${yajaEsc(exam.title)} <b>D-${Math.round((new Date(exam.date + "T00:00:00") - new Date(today + "T00:00:00")) / 86400000)}</b></div>` : ""}
+       ${nextEvs.length ? `<div class="td-line hint" style="margin:0;">이번 주: ${nextEvs.map(e => `${fmtMD(e.date)} ${yajaEsc(e.title)}`).join(" · ")}</div>` : ""}`));
+
+    // 출결
+    const unconfirmed = notesToday.filter(n => n.status === "open");
+    const byKind = k => notesToday.filter(n => n.kind === k);
+    cards.push(card("absence", "🏫", "오늘 출결", unconfirmed.length ? `미확인 ${unconfirmed.length}` : "", notesToday.length
+      ? ["결석", "지각", "조퇴", "결과"].filter(k => byKind(k).length).map(k => `<div class="td-line"><b style="color:${ATT_KIND_COLOR[k] || "inherit"};">${k} ${byKind(k).length}</b> ${byKind(k).map(n => `<span class="td-chip${n.status === "open" ? " warn" : ""}">${Number(n.num) || ""} ${yajaEsc(n.name)}${n.status === "open" ? " · 미확인" : n.status === "arrived" ? " · 등교" : ""}</span>`).join("")}</div>`).join("")
+      : `<div class="td-line hint" style="margin:0;">오늘 출결 특이사항이 없어요. 전원 출석 👍</div>`, unconfirmed.length > 0));
+
+    // 결석계 미제출 (최근 2주, 오늘 제외)
+    const gaps = absNotes.filter(n => n.date >= from14 && n.date < today).map(n => ({ n, st: absReportStatus(n, absences) })).filter(x => x.st === "none" || x.st === "waiting")
+      .sort((a, b) => a.n.date < b.n.date ? 1 : -1);
+    if(gaps.length) cards.push(card("absence", "📄", "결석계 안 낸 학생", `${gaps.length}건`,
+      gaps.map(x => `<div class="td-line">${fmtMD(x.n.date)} <b>${Number(x.n.num) || ""} ${yajaEsc(x.n.name)}</b> <span class="hint" style="margin:0;">${ABS_REP_LABEL[x.st]}</span></div>`).join(""), true));
+
+    // 야자
+    const blocks = yajaEffectiveBlocks(dow, ovDoc.exists ? ovDoc.data().operating : null);
+    if(blocks.length){
+      const done = {}, exc = {};
+      yAtt.forEach(r => { if(r.checkInAt) done[`${r.num}_${r.block}`] = 1; if(r.excused) exc[`${r.num}_${r.block}`] = 1; });
+      yExcToday.forEach(r => { if(r.status !== "rejected") exc[`${r.num}_${r.block}`] = 1; });
+      const lines = blocks.filter(b => stu.some(s => yajaIsEnrolled(s.yajaEnroll, dow, b.key))).map(b => {
+        const enrolled = stu.filter(s => yajaIsEnrolled(s.yajaEnroll, dow, b.key));
+        const inN = enrolled.filter(s => done[`${s.num}_${b.key}`]).length, exN = enrolled.filter(s => !done[`${s.num}_${b.key}`] && exc[`${s.num}_${b.key}`]).length;
+        const started = now.getHours() * 60 + now.getMinutes() >= yajaToMinutes(b.start);
+        const miss = started ? enrolled.filter(s => !done[`${s.num}_${b.key}`] && !exc[`${s.num}_${b.key}`]) : [];
+        return { html: `<div class="td-line"><b>${yajaEsc(b.label)}</b> ${b.start}~${b.end} · 신청 ${enrolled.length} · 입실 ${inN} · 사유 ${exN}${started ? ` · <b style="color:${miss.length ? "var(--danger)" : "inherit"};">미입실 ${miss.length}</b>` : ` <span class="hint" style="margin:0;">(시작 전)</span>`}${miss.length ? `<br>${names(miss)}` : ""}</div>`, miss: miss.length };
+      });
+      cards.push(card("yajaadmin", "🦉", "오늘 야자", yExcPending.length ? `사유 대기 ${yExcPending.length}` : "", lines.map(l => l.html).join("") || `<div class="td-line hint" style="margin:0;">오늘 신청한 학생이 없어요.</div>`, yExcPending.length > 0 || lines.some(l => l.miss)));
+    } else cards.push(card("yajaadmin", "🦉", "오늘 야자", yExcPending.length ? `사유 대기 ${yExcPending.length}` : "", `<div class="td-line hint" style="margin:0;">오늘은 야자가 없어요.</div>`, yExcPending.length > 0));
+
+    // 학습계획서
+    const planIn = new Set(plansNow.filter(p => p.planSubmitted).map(p => p.studentUid)), reflIn = new Set(plansPrev.filter(p => p.reflectSubmitted).map(p => p.studentUid));
+    const planLeft = stu.filter(s => !planIn.has(s.uid)), reflLeft = stu.filter(s => !reflIn.has(s.uid));
+    const fbWait = plansPrev.filter(p => p.reflectSubmitted && !p.teacherFeedback).length;
+    const planOpen = now < new Date(new Date(wkNow + "T00:00:00").getTime() + 86400000);
+    cards.push(card("studyplan", "📝", "주간 학습계획서", fbWait ? `피드백 대기 ${fbWait}` : "",
+      `<div class="td-line">이번 주 계획 <b>${planIn.size}/${stu.length}</b> 제출${planOpen ? " <span class='hint' style='margin:0;'>(오늘 24:00 마감)</span>" : ""}${planLeft.length && planLeft.length <= 12 ? `<br>${names(planLeft)}` : ""}</div>
+       <div class="td-line">지난주 회고 <b>${reflIn.size}/${stu.length}</b> 제출${reflLeft.length && reflLeft.length <= 8 ? `<br>${names(reflLeft)}` : ""}</div>`, fbWait > 0));
+
+    // 듣기평가
+    openRounds.forEach((r, i) => {
+      const done = new Set(subsByRound[i].map(x => x.uid)), left = stu.filter(s => !done.has(s.uid));
+      cards.push(card("listen", "🎧", yajaEsc(r.title), `${done.size}/${stu.length}`,
+        `<div class="td-line">마감 ${lsFmt(lsTs(r.dueAt))} · 미응시 <b>${left.length}</b>${left.length && left.length <= 14 ? `<br>${names(left)}` : ""}</div>`));
+    });
+
+    // 상담
+    const cToday = counselToday.filter(c => c.status === "confirmed" || c.status === "pending").sort((a, b) => (a.slot || "") < (b.slot || "") ? -1 : 1);
+    if(cToday.length || counselPending.length) cards.push(card("counsel", "💬", "상담", counselPending.length ? `신청 대기 ${counselPending.length}` : "",
+      (cToday.map(c => `<div class="td-line">오늘 <b>${yajaEsc(c.slotLabel || "")}</b> · ${Number(c.num) || ""} ${yajaEsc(c.name)} · ${yajaEsc(c.topic || "")}${c.status === "pending" ? " <span class='hint' style='margin:0;'>(확정 전)</span>" : ""}</div>`).join("")
+        || `<div class="td-line hint" style="margin:0;">오늘 잡힌 상담은 없어요.</div>`), counselPending.length > 0));
+
+    // 건의함
+    if(sugNew.length) cards.push(card("suggest", "📮", "새 건의·칭찬", `${sugNew.length}건`, sugNew.slice(0, 3).map(x => `<div class="td-line" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${yajaEsc((x.content || "").slice(0, 60))}</div>`).join(""), true));
+
+    // 자기소개
+    if(profs){
+      const sub = new Set(profs.filter(p => p.submittedAt).map(p => p.id)), left = stu.filter(s => !sub.has(s.uid));
+      if(left.length) cards.push(card("card", "👤", "자기소개 미제출", `${left.length}명`, `<div class="td-line">${left.length <= 10 ? names(left) : `<span class="hint" style="margin:0;">학생카드 탭에서 작성 요청 알림을 보낼 수 있어요.</span>`}</div>`));
+    }
+
+    const todo = cards.filter(c => c.includes("td-card alert")).length;
+    body.dataset.loaded = "1";
+    body.innerHTML = `<div style="display:flex; justify-content:space-between; align-items:center; margin:0 2px 10px;">
+        <b style="font-size:15px;">${todo ? `확인할 것 ${todo}가지` : "오늘 확인할 것 없음 ✨"}</b>
+        <button class="link-btn" id="tdRefresh">🔄 새로고침</button></div>${cards.join("")}`;
+    body.querySelectorAll(".td-card").forEach(c => c.onclick = () => switchMainTab(c.dataset.tab));
+    document.getElementById("tdRefresh").onclick = e => { e.stopPropagation(); tdRender(); };
+  }catch(e){
+    console.error("오늘 한눈에 불러오기 실패", e);
+    body.innerHTML = `<p class="hint">불러오지 못했어요 (${yajaEsc(e.code || e.message)}). <button class="link-btn" onclick="tdRender()">다시 시도</button></p>`;
+  }finally{ tdLoading = false; }
 }
 
 /* =========================================================

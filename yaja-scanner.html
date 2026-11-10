@@ -137,6 +137,14 @@ const db = fbApp.firestore();
 function numToEmail(num){ return `s${num}@${EMAIL_DOMAIN}`; }
 
 let gateUser = null, gateProfile = null;
+// 우리 반 QR 앞자리 (학년 + 반 두 자리). 새 학년 전환 뒤에는 config/class 값으로 바뀜
+let CLASS_PREFIX = "207";
+async function loadClassPrefix(){
+  try{
+    const d = await db.collection("config").doc("class").get();
+    if(d.exists && d.data().grade && d.data().classNo) CLASS_PREFIX = `${d.data().grade}${String(d.data().classNo).padStart(2, "0")}`;
+  }catch(e){ console.warn("학년·반 설정을 읽지 못했어요 (기본값 사용)", e); }
+}
 let rosterMap = {}; // num(1~27) -> {uid, name}
 
 document.getElementById("gateLoginBtn").addEventListener("click", async () => {
@@ -174,6 +182,7 @@ auth.onAuthStateChanged(async (user) => {
     await auth.signOut();
     return;
   }
+  await loadClassPrefix();
 
   document.getElementById("authGate").style.display = "none";
   document.getElementById("appRoot").style.display = "block";
@@ -406,8 +415,8 @@ async function handleCode(text){
     showFeedback("bad", "✕", "위조 의심", "비밀키가 일치하지 않는 QR이에요.");
     return;
   }
-  if(!code.startsWith("207")){
-    showFeedback("bad", "✕", "다른 반 QR", "2학년 7반 QR이 아니에요.");
+  if(!code.startsWith(CLASS_PREFIX)){
+    showFeedback("bad", "✕", "다른 반 QR", "우리 반 QR이 아니에요.");
     return;
   }
   const num = parseInt(code.slice(3), 10);

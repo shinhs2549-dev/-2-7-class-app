@@ -55,6 +55,8 @@
 
     <div class="page-outer" id="page1Outer">
       <div class="page-inner" id="page1" style="background-image:url('assets/abs-form-1.jpg');">
+        <div class="ov" id="p1GradeFix" style="display:none; left:174px; top:197px; width:22px; height:32px; background:#fff; font-size:19px; line-height:32px; text-align:center;"></div>
+        <div class="ov" id="p1BanFix" style="display:none; left:320px; top:197px; width:24px; height:32px; background:#fff; font-size:19px; line-height:32px; text-align:center;"></div>
         <div class="ov ov-text" id="p1Num" style="left:400px; top:203px;"></div>
         <div class="ov ov-text" id="p1Name" style="left:300px; top:250px;"></div>
         <div class="ov-circle" id="p1TypeCircle"></div>
@@ -176,6 +178,17 @@ async function init(){
     const doc = await db.collection("absences").doc(absenceId).get();
     if(!doc.exists){ showMsg("결석계를 찾을 수 없어요.", true); return; }
     absenceData = doc.data();
+    // 학년·반 (새 학년 전환 뒤에는 config/class 값으로 표시)
+    try{
+      const c = await db.collection("config").doc("class").get();
+      const cfg = c.exists ? c.data() : null;
+      if(cfg && cfg.grade && cfg.classNo){
+        document.getElementById("p2Grade").textContent = cfg.grade;
+        document.getElementById("p2Ban").textContent = cfg.classNo;
+        if(Number(cfg.grade) !== 2){ const g = document.getElementById("p1GradeFix"); g.textContent = cfg.grade; g.style.display = "block"; }
+        if(Number(cfg.classNo) !== 7){ const b = document.getElementById("p1BanFix"); b.textContent = cfg.classNo; b.style.display = "block"; }
+      }
+    }catch(e){ console.warn("학년·반 설정을 읽지 못했어요 (기본값 사용)", e); }
     if(absenceData.status === "submitted"){
       document.getElementById("loadingMsg").style.display = "none";
       document.getElementById("doneMsg").style.display = "block";
