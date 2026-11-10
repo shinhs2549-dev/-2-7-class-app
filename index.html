@@ -272,7 +272,7 @@
 <div class="wrap">
 
   <div class="brand">
-    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1110-1</span></h1>
+    <h1>2학년 7반 <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1110-2</span></h1>
     <div id="brandRight"></div>
   </div>
 
@@ -1652,6 +1652,11 @@ function subscribeMyAbsences(){
     const d = new Date(monday); d.setDate(d.getDate() + 1);
     d.setHours(0, 0, 0, 0); return d;
   }
+  // 회고 마감: 다음 주 월요일 24:00 (담임이 풀어주면 그 뒤에도 제출 가능)
+  function reflectDeadlineFor(monday){
+    const d = new Date(monday); d.setDate(d.getDate() + 8);
+    d.setHours(0, 0, 0, 0); return d;
+  }
   function nowTimeStr(){ const n = new Date(); return `${pad(n.getHours())}:${pad(n.getMinutes())}`; }
 
   function defaultDay(){
@@ -1671,7 +1676,7 @@ function subscribeMyAbsences(){
       goals: ["", "", ""],
       days: DAY_NAMES.map(() => defaultDay()),
       planSubmitted: false, planOverride: false,
-      reflectText: "", reflectSubmitted: false,
+      reflectText: "", reflectSubmitted: false, reflectOverride: false,
       teacherFeedback: "",
     };
   }
@@ -1709,6 +1714,7 @@ function subscribeMyAbsences(){
     if(typeof s.planOverride !== "boolean") s.planOverride = false;
     if(typeof s.reflectText !== "string") s.reflectText = "";
     if(typeof s.reflectSubmitted !== "boolean") s.reflectSubmitted = false;
+    if(typeof s.reflectOverride !== "boolean") s.reflectOverride = false;
     if(typeof s.teacherFeedback !== "string") s.teacherFeedback = "";
     return s;
   }
@@ -2082,37 +2088,48 @@ function subscribeMyAbsences(){
       spUpdateScores(); await spSaveWeek(); spRender();
     };
     const reflectUnlockBtn = document.getElementById("reflectUnlockBtn");
-    reflectUnlockBtn.style.display = spViewerIsTeacher && spState.reflectSubmitted ? "block" : "none";
+    const reflectLate = !spState.reflectSubmitted && !spState.reflectOverride && new Date() >= reflectDeadlineFor(monday);
+    reflectUnlockBtn.style.display = spViewerIsTeacher && (spState.reflectSubmitted || reflectLate) ? "block" : "none";
+    reflectUnlockBtn.textContent = spState.reflectSubmitted ? "🔓 회고 제출 풀어주기" : "🔓 회고 마감 풀어주기 (늦은 제출 허용)";
     reflectUnlockBtn.onclick = async ()=>{
-      if(!confirm("회고 제출을 풀어줄까요?\n학생이 회고와 체크를 고친 뒤 다시 제출해야 포인트가 확정돼요.")) return;
-      spState.reflectSubmitted = false;
+      if(!confirm(spState.reflectSubmitted
+        ? "회고 제출을 풀어줄까요?\n학생이 회고와 체크를 고친 뒤 다시 제출해야 포인트가 확정돼요."
+        : "회고 마감을 풀어줄까요?\n학생이 지금이라도 회고를 제출할 수 있게 돼요.")) return;
+      spState.reflectSubmitted = false; spState.reflectOverride = true;
       spUpdateScores(); await spSaveWeek(); spRender();
     };
 
     const reflectText = document.getElementById("reflectText");
     reflectText.value = spState.reflectText;
-    reflectText.disabled = spState.reflectSubmitted || spViewerIsTeacher;
+    reflectText.disabled = spState.reflectSubmitted || spViewerIsTeacher || reflectLate;
     reflectText.oninput = (e)=>{ spState.reflectText = e.target.value; spSaveWeek(); };
 
     const submitBtn = document.getElementById("submitReflectBtn");
     const lockedNote = document.getElementById("reflectLockedNote");
     if(spViewerIsTeacher){
       submitBtn.style.display = "none";
-      lockedNote.style.display = spState.reflectSubmitted ? "block" : "none";
-      lockedNote.textContent = "회고 제출 완료.";
+      lockedNote.style.display = spState.reflectSubmitted || reflectLate || spState.reflectOverride ? "block" : "none";
+      lockedNote.textContent = spState.reflectSubmitted ? "회고 제출 완료."
+        : spState.reflectOverride ? "🔓 마감 해제됨 — 학생이 회고를 제출할 수 있어요." : "회고 마감(다음 주 월요일 24:00)이 지났어요. 미제출.";
     } else if(spState.reflectSubmitted){
       submitBtn.style.display = "block";
       submitBtn.disabled = true; submitBtn.textContent = "제출 완료";
       lockedNote.style.display = "block";
       lockedNote.textContent = "제출 완료 — 이번 주 기록은 더 이상 수정할 수 없습니다.";
+    } else if(reflectLate){
+      submitBtn.style.display = "block";
+      submitBtn.disabled = true; submitBtn.textContent = "회고 마감";
+      lockedNote.style.display = "block";
+      lockedNote.textContent = "회고 마감(다음 주 월요일 24:00)이 지나 제출할 수 없어요. 사정이 있으면 선생님께 말씀드리세요.";
     } else {
       submitBtn.style.display = "block";
       submitBtn.disabled = false; submitBtn.textContent = "회고 제출하고 이번 주 포인트 확정";
-      lockedNote.style.display = "none";
+      lockedNote.style.display = spState.reflectOverride ? "block" : "none";
+      lockedNote.textContent = spState.reflectOverride ? "🔓 선생님이 마감을 풀어줬어요. 지금 제출할 수 있어요." : "";
     }
     submitBtn.onclick = ()=>{
       if(!spState.reflectText.trim()){ alert("회고를 작성해야 제출할 수 있어요."); return; }
-      spState.reflectSubmitted = true;
+      spState.reflectSubmitted = true; spState.reflectOverride = false;
       spUpdateScores(); spSaveWeek(); spRender();
     };
 
