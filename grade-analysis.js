@@ -4,7 +4,17 @@
    화면 그리기: ga-render.js 의 gaRender(box, data)
    ※ 성적 JSON 파일은 GitHub에 올리지 마세요 (저장소 공개)
    ========================================================= */
-let gaRosterCache = null, gaAllCache = null;
+let gaRosterCache = null, gaAllCache = null, gaPendingUid = null;
+// 학생카드에서 '성적 분석 전체 보기'를 눌렀을 때: 성적 탭을 열고 그 학생 화면으로
+function gaOpenFor(uid){ gaPendingUid = uid; switchMainTab("grade"); }
+// 학생카드용 요약 (자료가 없으면 null)
+function gaSummary(g){
+  if(!g) return null;
+  const done = gaCleanExams(g.exams).filter(e => !e.missing); if(!done.length) return null;
+  const last = done[done.length - 1], prev = done.length > 1 ? done[done.length - 2] : null;
+  return { done, last, prev, diff: prev ? +(prev.avg - last.avg).toFixed(2) : null,
+    type: (g.trend && g.trend.type) || "", strong: (g.strengths && g.strengths.subjects) || "", weak: (g.weaknesses && g.weaknesses.subjects) || "", label: g.updatedLabel || "" };
+}
 
 function setupGradeTab(){
   const role = currentProfile && currentProfile.role;
@@ -47,7 +57,7 @@ async function gaTeacherList(){
   const labels = [...new Set(Object.values(gaAllCache).map(x => x.updatedLabel).filter(Boolean))];
   const summary = s => {
     const g = gaAllCache[s.uid]; if(!g) return `<span>자료 없음</span>`;
-    const done = (g.exams || []).filter(e => !e.missing); if(!done.length) return `<span>시험 기록 없음</span>`;
+    const done = gaCleanExams(g.exams).filter(e => !e.missing); if(!done.length) return `<span>시험 기록 없음</span>`;
     const last = done[done.length - 1];
     return `<span>${last.avg.toFixed(2)}등급 · ${yajaEsc((g.trend && g.trend.type) || "")}</span>`;
   };
@@ -61,6 +71,7 @@ async function gaTeacherList(){
     <div id="gaUpMsg" class="hint"></div>
   </div>`;
   body.querySelectorAll(".cd-stu").forEach(b => b.onclick = () => gaTeacherView(b.dataset.uid));
+  if(gaPendingUid){ const u = gaPendingUid; gaPendingUid = null; if(gaRosterCache.some(x => x.uid === u)){ gaTeacherView(u); return; } }
   document.getElementById("gaFile").onchange = e => { const f = e.target.files[0]; if(f) gaUpload(f); };
 }
 
@@ -82,10 +93,14 @@ async function gaUpload(file){
   const list = Array.isArray(json.students) ? json.students : null;
   if(!list || !list.length){ msg.innerHTML = `<span style="color:var(--danger);">students 목록이 없는 파일이에요.</span>`; return; }
   const byNum = {}; gaRosterCache.forEach(s => { byNum[Number(s.num)] = s; });
-  const matched = [], skipped = [];
+  const matched = [], skipped = [], warned = [];
   list.forEach(x => {
     const s = byNum[Number(x.num)];
-    if(s && String(s.name).trim() === String(x.name || "").trim()) matched.push({ s, x });
+    if(s && String(s.name).trim() === String(x.name || "").trim()){
+      const broken = (Array.isArray(x.exams) ? x.exams : []).filter(e => !e.missing).length - gaCleanExams(x.exams).filter(e => !e.missing).length;
+      if(broken > 0) warned.push(`${x.num}번 ${x.name}: 값이 빠진 회차 ${broken}개 (그 회차는 '기록 없음'으로 보여요)`);
+      matched.push({ s, x });
+    }
     else skipped.push(`${x.num}번 ${x.name}${s ? ` (앱 명단: ${s.name})` : " (앱 명단에 없음)"}`);
   });
   if(!matched.length){ msg.innerHTML = `<span style="color:var(--danger);">명단과 맞는 학생이 없어요.</span>`; return; }
@@ -103,7 +118,13 @@ async function gaUpload(file){
         uploadedAt: firebase.firestore.FieldValue.serverTimestamp() }));
       await batch.commit();
     }
-    alert(`${matched.length}명 저장했어요.${skipped.length ? `\n\n건너뛴 학생:\n${skipped.join("\n")}` : ""}`);
+    alert(`${matched.length}명 저장했어요.${skipped.length ? `\n\n건너뛴 학생:\n${skipped.join("\n")}` : ""}${warned.length ? `\n\n확인이 필요한 자료:\n${warned.join("\n")}` : ""}`);
+    // 이번 파일에 없는 학생의 예전 자료가 남아 있으면 지울지 물어봄
+    const kept = new Set(matched.map(m => m.s.uid));
+    const stale = Object.keys(gaAllCache || {}).filter(uid => !kept.has(uid)).map(uid => ({ uid, d: gaAllCache[uid] }));
+    if(stale.length && confirm(`이번 파일에 없는 학생 ${stale.length}명의 예전 성적 자료가 남아 있어요.\n${stale.map(x => `${x.d.num}번 ${x.d.name} (${x.d.updatedLabel || "라벨 없음"})`).join("\n")}\n\n지울까요? (취소하면 그대로 둬요)`)){
+      const batch = db.batch(); stale.forEach(x => batch.delete(db.collection("gradeAnalysis").doc(x.uid))); await batch.commit();
+    }
     gaTeacherList();
   }catch(e){
     console.error("성적 업로드 실패", e);

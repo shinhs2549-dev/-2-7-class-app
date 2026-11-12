@@ -319,7 +319,7 @@
 <div class="wrap">
 
   <div class="brand">
-    <h1><span id="classLabel">2학년 7반</span> <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1112-1</span></h1>
+    <h1><span id="classLabel">2학년 7반</span> <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1112-2</span></h1>
     <div id="brandRight"></div>
   </div>
 
@@ -894,8 +894,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js" defer></script>
 <script src="yaja-common.js?v=1105-1"></script>
-<script src="ga-render.js?v=1112-1"></script>
-<script src="grade-analysis.js?v=1112-1"></script>
+<script src="ga-render.js?v=1112-2"></script>
+<script src="grade-analysis.js?v=1112-2"></script>
 <script src="seat-common.js?v=1105-1"></script>
 <script>
 /* =========================================================
@@ -5293,6 +5293,8 @@ async function cdTeacherCard(uid){
     const [pDoc, notes, absences, yAtt, yExc, plans, subs, recs, memoDoc] = await Promise.all([
       db.collection("studentProfiles").doc(uid).get(), q("attendanceNotes"), q("absences"), q("yajaAttendance"), q("yajaExcuses"),
       q("studyplans"), q("listenSubs", "uid"), q("counselRecords"), db.collection("studentMemos").doc(uid).get() ]);
+    const gDoc = await db.collection("gradeAnalysis").doc(uid).get().catch(() => null);
+    const grade = typeof gaSummary === "function" ? gaSummary(gDoc && gDoc.exists ? gDoc.data() : null) : null;
     if(cdOpenUid !== uid) return;
     const p = pDoc.exists ? pDoc.data() : null, f = (p && p.f) || {}, fam = (p && p.family) || {};
 
@@ -5335,6 +5337,7 @@ async function cdTeacherCard(uid){
         <div class="cd-tiles">
           ${tile(kc("결석"), "결석", kc("결석") ? "var(--danger)" : "")}${tile(kc("지각"), "지각")}${tile(kc("조퇴"), "조퇴")}${tile(kc("결과"), "결과")}
           ${tile(yRate === null ? "-" : yRate + "%", "야자 출석률")}${tile(`${planDone}주`, "계획서 제출")}${tile(ptsAvg, "주 평균점")}${tile(lsAvg, "듣기 평균")}
+          ${grade ? `${tile(grade.last.avg.toFixed(2), "성적 평균등급")}${tile("상위 " + Math.max(1, Math.round(grade.last.pct)) + "%", "학년 내 위치")}` : ""}
         </div>
         <div class="cd-noprint" style="display:flex; gap:12px; margin-top:10px;">
           <button class="link-btn" id="cdPrint">🖨 인쇄·PDF 저장</button>
@@ -5370,6 +5373,16 @@ async function cdTeacherCard(uid){
         ${plans.length > 8 ? `<p class="hint">최근 8주만 보여요 (전체 ${plans.length}주)</p>` : ""}
       </div>
 
+      <div class="group-block"><h3>📊 성적 <span class="hint">${grade ? yajaEsc(grade.label) : "자료 없음"}</span></h3>
+        ${grade ? `<div style="font-size:13.5px; margin-top:6px;">최근 <b>${yajaEsc(grade.last.label)}</b> 전과목 평균 <b>${grade.last.avg.toFixed(2)}등급</b> · 학년 상위 ${Math.max(1, Math.round(grade.last.pct))}%${grade.diff === null ? "" : ` · 직전 대비 <b style="color:${grade.diff > 0 ? "#d9480f" : grade.diff < 0 ? "#1c7ed6" : "inherit"};">${grade.diff === 0 ? "변화 없음" : (grade.diff > 0 ? "▲ " : "▼ ") + Math.abs(grade.diff).toFixed(2)}</b>`}</div>
+          <div class="cd-row"><span>추세</span><div><b>${yajaEsc(grade.type)}</b></div></div>
+          <div class="cd-row"><span>장점 과목</span><div>${yajaEsc(grade.strong) || "-"}</div></div>
+          <div class="cd-row"><span>단점 과목</span><div>${yajaEsc(grade.weak) || "-"}</div></div>
+          <div class="cd-row"><span>회차별 평균</span><div>${grade.done.map(e => `${yajaEsc(e.label)} <b>${e.avg.toFixed(2)}</b>`).join(" · ")}</div></div>
+          <button class="link-btn cd-noprint" id="cdGoGrade" style="margin-top:8px;">📊 성적 분석 전체 보기</button>`
+          : `<p class="hint">성적 자료가 아직 없어요. (성적 탭에서 올리면 여기에 요약이 나와요)</p>`}
+      </div>
+
       <div class="group-block"><h3>🎧 영어 듣기평가 <span class="hint">응시 ${graded.length}회 · 평균 ${lsAvg}/${LS_Q}</span></h3>
         ${lsList.length ? lsTypeHtml(lsTypeStats(lsList), lsList.length) : `<p class="hint">채점된 기록이 없어요.</p>`}
       </div>
@@ -5385,6 +5398,7 @@ async function cdTeacherCard(uid){
     </div>`;
 
     document.getElementById("cdEditProfile").onclick = () => cdOpenForm(uid, { num: s.num, name: s.name });
+    const goGrade = document.getElementById("cdGoGrade"); if(goGrade) goGrade.onclick = () => gaOpenFor(uid);
     document.getElementById("cdPrint").onclick = () => {
       const w = window.open("", "_blank"); if(!w){ alert("팝업이 차단됐어요. 팝업을 허용해주세요."); return; }
       w.document.write(`<!doctype html><html lang="ko"><head><meta charset="utf-8"><title>${Number(s.num) || ""}번 ${yajaEsc(s.name)} 학생 카드</title><style>

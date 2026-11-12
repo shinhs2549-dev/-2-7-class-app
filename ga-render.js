@@ -42,9 +42,21 @@ const GA_CSS=`
 function gaEsc(s){return String(s==null?"":s).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));}
 function gaPct(p){return Math.max(1,Math.round(p));}
 function gaInjectCss(){if(document.getElementById("ga-css"))return;const s=document.createElement("style");s.id="ga-css";s.textContent=GA_CSS;document.head.appendChild(s);}
+function gaCleanExams(list){
+  const num=v=>typeof v==="number"&&isFinite(v);
+  return (Array.isArray(list)?list:[]).filter(e=>e&&typeof e==="object").map(e=>{
+    const label=String(e.label==null?"":e.label);
+    if(e.missing||!num(e.avg)||!num(e.pct))return {key:String(e.key||""),label,missing:true};
+    const o={key:String(e.key||""),label,avg:e.avg,pct:e.pct};
+    ["kor","eng","mat","soc","sci"].forEach(k=>{if(num(e[k]))o[k]=e[k];});
+    return o;});
+}
 function gaRender(box,d){
   gaInjectCss();
-  const ex=d.exams||[];const done=ex.filter(e=>!e.missing);
+  // 값이 빠지거나 깨진 회차는 '기록 없음'으로 처리 (화면이 통째로 멈추지 않게)
+  const ex=gaCleanExams(d.exams);const done=ex.filter(e=>!e.missing);
+  d=Object.assign({},d,{trend:d.trend||{type:"",desc:""},strengths:d.strengths||{subjects:"",reason:""},weaknesses:d.weaknesses||{subjects:"",reason:""}});
+  if(d.ai&&!Array.isArray(d.ai.actions))d.ai=Object.assign({},d.ai,{actions:[]});
   if(!done.length||!d.ai){box.innerHTML=`<div class="ga"><div class="gc"><p style="margin:0">아직 분석할 시험 기록이 없어요. 다음 시험이 끝나면 성적 분석이 제공돼요.</p></div></div>`;return;}
   const last=done[done.length-1],prev=done.length>1?done[done.length-2]:null;
   let dl="";
