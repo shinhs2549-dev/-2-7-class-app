@@ -319,7 +319,7 @@
 <div class="wrap">
 
   <div class="brand">
-    <h1><span id="classLabel">2학년 7반</span> <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1110-8</span></h1>
+    <h1><span id="classLabel">2학년 7반</span> <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1112-1</span></h1>
     <div id="brandRight"></div>
   </div>
 
@@ -406,6 +406,7 @@
       <button id="tabBtnSeat" onclick="switchMainTab('seat')" style="display:none;"><span class="ti">🪑</span><span class="tl">자리</span></button>
       <button id="tabBtnListen" onclick="switchMainTab('listen')" style="display:none;"><span class="ti">🎧</span><span class="tl">영어듣기</span></button>
       <button id="tabBtnCal" onclick="switchMainTab('cal')" style="display:none;"><span class="ti">🗓️</span><span class="tl">월간일정</span></button>
+      <button id="tabBtnGrade" onclick="switchMainTab('grade')" style="display:none;"><span class="ti">📊</span><span class="tl">성적</span></button>
       <button id="tabBtnCard" onclick="switchMainTab('card')" style="display:none;"><span class="ti">🙋</span><span class="tl">내 소개</span></button>
     </div>
 
@@ -758,6 +759,10 @@
       <div id="calBody"><p class="hint">불러오는 중...</p></div>
     </div>
 
+    <div class="tab-panel" id="panel-grade">
+      <div id="gaBody"><p class="hint">불러오는 중...</p></div>
+    </div>
+
     <div class="tab-panel" id="panel-card">
       <div id="cdBody"><p class="hint">불러오는 중...</p></div>
     </div>
@@ -889,6 +894,8 @@
 <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-storage-compat.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.js" defer></script>
 <script src="yaja-common.js?v=1105-1"></script>
+<script src="ga-render.js?v=1112-1"></script>
+<script src="grade-analysis.js?v=1112-1"></script>
 <script src="seat-common.js?v=1105-1"></script>
 <script>
 /* =========================================================
@@ -1086,6 +1093,7 @@ function enterApp(){
     setupCardTab();
     setupCalTab();
     setupTodayTab();
+    setupGradeTab();
   } else {
     goToSelectScreen();
   }
@@ -1126,6 +1134,9 @@ function switchMainTab(tab){
   document.getElementById("tabBtnCal").classList.toggle("active", tab === "cal");
   document.getElementById("panel-cal").classList.toggle("active", tab === "cal");
   if(tab === "cal") calOnTabOpen();
+  document.getElementById("tabBtnGrade").classList.toggle("active", tab === "grade");
+  document.getElementById("panel-grade").classList.toggle("active", tab === "grade");
+  if(tab === "grade") gaOnTabOpen();
   document.getElementById("tabBtnCard").classList.toggle("active", tab === "card");
   document.getElementById("panel-card").classList.toggle("active", tab === "card");
   if(tab === "card") cdOnTabOpen(); else if(cdSaveTimer) cdSave(false); // 다른 탭으로 갈 때 쓰던 내용 저장
@@ -1204,6 +1215,7 @@ async function handleSaveSelection(){
   setupCardTab();
   setupCalTab();
   setupTodayTab();
+  setupGradeTab();
 }
 
 /* =========================================================
