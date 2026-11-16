@@ -319,7 +319,7 @@
 <div class="wrap">
 
   <div class="brand">
-    <h1><span id="classLabel">2학년 7반</span> <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1112-2</span></h1>
+    <h1><span id="classLabel">2학년 7반</span> <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1116-1</span></h1>
     <div id="brandRight"></div>
   </div>
 
@@ -1024,9 +1024,12 @@ function profileCacheLoad(uid){ try{ return JSON.parse(localStorage.getItem(prof
 
 // 로그인 상태가 바뀔 때마다 자동 실행 (새로고침해도 로그인 유지됨)
 auth.onAuthStateChanged(user => handleAuthUser(user));
+let appEntered = false; // 한 번이라도 앱 화면에 들어갔는지
 async function handleAuthUser(user){
   currentUser = user;
   if(!user){
+    // 로그아웃되면 화면을 새로 불러옴 — 앞사람이 보던 화면(학생카드·성적 등)이 다음 로그인한 사람에게 남지 않게
+    if(appEntered){ location.reload(); return; }
     currentProfile = null;
     renderBrandRight();
     showScreen("screen-login");
@@ -1043,6 +1046,8 @@ async function handleAuthUser(user){
         if(auth.currentUser !== user) return;
         const fresh = d.exists ? d.data() : null;
         if(!fresh || !["student","teacher"].includes(fresh.role) || fresh.role !== cached.role){ profileCacheClear(user.uid); location.reload(); return; }
+        // 담임이 비밀번호를 초기화했으면 저장된 정보로 넘어가지 않고 새 비밀번호를 정하게 함
+        if(fresh.role === "student" && !fresh.pwChanged){ profileCacheClear(user.uid); location.reload(); return; }
         const selChanged = JSON.stringify(fresh.selection) !== JSON.stringify(cached.selection);
         Object.keys(currentProfile).forEach(k => { if(!(k in fresh)) delete currentProfile[k]; });
         Object.assign(currentProfile, fresh); profileCacheSave(); renderBrandRight();
@@ -1075,6 +1080,7 @@ async function handleAuthUser(user){
 }
 
 function enterApp(){
+  appEntered = true;
   if(currentProfile && currentProfile.selection){
     showScreen("screen-main");
     renderTimetable(currentProfile.selection);
@@ -5170,7 +5176,7 @@ function cdCollect(){
 }
 function cdStatus(msg){ const el = document.getElementById("cdSaveStatus"); if(el) el.textContent = msg; }
 async function cdSave(submit){
-  clearTimeout(cdSaveTimer);
+  clearTimeout(cdSaveTimer); cdSaveTimer = null;
   if(!cdEditUid || !document.getElementById("cdForm")) return false;
   const data = { uid: cdEditUid, num: cdEditMeta.num, name: cdEditMeta.name, ...cdCollect(), updatedAt: firebase.firestore.FieldValue.serverTimestamp() };
   if(submit) data.submittedAt = firebase.firestore.FieldValue.serverTimestamp();
