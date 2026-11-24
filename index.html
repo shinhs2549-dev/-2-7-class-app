@@ -35,6 +35,37 @@
   .main-tabs{ display:grid; grid-template-columns:repeat(4, 1fr); gap:7px; margin-bottom:20px; }
   .main-tabs button{ display:flex; flex-direction:column; align-items:center; gap:3px; padding:10px 4px 9px; background:var(--card); border:1px solid var(--line); border-radius:12px; font-family:'Noto Sans KR', sans-serif; font-size:12.5px; font-weight:500; color:#6b6455; cursor:pointer; transition:transform .12s ease; white-space:nowrap; }
   .main-tabs button .ti{ font-size:22px; line-height:1; }
+  .main-tabs button{ position:relative; }
+  .tab-dot{ position:absolute; top:5px; right:8px; min-width:17px; height:17px; padding:0 4px; border-radius:9px; background:var(--danger); color:#fff; font-size:10.5px; font-style:normal; font-weight:700; line-height:17px; text-align:center; display:none; }
+  /* 대화 */
+  .ch-wrap{ background:var(--card); border:1px solid var(--line); border-radius:10px; overflow:hidden; }
+  .ch-head{ display:flex; align-items:center; gap:8px; padding:12px 14px; border-bottom:1px solid var(--line); }
+  .ch-head h3{ font-size:16px; flex:1; min-width:0; }
+  .ch-note{ font-size:11.5px; color:#8a8270; padding:7px 14px; background:#F2ECDD; border-bottom:1px solid var(--line); line-height:1.5; }
+  .ch-msgs{ height:calc(100vh - 360px); min-height:300px; overflow-y:auto; padding:12px 12px 6px; background:var(--paper); }
+  .ch-day{ text-align:center; font-size:11.5px; color:#8a8270; margin:10px 0 8px; }
+  .ch-day span{ background:#EAE3D2; border-radius:10px; padding:2px 10px; }
+  .ch-m{ display:flex; align-items:flex-end; gap:5px; margin:4px 0; }
+  .ch-m.me{ flex-direction:row-reverse; }
+  .ch-b{ max-width:76%; padding:8px 11px; border-radius:14px; font-size:14.5px; line-height:1.5; white-space:pre-wrap; word-break:break-word; background:#fff; border:1px solid var(--line); cursor:pointer; }
+  .ch-m.me .ch-b{ background:var(--forest); color:#fff; border-color:var(--forest); }
+  .ch-meta{ font-size:10.5px; color:#a49c88; white-space:nowrap; text-align:right; line-height:1.3; }
+  .ch-m:not(.me) .ch-meta{ text-align:left; }
+  .ch-meta b{ color:var(--ochre); font-weight:500; display:block; }
+  .ch-input{ display:flex; gap:8px; padding:10px; border-top:1px solid var(--line); background:var(--card); align-items:flex-end; }
+  .ch-input textarea{ flex:1; resize:none; border:1px solid var(--line); border-radius:18px; padding:9px 14px; font-family:inherit; font-size:15px; line-height:1.4; max-height:120px; background:#fff; color:var(--ink); }
+  .ch-send{ border:none; background:var(--forest); color:#fff; border-radius:18px; padding:10px 16px; font-family:inherit; font-size:14px; font-weight:500; cursor:pointer; white-space:nowrap; }
+  .ch-send:disabled{ opacity:.5; }
+  .ch-row{ display:flex; align-items:center; gap:10px; padding:11px 14px; border-bottom:1px solid #EEE7D6; cursor:pointer; }
+  .ch-row:last-child{ border-bottom:none; }
+  .ch-row .nm{ font-weight:700; font-size:14.5px; white-space:nowrap; }
+  .ch-row .pv{ flex:1; min-width:0; font-size:13px; color:#8a8270; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .ch-row .tm{ font-size:11px; color:#a49c88; white-space:nowrap; }
+  .ch-row .un{ width:9px; height:9px; border-radius:50%; background:var(--danger); flex:none; }
+  .ch-pick{ display:grid; grid-template-columns:repeat(auto-fill, minmax(104px, 1fr)); gap:6px; padding:12px 14px; }
+  .ch-pick label{ display:flex; align-items:center; gap:5px; font-size:13.5px; border:1px solid var(--line); border-radius:8px; padding:6px 8px; cursor:pointer; background:#fff; }
+  .ch-toast{ position:fixed; left:50%; bottom:22px; transform:translateX(-50%); width:min(92vw, 420px); background:var(--ink); color:#fff; border-radius:12px; padding:11px 14px; font-size:13.5px; box-shadow:0 6px 20px rgba(0,0,0,.25); z-index:999; cursor:pointer; }
+  .ch-toast b{ display:block; margin-bottom:2px; }
   .main-tabs button:active{ transform:scale(.96); }
   .main-tabs button.active{ color:#fff; background:var(--forest); border-color:var(--forest); }
   .main-tabs button.active .ti{ filter:drop-shadow(0 1px 0 rgba(0,0,0,.15)); }
@@ -319,7 +350,7 @@
 <div class="wrap">
 
   <div class="brand">
-    <h1><span id="classLabel">2학년 7반</span> <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1116-1</span></h1>
+    <h1><span id="classLabel">2학년 7반</span> <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1124-1</span></h1>
     <div id="brandRight"></div>
   </div>
 
@@ -397,6 +428,7 @@
       <button id="tabBtnToday" onclick="switchMainTab('today')" style="display:none;"><span class="ti">🏠</span><span class="tl">오늘</span></button>
       <button id="tabBtnTimetable" class="active" onclick="switchMainTab('timetable')"><span class="ti">📅</span><span class="tl">시간표</span></button>
       <button id="tabBtnNotice" onclick="switchMainTab('notice')"><span class="ti">📢</span><span class="tl">공지사항</span></button>
+      <button id="tabBtnChat" onclick="switchMainTab('chat')" style="display:none;"><span class="ti">💌</span><span class="tl">대화</span><i class="tab-dot" id="chatDot"></i></button>
       <button id="tabBtnAbsence" onclick="switchMainTab('absence')" style="display:none;"><span class="ti">🏫</span><span class="tl">출결관리</span></button>
       <button id="tabBtnStudyplan" onclick="switchMainTab('studyplan')"><span class="ti">📝</span><span class="tl">학습계획서</span></button>
       <button id="tabBtnYaja" onclick="switchMainTab('yaja')" style="display:none;"><span class="ti">🌙</span><span class="tl">야자</span></button>
@@ -763,6 +795,10 @@
       <div id="gaBody"><p class="hint">불러오는 중...</p></div>
     </div>
 
+    <div class="tab-panel" id="panel-chat">
+      <div id="chBody"><p class="hint">불러오는 중...</p></div>
+    </div>
+
     <div class="tab-panel" id="panel-card">
       <div id="cdBody"><p class="hint">불러오는 중...</p></div>
     </div>
@@ -1100,6 +1136,7 @@ function enterApp(){
     setupCalTab();
     setupTodayTab();
     setupGradeTab();
+    setupChatTab();
   } else {
     goToSelectScreen();
   }
@@ -1147,6 +1184,9 @@ function switchMainTab(tab){
   document.getElementById("panel-card").classList.toggle("active", tab === "card");
   if(tab === "card") cdOnTabOpen(); else if(cdSaveTimer) cdSave(false); // 다른 탭으로 갈 때 쓰던 내용 저장
   document.getElementById("panel-suggest").classList.toggle("active", tab === "suggest");
+  document.getElementById("tabBtnChat").classList.toggle("active", tab === "chat");
+  document.getElementById("panel-chat").classList.toggle("active", tab === "chat");
+  if(tab === "chat") chOnTabOpen(); else chOnTabLeave();
 }
 function renderBrandRight(){
   const el = document.getElementById("brandRight");
@@ -1567,6 +1607,7 @@ if(messaging){
     const k = (n.title || "") + "|" + (n.body || "");
     if(k === lastFg.k && Date.now() - lastFg.t < 10000) return; // 같은 알림 중복 표시 막기
     lastFg = { k, t: Date.now() };
+    if((n.title || "").startsWith("💌")){ chToast(n.title, n.body); return; }
     alert(`📢 ${n.title || ""}\n${n.body || ""}`);
   });
 }
@@ -5667,7 +5708,7 @@ async function tdRender(){
     const wkNow = tdMondayKey(0), wkPrev = tdMondayKey(-1);
     const col = (c, f, op, v) => db.collection(c).where(f, op, v).get().then(s => s.docs.map(d => ({ id: d.id, ...d.data() })));
     const openRounds = (await db.collection("listenRounds").get()).docs.map(d => ({ id: d.id, ...d.data() })).filter(r => lsStatus(r) === "open");
-    const [roster, notesToday, absNotes, absences, yAtt, yExcToday, yExcPending, ovDoc, plansNow, plansPrev, counselToday, counselPending, sugNew, profs, ...subsByRound] = await Promise.all([
+    const [roster, notesToday, absNotes, absences, yAtt, yExcToday, yExcPending, ovDoc, plansNow, plansPrev, counselToday, counselPending, sugNew, profs, chatDocs, ...subsByRound] = await Promise.all([
       col("students", "role", "==", "student"), col("attendanceNotes", "date", "==", today), col("attendanceNotes", "kind", "==", "결석"),
       db.collection("absences").get().then(s => s.docs.map(d => d.data())),
       col("yajaAttendance", "date", "==", today), col("yajaExcuses", "date", "==", today), col("yajaExcuses", "status", "==", "pending"),
@@ -5675,6 +5716,7 @@ async function tdRender(){
       col("studyplans", "weekKey", "==", wkNow), col("studyplans", "weekKey", "==", wkPrev),
       col("counsels", "date", "==", today), col("counsels", "status", "==", "pending"), col("suggestions", "status", "==", "new"),
       db.collection("studentProfiles").get().then(s => s.docs.map(d => ({ id: d.id, ...d.data() }))).catch(() => null),
+      db.collection("chats").get().then(s => s.docs.map(d => ({ id: d.id, ...d.data() }))).catch(() => []),
       ...openRounds.map(r => col("listenSubs", "roundId", "==", r.id)) ]);
     const stu = roster.filter(s => s.name !== "테스트").map(s => ({ ...s, uid: s.id })).sort((a, b) => a.num - b.num);
     const names = list => list.map(s => `<span class="td-chip">${Number(s.num) || ""} ${yajaEsc(s.name)}</span>`).join("");
@@ -5744,6 +5786,13 @@ async function tdRender(){
       (cToday.map(c => `<div class="td-line">오늘 <b>${yajaEsc(c.slotLabel || "")}</b> · ${Number(c.num) || ""} ${yajaEsc(c.name)} · ${yajaEsc(c.topic || "")}${c.status === "pending" ? " <span class='hint' style='margin:0;'>(확정 전)</span>" : ""}</div>`).join("")
         || `<div class="td-line hint" style="margin:0;">오늘 잡힌 상담은 없어요.</div>`), counselPending.length > 0));
 
+    // 대화
+    const chNew = chatDocs.filter(c => c.lastFrom === "s" && chMs(c.lastAt) > chMs(c.readT));
+    if(chNew.length){
+      const byId = {}; roster.forEach(s => byId[s.id] = s);
+      cards.push(card("chat", "💌", "새 메시지", `${chNew.length}명`, `<div class="td-line">${chNew.map(c => byId[c.id] ? names([byId[c.id]]) : "").join("")}</div>`, true));
+    }
+
     // 건의함
     if(sugNew.length) cards.push(card("suggest", "📮", "새 건의·칭찬", `${sugNew.length}건`, sugNew.slice(0, 3).map(x => `<div class="td-line" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${yajaEsc((x.content || "").slice(0, 60))}</div>`).join(""), true));
 
@@ -5764,6 +5813,229 @@ async function tdRender(){
     console.error("오늘 한눈에 불러오기 실패", e);
     body.innerHTML = `<p class="hint">불러오지 못했어요 (${yajaEsc(e.code || e.message)}). <button class="link-btn" onclick="tdRender()">다시 시도</button></p>`;
   }finally{ tdLoading = false; }
+}
+
+/* =========================================================
+   22. 대화 — 담임 ↔ 학생 1:1 메신저
+   chats/{학생uid}            : 목록·안읽음 표시용 (lastText, lastAt, lastFrom, readT, readS)
+   chats/{학생uid}/msgs/{id}  : 메시지 (from "t"|"s", text, at, uid)
+   알림은 07:00~22:00에만 바로 가고, 밤에 온 메시지는 아침 7:30에 모아서 알려줌 (Functions)
+   ========================================================= */
+const CH_MAX = 500;
+let chMetaUnsub = null, chMsgUnsub = null, chChats = {}, chRoster = null;
+let chMode = "list", chOpenSid = null, chLimit = 60, chMsgs = [];
+const chIsT = () => currentProfile && currentProfile.role === "teacher";
+function chMs(ts){ return !ts ? 0 : ts.toMillis ? ts.toMillis() : ts._ms || (ts.seconds ? ts.seconds * 1000 : 0); }
+function chUnread(sid){
+  const c = chChats[sid]; if(!c) return false;
+  return chIsT() ? (c.lastFrom === "s" && chMs(c.lastAt) > chMs(c.readT)) : (c.lastFrom === "t" && chMs(c.lastAt) > chMs(c.readS));
+}
+function chTime(ms, withDay){
+  if(!ms) return "";
+  const d = new Date(ms), hm = `${d.getHours() < 12 ? "오전" : "오후"} ${(d.getHours() % 12) || 12}:${String(d.getMinutes()).padStart(2, "0")}`;
+  if(!withDay) return hm;
+  return yajaDateKey(d) === yajaDateKey(new Date()) ? hm : `${d.getMonth() + 1}/${d.getDate()}`;
+}
+
+function setupChatTab(){
+  const role = currentProfile && currentProfile.role;
+  const btn = document.getElementById("tabBtnChat");
+  if(role !== "student" && role !== "teacher"){ btn.style.display = "none"; return; }
+  btn.style.display = "";
+  if(!chMetaUnsub){
+    const onErr = e => console.warn("대화 목록을 불러오지 못했어요", e);
+    if(role === "teacher"){
+      chMetaUnsub = db.collection("chats").onSnapshot(s => {
+        chChats = {}; s.docs.forEach(d => chChats[d.id] = d.data());
+        chBadge(); if(chMode === "list" && chActive()) chRenderList();
+        if(chMode === "thread") chRenderMsgs(false);
+      }, onErr);
+    } else {
+      chMetaUnsub = db.collection("chats").doc(currentUser.uid).onSnapshot(d => {
+        chChats = {}; if(d.exists) chChats[currentUser.uid] = d.data();
+        chBadge(); if(chActive()){ chRenderMsgs(false); chMarkRead(); }
+      }, onErr);
+    }
+    document.addEventListener("visibilitychange", () => { if(document.visibilityState === "visible") chMarkRead(); });
+  }
+  // 알림을 눌러 들어온 경우 바로 대화 탭으로
+  if(location.hash === "#chat"){ history.replaceState(null, "", location.pathname + location.search); switchMainTab("chat"); }
+}
+function chActive(){ const p = document.getElementById("panel-chat"); return p && p.classList.contains("active"); }
+function chBadge(){
+  const n = Object.keys(chChats).filter(chUnread).length, dot = document.getElementById("chatDot");
+  dot.textContent = n; dot.style.display = n ? "block" : "none";
+}
+function chToast(title, body){
+  if(chActive()) return; // 대화창을 보고 있으면 따로 안 띄움
+  document.querySelectorAll(".ch-toast").forEach(x => x.remove());
+  const t = document.createElement("div"); t.className = "ch-toast";
+  t.innerHTML = `<b>${yajaEsc(title || "")}</b>${yajaEsc(body || "")}`;
+  t.onclick = () => { t.remove(); switchMainTab("chat"); };
+  document.body.appendChild(t); setTimeout(() => t.remove(), 6000);
+}
+
+async function chOnTabOpen(){
+  if(!chIsT()) return chOpenThread(currentUser.uid);
+  if(chMode === "thread" && chOpenSid) return chOpenThread(chOpenSid);
+  if(chMode === "bulk") return chRenderBulk();
+  chRenderList();
+}
+function chOnTabLeave(){ if(chMsgUnsub){ chMsgUnsub(); chMsgUnsub = null; } }
+
+async function chLoadRoster(){
+  if(chRoster) return chRoster;
+  const s = await db.collection("students").where("role", "==", "student").get();
+  chRoster = s.docs.map(d => ({ uid: d.id, ...d.data() })).sort((a, b) => (a.name === "테스트") - (b.name === "테스트") || a.num - b.num);
+  return chRoster;
+}
+
+/* ---------- 담임: 학생 목록 ---------- */
+async function chRenderList(){
+  chMode = "list"; chOnTabLeave();
+  const body = document.getElementById("chBody");
+  if(!chRoster) body.innerHTML = `<p class="hint">불러오는 중...</p>`;
+  let roster;
+  try{ roster = await chLoadRoster(); }
+  catch(e){ body.innerHTML = `<p class="hint">명단을 불러오지 못했어요 (${yajaEsc(e.code || e.message)}).</p>`; return; }
+  if(chMode !== "list") return;
+  const rows = roster.map(s => ({ s, c: chChats[s.uid] || {}, un: chUnread(s.uid) }))
+    .sort((a, b) => (b.un - a.un) || (chMs(b.c.lastAt) - chMs(a.c.lastAt)) || (a.s.num - b.s.num));
+  const unN = rows.filter(r => r.un).length;
+  body.innerHTML = `<div class="ch-wrap">
+    <div class="ch-head"><h3>💌 학생과 대화 ${unN ? `<span class="td-badge on">안 읽음 ${unN}</span>` : ""}</h3>
+      <button class="link-btn" id="chBulkBtn">📣 여러 명에게 보내기</button></div>
+    <div class="ch-note">학생은 담임 선생님하고만 대화할 수 있어요 (학생끼리는 안 됨). 밤 10시~아침 7시 메시지는 알림 없이 쌓였다가 아침 7시 30분에 모아서 알려줘요.</div>
+    ${rows.map(r => `<div class="ch-row" data-sid="${r.s.uid}">
+      ${r.un ? `<i class="un"></i>` : ""}<span class="nm">${Number(r.s.num) || ""} ${yajaEsc(r.s.name)}</span>
+      <span class="pv">${r.c.lastText ? (r.c.lastFrom === "t" ? "나: " : "") + yajaEsc(r.c.lastText) : `<span style="color:#c4bba6;">대화 시작하기</span>`}</span>
+      <span class="tm">${chTime(chMs(r.c.lastAt), true)}</span></div>`).join("")}
+  </div>`;
+  body.querySelectorAll(".ch-row").forEach(r => r.onclick = () => chOpenThread(r.dataset.sid));
+  document.getElementById("chBulkBtn").onclick = chRenderBulk;
+}
+
+/* ---------- 담임: 여러 명에게 보내기 (학생마다 각자 대화방으로 들어감) ---------- */
+async function chRenderBulk(){
+  chMode = "bulk"; chOnTabLeave();
+  const body = document.getElementById("chBody");
+  const roster = await chLoadRoster();
+  body.innerHTML = `<div class="ch-wrap">
+    <div class="ch-head"><button class="link-btn" id="chBack" style="text-decoration:none; font-size:15px;">‹ 목록</button><h3>📣 여러 명에게 보내기</h3></div>
+    <div class="ch-note">학생마다 <b>각자의 1:1 대화방</b>으로 같은 메시지가 가요. 학생들은 누가 같이 받았는지 몰라요. 반 전체 안내는 공지사항이 더 좋아요.</div>
+    <div style="padding:10px 14px 0; display:flex; gap:14px;"><button class="link-btn" id="chAll">전체 선택</button><button class="link-btn" id="chNone">선택 해제</button><span class="hint" id="chCnt" style="margin:0; align-self:center;"></span></div>
+    <div class="ch-pick">${roster.map(s => `<label><input type="checkbox" value="${s.uid}"> ${Number(s.num) || ""} ${yajaEsc(s.name)}</label>`).join("")}</div>
+    <div class="ch-input"><textarea id="chBulkText" rows="3" maxlength="${CH_MAX}" placeholder="보낼 메시지"></textarea><button class="ch-send" id="chBulkSend">보내기</button></div>
+  </div>`;
+  const boxes = [...body.querySelectorAll(".ch-pick input")];
+  const cnt = () => document.getElementById("chCnt").textContent = `${boxes.filter(b => b.checked).length}명 선택`;
+  boxes.forEach(b => b.onchange = cnt); cnt();
+  document.getElementById("chAll").onclick = () => { boxes.forEach(b => b.checked = b.closest("label").textContent.indexOf("테스트") < 0); cnt(); };
+  document.getElementById("chNone").onclick = () => { boxes.forEach(b => b.checked = false); cnt(); };
+  document.getElementById("chBack").onclick = chRenderList;
+  document.getElementById("chBulkSend").onclick = async () => {
+    const text = document.getElementById("chBulkText").value.trim(), sids = boxes.filter(b => b.checked).map(b => b.value);
+    if(!sids.length) return alert("받을 학생을 골라주세요.");
+    if(!text) return alert("메시지를 적어주세요.");
+    if(!confirm(`${sids.length}명에게 보낼까요?`)) return;
+    const btn = document.getElementById("chBulkSend"); btn.disabled = true; btn.textContent = "보내는 중...";
+    try{
+      const batch = db.batch();
+      sids.forEach(sid => chAddToBatch(batch, sid, text));
+      await batch.commit();
+      alert(`${sids.length}명에게 보냈어요.`); chRenderList();
+    }catch(e){ console.error(e); alert("보내지 못했어요: " + (e.code || e.message)); btn.disabled = false; btn.textContent = "보내기"; }
+  };
+}
+
+/* ---------- 대화방 ---------- */
+function chAddToBatch(batch, sid, text){
+  const ts = firebase.firestore.FieldValue.serverTimestamp(), from = chIsT() ? "t" : "s";
+  const ref = db.collection("chats").doc(sid);
+  batch.set(ref.collection("msgs").doc(), { from, text, at: ts, uid: currentUser.uid });
+  batch.set(ref, { studentUid: sid, lastText: text.slice(0, 80), lastAt: ts, lastFrom: from, [from === "t" ? "readT" : "readS"]: ts }, { merge: true });
+}
+async function chOpenThread(sid){
+  chMode = "thread"; chOpenSid = sid; chOnTabLeave();
+  const body = document.getElementById("chBody"), isT = chIsT();
+  let title = "💌 담임 선생님";
+  if(isT){ const s = (await chLoadRoster()).find(x => x.uid === sid); title = s ? `${Number(s.num) || ""} ${yajaEsc(s.name)}` : "학생"; }
+  if(chMode !== "thread" || chOpenSid !== sid) return;
+  body.innerHTML = `<div class="ch-wrap">
+    <div class="ch-head">${isT ? `<button class="link-btn" id="chBack" style="text-decoration:none; font-size:15px;">‹ 목록</button>` : ""}<h3>${title}</h3></div>
+    <div class="ch-note">${isT ? "메시지를 누르면 지울 수 있어요." : "궁금한 것, 고민, 부탁 무엇이든 편하게 보내요. 밤 10시~아침 7시에 보낸 메시지는 아침에 알림이 가요. 결석·조퇴는 출결관리로 알려주세요. 보낸 지 5분 안에는 메시지를 눌러 지울 수 있어요."}</div>
+    <div class="ch-msgs" id="chMsgs"><p class="hint" style="text-align:center;">불러오는 중...</p></div>
+    <div class="ch-input"><textarea id="chText" rows="1" maxlength="${CH_MAX}" placeholder="메시지 입력"></textarea><button class="ch-send" id="chSend">보내기</button></div>
+  </div>`;
+  if(isT) document.getElementById("chBack").onclick = chRenderList;
+  const ta = document.getElementById("chText");
+  ta.oninput = () => { ta.style.height = "auto"; ta.style.height = Math.min(ta.scrollHeight, 120) + "px"; };
+  ta.onkeydown = e => { if(e.key === "Enter" && (e.ctrlKey || e.metaKey)){ e.preventDefault(); chSend(); } };
+  document.getElementById("chSend").onclick = chSend;
+  chLimit = 60; chMsgs = []; chSubscribe(sid);
+  // 휴대폰에서 탭 버튼 아래에 대화창이 가려지지 않게 대화창이 화면에 꽉 차도록 내림
+  requestAnimationFrame(() => { const w = body.querySelector(".ch-wrap"); if(w && w.getBoundingClientRect().top > 40) w.scrollIntoView({ block: "start" }); });
+}
+function chSubscribe(sid){
+  if(chMsgUnsub) chMsgUnsub();
+  chMsgUnsub = db.collection("chats").doc(sid).collection("msgs").orderBy("at").limitToLast(chLimit).onSnapshot(s => {
+    if(chOpenSid !== sid) return;
+    const box = document.getElementById("chMsgs"), atBottom = !box || box.scrollHeight - box.scrollTop - box.clientHeight < 80;
+    chMsgs = s.docs.map(d => ({ id: d.id, ...d.data({ serverTimestamps: "estimate" }) })).sort((a, b) => chMs(a.at) - chMs(b.at));
+    chRenderMsgs(atBottom || chMsgs.some(m => m.uid === currentUser.uid && Date.now() - chMs(m.at) < 5000));
+    chMarkRead();
+  }, e => {
+    const box = document.getElementById("chMsgs");
+    if(box) box.innerHTML = `<p class="hint" style="text-align:center;">대화를 불러오지 못했어요 (${yajaEsc(e.code || e.message)}).</p>`;
+  });
+}
+function chRenderMsgs(scroll){
+  const box = document.getElementById("chMsgs"); if(!box || !chOpenSid) return;
+  const isT = chIsT(), mine = isT ? "t" : "s", c = chChats[chOpenSid] || {};
+  const otherRead = chMs(isT ? c.readS : c.readT);
+  const lastMine = [...chMsgs].reverse().find(m => m.from === mine);
+  let html = chMsgs.length >= chLimit ? `<div style="text-align:center; margin-bottom:6px;"><button class="link-btn" id="chMore">이전 대화 더 보기</button></div>` : "";
+  if(!chMsgs.length) html += `<p class="hint" style="text-align:center; margin-top:40px;">${isT ? "아직 나눈 대화가 없어요." : "선생님께 첫 메시지를 보내보세요 😊"}</p>`;
+  let day = "";
+  chMsgs.forEach(m => {
+    const ms = chMs(m.at), d = new Date(ms), k = yajaDateKey(d);
+    if(k !== day){ day = k; html += `<div class="ch-day"><span>${d.getMonth() + 1}월 ${d.getDate()}일 (${"일월화수목금토"[d.getDay()]})</span></div>`; }
+    const me = m.from === mine;
+    const read = me && m === lastMine && otherRead >= ms ? `<b>읽음</b>` : "";
+    html += `<div class="ch-m${me ? " me" : ""}"><div class="ch-b" data-id="${m.id}">${yajaEsc(m.text)}</div><div class="ch-meta">${read}${chTime(ms)}</div></div>`;
+  });
+  box.innerHTML = html;
+  box.querySelectorAll(".ch-b").forEach(b => b.onclick = () => chDelete(b.dataset.id));
+  const more = document.getElementById("chMore");
+  if(more) more.onclick = () => { chLimit += 60; chSubscribe(chOpenSid); };
+  if(scroll) box.scrollTop = box.scrollHeight;
+}
+async function chSend(){
+  const ta = document.getElementById("chText"), btn = document.getElementById("chSend");
+  const text = ta.value.trim(); if(!text || !chOpenSid) return;
+  if(text.length > CH_MAX) return alert(`${CH_MAX}자까지 보낼 수 있어요.`);
+  btn.disabled = true;
+  try{
+    const batch = db.batch(); chAddToBatch(batch, chOpenSid, text); await batch.commit();
+    ta.value = ""; ta.style.height = "auto"; ta.focus();
+  }catch(e){ console.error("메시지 보내기 실패", e); alert("보내지 못했어요. 인터넷 연결을 확인하고 다시 보내주세요."); }
+  finally{ btn.disabled = false; }
+}
+async function chDelete(id){
+  const m = chMsgs.find(x => x.id === id); if(!m) return;
+  const isT = chIsT();
+  if(!isT && (m.uid !== currentUser.uid || Date.now() - chMs(m.at) > 5 * 60000)) return;
+  if(!confirm(isT && m.from === "s" ? "학생이 보낸 이 메시지를 지울까요? (학생 화면에서도 지워져요)" : "이 메시지를 지울까요? (상대 화면에서도 지워져요)")) return;
+  const sid = chOpenSid, wasLast = chMsgs[chMsgs.length - 1] === m;
+  try{
+    await db.collection("chats").doc(sid).collection("msgs").doc(id).delete();
+    if(wasLast) await db.collection("chats").doc(sid).set({ studentUid: sid, lastText: "(지운 메시지)" }, { merge: true });
+  }catch(e){ console.error(e); alert(isT ? "지우지 못했어요." : "보낸 지 5분이 지나서 지울 수 없어요."); }
+}
+function chMarkRead(){
+  if(!chOpenSid || chMode !== "thread" || !chActive() || document.visibilityState !== "visible" || !chUnread(chOpenSid)) return;
+  const f = chIsT() ? "readT" : "readS";
+  db.collection("chats").doc(chOpenSid).set({ studentUid: chOpenSid, [f]: firebase.firestore.FieldValue.serverTimestamp() }, { merge: true }).catch(e => console.warn("읽음 표시 실패", e));
 }
 
 /* =========================================================
