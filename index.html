@@ -350,7 +350,7 @@
 <div class="wrap">
 
   <div class="brand">
-    <h1><span id="classLabel">2학년 7반</span> <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1124-1</span></h1>
+    <h1><span id="classLabel">2학년 7반</span> <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1124-2</span></h1>
     <div id="brandRight"></div>
   </div>
 
@@ -1607,7 +1607,7 @@ if(messaging){
     const k = (n.title || "") + "|" + (n.body || "");
     if(k === lastFg.k && Date.now() - lastFg.t < 10000) return; // 같은 알림 중복 표시 막기
     lastFg = { k, t: Date.now() };
-    if((n.title || "").startsWith("💌")){ chToast(n.title, n.body); return; }
+    if((n.title || "").startsWith("💌")){ chForegroundNotify(n.title, n.body); return; }
     alert(`📢 ${n.title || ""}\n${n.body || ""}`);
   });
 }
@@ -5858,6 +5858,11 @@ function setupChatTab(){
     }
     document.addEventListener("visibilitychange", () => { if(document.visibilityState === "visible") chMarkRead(); });
   }
+  // 앱이 켜져 있을 때 알림을 누르면 (서비스워커가 알려줌) 대화 탭으로
+  if("serviceWorker" in navigator && !setupChatTab.swBound){
+    setupChatTab.swBound = true;
+    navigator.serviceWorker.addEventListener("message", e => { if(e.data && e.data.openChat) switchMainTab("chat"); });
+  }
   // 알림을 눌러 들어온 경우 바로 대화 탭으로
   if(location.hash === "#chat"){ history.replaceState(null, "", location.pathname + location.search); switchMainTab("chat"); }
 }
@@ -5866,8 +5871,27 @@ function chBadge(){
   const n = Object.keys(chChats).filter(chUnread).length, dot = document.getElementById("chatDot");
   dot.textContent = n; dot.style.display = n ? "block" : "none";
 }
+// 앱을 켜 둔 상태에서 온 대화 알림: 폰 알림(소리·진동)도 울리고 화면 아래 쪽지도 띄움.
+// 단, 바로 그 사람과의 대화방을 보고 있을 때는 메시지가 눈앞에 뜨므로 울리지 않음
+function chViewingSender(title){
+  if(!chActive() || chMode !== "thread" || !chOpenSid || document.visibilityState !== "visible") return false;
+  if(!chIsT()) return true;
+  const who = (title || "").replace("💌", "").trim();
+  const s = (chRoster || []).find(x => `${x.num}번 ${x.name}` === who);
+  return !!s && s.uid === chOpenSid;
+}
+async function chForegroundNotify(title, body){
+  if(chViewingSender(title)) return;
+  chToast(title, body);
+  try{
+    if(!("Notification" in window) || Notification.permission !== "granted") return;
+    const opt = { body: body || "", icon: "icons/icon-192.png", tag: "chat-fg", renotify: true, data: { chatUrl: location.origin + location.pathname + "#chat" } };
+    const reg = "serviceWorker" in navigator ? await navigator.serviceWorker.getRegistration("firebase-messaging-sw.js") : null;
+    if(reg) await reg.showNotification(title, opt);
+    else new Notification(title, opt); // (PC 브라우저용 예비)
+  }catch(e){ console.warn("앱 켜짐 상태 알림 실패", e); }
+}
 function chToast(title, body){
-  if(chActive()) return; // 대화창을 보고 있으면 따로 안 띄움
   document.querySelectorAll(".ch-toast").forEach(x => x.remove());
   const t = document.createElement("div"); t.className = "ch-toast";
   t.innerHTML = `<b>${yajaEsc(title || "")}</b>${yajaEsc(body || "")}`;

@@ -21,3 +21,15 @@ messaging.onBackgroundMessage((payload) => {
   if (!d.title) return;
   self.registration.showNotification(d.title, { body: d.body || "", icon: "icons/icon-192.png", tag: d.tag || undefined });
 });
+
+// 앱을 켜 둔 상태에서 앱이 직접 띄운 대화 알림을 누르면 앱의 대화 탭으로
+self.addEventListener("notificationclick", (event) => {
+  const url = event.notification.data && event.notification.data.chatUrl;
+  if (!url) return; // Firebase가 띄운 알림은 Firebase가 처리
+  event.notification.close();
+  event.waitUntil(clients.matchAll({ type: "window", includeUncontrolled: true }).then((list) => {
+    const c = list.find((w) => w.url.split("#")[0] === url.split("#")[0]);
+    if (c) { c.postMessage({ openChat: true }); return c.focus(); }
+    return clients.openWindow(url);
+  }));
+});
