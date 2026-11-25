@@ -19,7 +19,7 @@ messaging.onBackgroundMessage((payload) => {
   if (payload.notification) return;
   const d = payload.data || {};
   if (!d.title) return;
-  self.registration.showNotification(d.title, { body: d.body || "", icon: "icons/icon-192.png", tag: d.tag || undefined });
+  self.registration.showNotification(d.title, { body: d.body || "", icon: "icons/icon-192-v2.png", tag: d.tag || undefined });
 });
 
 // 앱을 켜 둔 상태에서 앱이 직접 띄운 대화 알림을 누르면 앱의 대화 탭으로
