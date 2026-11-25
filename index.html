@@ -442,7 +442,7 @@
 <div class="wrap">
 
   <div class="brand">
-    <h1><span id="classLabel">2학년 7반</span> <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1125-1</span></h1>
+    <h1><span id="classLabel">2학년 7반</span> <span id="appVersion" style="font-family:'Noto Sans KR',sans-serif; font-size:11px; font-weight:400; color:#a49c88;">v1125-2</span></h1>
     <div id="brandRight"></div>
   </div>
 
@@ -5365,6 +5365,10 @@ async function cdOpenForm(uid, meta){
 }
 
 /* ---------- 담임: 목록 ---------- */
+// 인터넷이 잠깐 끊기면 Firestore 응답이 한없이 늦어질 수 있음 → 일정 시간 뒤 '다시 시도'를 보여줌
+function slowGuard(p, ms){
+  return Promise.race([p, new Promise((_, rej) => setTimeout(() => rej({ code: "응답이 늦어요 — 인터넷 연결을 확인하고 다시 시도해주세요" }), ms || 12000))]);
+}
 async function cdLoadRoster(){
   const snap = await db.collection("students").where("role", "==", "student").get();
   cdRoster = snap.docs.map(d => ({ uid: d.id, ...d.data() })).sort((a, b) => a.num - b.num);
@@ -5375,9 +5379,9 @@ async function cdTeacherList(){
   body.innerHTML = `<p class="hint">불러오는 중...</p>`;
   let roster, profs = {};
   try{
-    const [r, ps] = await Promise.all([cdLoadRoster(), db.collection("studentProfiles").get()]);
+    const [r, ps] = await slowGuard(Promise.all([cdLoadRoster(), db.collection("studentProfiles").get()]));
     roster = r; ps.forEach(d => { profs[d.id] = d.data(); });
-  }catch(e){ console.error("학생 카드 목록 실패", e); body.innerHTML = `<p class="hint">불러오지 못했어요. 보안 규칙이 배포됐는지 확인해주세요.</p>`; return; }
+  }catch(e){ console.error("학생 카드 목록 실패", e); body.innerHTML = `<p class="hint">불러오지 못했어요 (${yajaEsc(e.code || e.message)}). <button class="link-btn" onclick="cdTeacherList()">다시 시도</button></p>`; return; }
   const real = roster.filter(s => s.name !== "테스트");
   const st = s => { const p = profs[s.uid]; return !p ? "none" : p.submittedAt ? "done" : "draft"; };
   const cnt = k => real.filter(s => st(s) === k).length;
@@ -5426,12 +5430,12 @@ async function cdTeacherCard(uid){
   const body = document.getElementById("cdBody");
   body.innerHTML = `<p class="hint">불러오는 중...</p>`;
   try{
-    if(!cdRoster) await cdLoadRoster();
+    if(!cdRoster) await slowGuard(cdLoadRoster());
     const s = cdRoster.find(x => x.uid === uid); if(!s){ cdTeacherList(); return; }
     const q = (c, field) => db.collection(c).where(field || "studentUid", "==", uid).get().then(x => x.docs.map(d => ({ id: d.id, ...d.data() })));
-    const [pDoc, notes, absences, yAtt, yExc, plans, subs, recs, memoDoc] = await Promise.all([
+    const [pDoc, notes, absences, yAtt, yExc, plans, subs, recs, memoDoc] = await slowGuard(Promise.all([
       db.collection("studentProfiles").doc(uid).get(), q("attendanceNotes"), q("absences"), q("yajaAttendance"), q("yajaExcuses"),
-      q("studyplans"), q("listenSubs", "uid"), q("counselRecords"), db.collection("studentMemos").doc(uid).get() ]);
+      q("studyplans"), q("listenSubs", "uid"), q("counselRecords"), db.collection("studentMemos").doc(uid).get() ]));
     const gDoc = await db.collection("gradeAnalysis").doc(uid).get().catch(() => null);
     const grade = typeof gaSummary === "function" ? gaSummary(gDoc && gDoc.exists ? gDoc.data() : null) : null;
     if(cdOpenUid !== uid) return;
@@ -5562,7 +5566,7 @@ async function cdTeacherCard(uid){
     });
   }catch(e){
     console.error("학생 카드 불러오기 실패", e);
-    body.innerHTML = `<button class="link-btn" onclick="cdTeacherList()">← 목록</button><p class="hint">불러오지 못했어요 (${yajaEsc(e.code || e.message)}).</p>`;
+    body.innerHTML = `<button class="link-btn" onclick="cdTeacherList()">← 목록</button><p class="hint">불러오지 못했어요 (${yajaEsc(e.code || e.message)}). <button class="link-btn" onclick="cdTeacherCard('${uid}')">다시 시도</button></p>`;
   }
 }
 
@@ -5799,8 +5803,8 @@ async function tdRender(){
     const from14 = yajaDateKey(new Date(now.getTime() - 14 * 86400000));
     const wkNow = tdMondayKey(0), wkPrev = tdMondayKey(-1);
     const col = (c, f, op, v) => db.collection(c).where(f, op, v).get().then(s => s.docs.map(d => ({ id: d.id, ...d.data() })));
-    const openRounds = (await db.collection("listenRounds").get()).docs.map(d => ({ id: d.id, ...d.data() })).filter(r => lsStatus(r) === "open");
-    const [roster, notesToday, absNotes, absences, yAtt, yExcToday, yExcPending, ovDoc, plansNow, plansPrev, counselToday, counselPending, sugNew, profs, chatDocs, ...subsByRound] = await Promise.all([
+    const openRounds = (await slowGuard(db.collection("listenRounds").get())).docs.map(d => ({ id: d.id, ...d.data() })).filter(r => lsStatus(r) === "open");
+    const [roster, notesToday, absNotes, absences, yAtt, yExcToday, yExcPending, ovDoc, plansNow, plansPrev, counselToday, counselPending, sugNew, profs, chatDocs, ...subsByRound] = await slowGuard(Promise.all([
       col("students", "role", "==", "student"), col("attendanceNotes", "date", "==", today), col("attendanceNotes", "kind", "==", "결석"),
       db.collection("absences").get().then(s => s.docs.map(d => d.data())),
       col("yajaAttendance", "date", "==", today), col("yajaExcuses", "date", "==", today), col("yajaExcuses", "status", "==", "pending"),
@@ -5809,7 +5813,7 @@ async function tdRender(){
       col("counsels", "date", "==", today), col("counsels", "status", "==", "pending"), col("suggestions", "status", "==", "new"),
       db.collection("studentProfiles").get().then(s => s.docs.map(d => ({ id: d.id, ...d.data() }))).catch(() => null),
       db.collection("chats").get().then(s => s.docs.map(d => ({ id: d.id, ...d.data() }))).catch(() => []),
-      ...openRounds.map(r => col("listenSubs", "roundId", "==", r.id)) ]);
+      ...openRounds.map(r => col("listenSubs", "roundId", "==", r.id)) ]));
     const stu = roster.filter(s => s.name !== "테스트").map(s => ({ ...s, uid: s.id })).sort((a, b) => a.num - b.num);
     const names = list => list.map(s => `<span class="td-chip">${Number(s.num) || ""} ${yajaEsc(s.name)}</span>`).join("");
     const card = (tab, icon, title, badge, inner, alert) => `<div class="group-block td-card${alert ? " alert" : ""}" data-tab="${tab}">
